@@ -89,15 +89,34 @@
   .search-bar input::placeholder { color: var(--text3); }
   .search-icon { color: var(--text3); font-size: 13px; flex-shrink: 0; }
 
-  /* ── CONTENT ── */
-  .content { flex: 1; overflow-y: auto; padding: 22px; }
-
+  /* ── CONTENT & PAGES ── */
+  .content { flex: 1; overflow-y: auto; }
   .page { display: none; }
-  .page.active { display: block; }
-
-  /* Pages fill full width - inner content constrains itself via inline styles */
-  /* All pages: consistent full width, content scrolls naturally */
-  .page.active { display: block; width: 100%; box-sizing: border-box; }
+  .page.active { display: block; padding: 24px; width: 100%; box-sizing: border-box; }
+  /* Pages that manage their own layout - no content padding */
+  #page-candidates.active,
+  #page-pipeline.active,
+  #page-candprofile.active,
+  #page-jobdetail.active,
+  #page-projectdetail.active { padding: 0; }
+  /* Jobs page - sticky toolbar + scrollable list */
+  #page-jobs.active { padding: 0; display: flex; flex-direction: column; }
+  #page-jobs.active .panel { flex: 1; overflow-y: auto; min-height: 0; }
+  /* Settings page - uses its own grid layout */
+  #page-settings.active { padding: 0; overflow: hidden; height: calc(100vh - 52px); }
+  #page-projects.active { padding: 0; display: flex; flex-direction: column; }
+  /* Pipeline needs flex for kanban */
+  #page-pipeline.active { display: flex; flex-direction: column; }
+  #page-pipeline.active .kanban-wrap { flex: 1; overflow: auto; }
+  /* Candidates sidebar layout */
+  #page-candidates.active { display: flex; flex-direction: row; overflow: hidden; height: calc(100vh - 52px); }
+  /* Full-height detail pages */
+  #page-candprofile.active,
+  #page-jobdetail.active,
+  #page-projectdetail.active { overflow: hidden; height: calc(100vh - 52px); }
+  /* Mobile override */
+  #page-candidates { padding-bottom: 0; }
+  #page-settings > div { grid-template-columns: 1fr !important; }
 
   /* ── STATS ROW ── */
   .stats-row { display: grid; grid-template-columns: repeat(4,1fr); gap: 14px; margin-bottom: 22px; }
@@ -915,7 +934,7 @@
     <!-- CANDIDATES PAGE -->
     <!-- PROJECTS PAGE -->
     <div class="page" id="page-projects">
-      <div class="filters-bar" style="justify-content:space-between;">
+      <div class="filters-bar" style="justify-content:space-between;padding:12px 24px;margin-bottom:0;">
         <div style="display:flex;gap:8px;align-items:center;">
           <input class="search-bar" id="projects-search" placeholder="🔍 Search projects..." oninput="renderProjects()" style="width:220px;">
           <select class="filter-select" id="projects-status-filter" onchange="renderProjects()">
@@ -927,7 +946,7 @@
         </div>
         <button class="btn btn-primary" onclick="openNewProject()">+ New Project</button>
       </div>
-      <div class="content" id="projects-content" style="padding:24px;overflow-y:auto;"></div>
+      <div id="projects-content" style="padding:0 24px 24px;overflow-y:auto;"></div>
     </div>
 
     <!-- PROJECT DETAIL PAGE -->
