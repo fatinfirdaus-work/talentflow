@@ -822,33 +822,29 @@
 
     <!-- SETTINGS PAGE -->
     <div class="page" id="page-settings">
-      <div style="max-width:600px;display:flex;flex-direction:column;gap:20px;">
-        <div class="panel">
-          <div class="panel-header"><span class="panel-title">Company Profile</span></div>
-          <div style="padding:20px;display:flex;flex-direction:column;gap:14px;">
-            <div class="form-row">
-              <div class="form-group"><label>Company Name</label><input type="text" value="Acme Corp"></div>
-              <div class="form-group"><label>Industry</label><input type="text" value="Technology"></div>
-            </div>
-            <div class="form-group"><label>Careers Page URL</label><input type="text" value="https://acmecorp.com/careers"></div>
-            <div class="form-group"><label>Default Currency</label>
-              <select><option>USD ($)</option><option>EUR (€)</option><option>GBP (£)</option><option>MYR (RM)</option></select>
-            </div>
-            <button class="btn btn-primary" style="align-self:flex-start">Save Changes</button>
-          </div>
+      <div style="display:grid;grid-template-columns:200px 1fr;gap:0;min-height:calc(100vh - 56px - 48px);">
+
+        <!-- Settings sidebar -->
+        <div style="border-right:1px solid var(--border);padding:16px 8px;">
+          ${[
+            {id:'s-company',    icon:'🏢', label:'Company Profile'},
+            {id:'s-team',       icon:'👥', label:'Team Members'},
+            {id:'s-pipeline',   icon:'🔀', label:'Hiring Pipeline'},
+            {id:'s-rounds',     icon:'📋', label:'Interview Rounds'},
+            {id:'s-templates',  icon:'✉️', label:'Email Templates'},
+            {id:'s-apikey',     icon:'🔑', label:'AI & Integrations'},
+            {id:'s-notifs',     icon:'🔔', label:'Notifications'},
+            {id:'s-appearance', icon:'🎨', label:'Appearance'},
+            {id:'s-danger',     icon:'⚠️', label:'Danger Zone'},
+          ].map(s=>`
+            <div onclick="switchSettingsTab('${s.id}')" id="stab-${s.id}"
+              class="stab nav-item" style="font-size:13px;">
+              <span class="icon">${s.icon}</span>${s.label}
+            </div>`).join('')}
         </div>
-        <div class="panel">
-          <div class="panel-header"><span class="panel-title">Pipeline Stages</span></div>
-          <div style="padding:20px;display:flex;flex-direction:column;gap:10px;" id="stage-settings"></div>
-        </div>
-        <div class="panel">
-          <div class="panel-header"><span class="panel-title">Notifications</span></div>
-          <div style="padding:20px;display:flex;flex-direction:column;gap:14px;" id="notif-settings"></div>
-        </div>
-        <div class="panel" style="border-color:var(--red-dim)">
-          <div class="panel-header"><span class="panel-title" style="color:var(--red)">Danger Zone</span></div>
-          <div style="padding:20px;" id="danger-zone"></div>
-        </div>
+
+        <!-- Settings content -->
+        <div style="padding:24px;overflow-y:auto;max-width:680px;" id="settings-content"></div>
       </div>
     </div>
 
@@ -1417,34 +1413,533 @@ function markAllRead() {
 }
 
 
-function renderSettings() {
-  document.getElementById('stage-settings').innerHTML = stages.slice(0,5).map(s=>`
-    <div style="display:flex;align-items:center;justify-content:space-between;padding:10px 0;border-bottom:1px solid var(--border)">
-      <div style="display:flex;align-items:center;gap:10px">
-        <span style="cursor:grab;color:var(--text3)">⠿</span>
-        <span style="font-size:13px;font-weight:600;color:${stageColors[s]}">${s}</span>
-      </div>
-      <label class="toggle-switch"><input type="checkbox" checked><div class="toggle-track"></div></label>
-    </div>`).join('');
-
-  const notifs = ['New application received','Interview scheduled','Candidate moved stage','Offer accepted/rejected','Weekly summary report'];
-  document.getElementById('notif-settings').innerHTML = notifs.map(n=>`
-    <div style="display:flex;align-items:center;justify-content:space-between">
-      <span style="font-size:13px;color:var(--text2)">${n}</span>
-      <label class="toggle-switch"><input type="checkbox" checked><div class="toggle-track"></div></label>
-    </div>`).join('');
-
-  // Danger zone
-  const danger = document.getElementById('danger-zone');
-  if(danger) danger.innerHTML = `
-    <div style="display:flex;align-items:center;justify-content:space-between">
-      <div>
-        <div style="font-size:13px;font-weight:600;color:var(--red)">Reset All Data</div>
-        <div style="font-size:12px;color:var(--text3);margin-top:2px">Restore sample data and clear everything</div>
-      </div>
-      <button class="btn btn-ghost btn-sm" style="color:var(--red);border-color:var(--red)" onclick="openModal('resetConfirm')">Reset</button>
-    </div>`;
+function getSettings() {
+  try { return JSON.parse(localStorage.getItem('tf_settings')||'{}'); } catch(e){ return {}; }
 }
+function saveSettings(updates) {
+  const s = {...getSettings(), ...updates};
+  localStorage.setItem('tf_settings', JSON.stringify(s));
+  showToast('Settings saved!');
+}
+
+function renderSettings() {
+  // Add stab styles if needed
+  switchSettingsTab('s-company');
+}
+
+function switchSettingsTab(tabId) {
+  document.querySelectorAll('.stab').forEach(t=>t.classList.remove('active'));
+  const tab = document.getElementById('stab-'+tabId);
+  if(tab) tab.classList.add('active');
+
+  const s = getSettings();
+  const el = document.getElementById('settings-content');
+  if(!el) return;
+
+  if(tabId==='s-company') {
+    el.innerHTML = `
+      <div style="font-size:18px;font-weight:800;margin-bottom:20px;">🏢 Company Profile</div>
+      <div class="panel" style="margin-bottom:16px;">
+        <div class="panel-header"><span class="panel-title">Basic Information</span></div>
+        <div style="padding:20px;display:flex;flex-direction:column;gap:14px;">
+          <div class="form-row">
+            <div class="form-group"><label>Company Name</label>
+              <input type="text" id="s-companyName" value="${s.companyName||''}">
+            </div>
+            <div class="form-group"><label>Industry</label>
+              <select id="s-industry">
+                ${['Technology','Healthcare','Finance','Education','Retail','Manufacturing','Media','Consulting','Other'].map(i=>`<option ${s.industry===i?'selected':''}>${i}</option>`).join('')}
+              </select>
+            </div>
+          </div>
+          <div class="form-row">
+            <div class="form-group"><label>Company Size</label>
+              <select id="s-size">
+                ${['1–10','11–50','51–200','201–500','500+'].map(i=>`<option ${s.size===i?'selected':''}>${i}</option>`).join('')}
+              </select>
+            </div>
+            <div class="form-group"><label>Country / Region</label>
+              <input type="text" id="s-country" value="${s.country||'Malaysia'}" placeholder="e.g. Malaysia">
+            </div>
+          </div>
+          <div class="form-group"><label>Company Website</label>
+            <input type="text" id="s-website" value="${s.website||''}" placeholder="https://yourcompany.com">
+          </div>
+          <div class="form-group"><label>Careers Page URL</label>
+            <input type="text" id="s-careersUrl" value="${s.careersUrl||''}" placeholder="https://yourcompany.com/careers">
+          </div>
+          <div class="form-group"><label>Company Description (shown on job postings)</label>
+            <textarea id="s-companyDesc" style="min-height:80px" placeholder="A brief description of your company...">${s.companyDesc||''}</textarea>
+          </div>
+          <button class="btn btn-primary" style="align-self:flex-start" onclick="saveCompanyProfile()">Save Changes</button>
+        </div>
+      </div>
+      <div class="panel">
+        <div class="panel-header"><span class="panel-title">Finance & Currency</span></div>
+        <div style="padding:20px;display:flex;flex-direction:column;gap:14px;">
+          <div class="form-row">
+            <div class="form-group"><label>Default Currency</label>
+              <select id="s-currency">
+                ${[['MYR (RM)','MYR'],['USD ($)','USD'],['EUR (€)','EUR'],['GBP (£)','GBP'],['SGD (S$)','SGD']].map(([l,v])=>`<option value="${v}" ${s.currency===v?'selected':''}>${l}</option>`).join('')}
+              </select>
+            </div>
+            <div class="form-group"><label>Salary Display Format</label>
+              <select id="s-salaryFormat">
+                <option ${s.salaryFormat==='monthly'?'selected':''} value="monthly">Monthly (e.g. RM 5,000/month)</option>
+                <option ${s.salaryFormat==='annual'?'selected':''} value="annual">Annual (e.g. RM 60,000/year)</option>
+                <option ${s.salaryFormat==='range'?'selected':''} value="range">Range (e.g. RM 4k–6k)</option>
+              </select>
+            </div>
+          </div>
+          <button class="btn btn-primary" style="align-self:flex-start" onclick="saveCompanyProfile()">Save Changes</button>
+        </div>
+      </div>`;
+
+  } else if(tabId==='s-team') {
+    const team = s.team||[];
+    el.innerHTML = `
+      <div style="font-size:18px;font-weight:800;margin-bottom:20px;">👥 Team Members</div>
+      <div style="font-size:13px;color:var(--text3);margin-bottom:16px;">Add your hiring team so their names appear as quick-select options when scheduling interviews.</div>
+      <div class="panel" style="margin-bottom:16px;">
+        <div class="panel-header">
+          <span class="panel-title">Hiring Team</span>
+          <button class="btn btn-primary btn-sm" onclick="openAddTeamMember()">+ Add Member</button>
+        </div>
+        <div id="team-list">
+          ${team.length ? team.map((m,i)=>`
+            <div style="display:flex;align-items:center;gap:12px;padding:12px 20px;border-bottom:1px solid var(--border);">
+              <div style="width:36px;height:36px;border-radius:50%;background:${m.color||'var(--accent-dim)'};color:${m.textColor||'var(--accent)'};display:flex;align-items:center;justify-content:center;font-size:14px;font-weight:700;">${(m.name||'?')[0].toUpperCase()}</div>
+              <div style="flex:1;">
+                <div style="font-size:13px;font-weight:600;">${m.name}</div>
+                <div style="font-size:12px;color:var(--text3);">${m.role||''} ${m.dept?'· '+m.dept:''}</div>
+              </div>
+              <span class="badge ${m.canInterview?'badge-green':'badge-gray'}" style="font-size:10px;">${m.canInterview?'Interviewer':'Viewer'}</span>
+              <button class="btn btn-ghost btn-sm" onclick="removeTeamMember(${i})">✕</button>
+            </div>`).join('')
+          : `<div style="text-align:center;padding:32px;color:var(--text3);">
+              <div style="font-size:32px;margin-bottom:10px;">👥</div>
+              <div>No team members added yet</div>
+            </div>`}
+        </div>
+      </div>`;
+
+  } else if(tabId==='s-pipeline') {
+    el.innerHTML = `
+      <div style="font-size:18px;font-weight:800;margin-bottom:20px;">🔀 Hiring Pipeline</div>
+      <div style="font-size:13px;color:var(--text3);margin-bottom:16px;">Customise the stages candidates move through in your hiring process.</div>
+      <div class="panel" style="margin-bottom:16px;">
+        <div class="panel-header"><span class="panel-title">Pipeline Stages</span></div>
+        <div style="padding:20px;display:flex;flex-direction:column;gap:10px;">
+          ${stages.map((s,i)=>`
+            <div style="display:flex;align-items:center;gap:12px;padding:10px 12px;background:var(--bg3);border-radius:8px;">
+              <span style="cursor:grab;color:var(--text3);font-size:18px;">⠿</span>
+              <div style="width:10px;height:10px;border-radius:50%;background:${stageColors[s]};flex-shrink:0;"></div>
+              <span style="font-size:13px;font-weight:600;flex:1;color:${stageColors[s]}">${s}</span>
+              <span style="font-size:12px;color:var(--text3);">${candidates.filter(c=>c.stage===s).length} candidates</span>
+              <label class="toggle-switch"><input type="checkbox" checked><div class="toggle-track"></div></label>
+            </div>`).join('')}
+        </div>
+      </div>
+      <div class="panel">
+        <div class="panel-header"><span class="panel-title">Auto-move Rules</span></div>
+        <div style="padding:20px;display:flex;flex-direction:column;gap:12px;">
+          ${[
+            {label:'Move to Screening after application received', checked:s.autoScreening!==false},
+            {label:'Move to Hired automatically when offer is accepted', checked:s.autoHired!==false},
+            {label:'Mark as Rejected after 30 days of no activity', checked:s.autoReject||false},
+          ].map((r,i)=>`
+            <div style="display:flex;align-items:center;justify-content:space-between;">
+              <span style="font-size:13px;color:var(--text2);">${r.label}</span>
+              <label class="toggle-switch"><input type="checkbox" ${r.checked?'checked':''} onchange="saveSettings({'autoRule${i}':this.checked})"><div class="toggle-track"></div></label>
+            </div>`).join('')}
+        </div>
+      </div>`;
+
+  } else if(tabId==='s-rounds') {
+    el.innerHTML = `
+      <div style="font-size:18px;font-weight:800;margin-bottom:20px;">📋 Interview Rounds</div>
+      <div style="font-size:13px;color:var(--text3);margin-bottom:16px;">Your configured hiring rounds. These appear as options when scheduling interviews and submitting feedback.</div>
+      <div class="panel" style="margin-bottom:16px;">
+        <div class="panel-header"><span class="panel-title">Your Interview Rounds</span></div>
+        <div style="padding:20px;display:flex;flex-direction:column;gap:10px;">
+          ${HIRING_ROUNDS.map((r,i)=>`
+            <div style="display:flex;align-items:center;gap:12px;padding:12px 14px;background:var(--bg3);border-radius:8px;">
+              <span style="font-size:20px;">${r.icon}</span>
+              <div style="flex:1;">
+                <div style="font-size:13px;font-weight:700;">${r.label}</div>
+                <div style="font-size:12px;color:var(--text3);">${r.desc}</div>
+              </div>
+              <span style="font-size:12px;color:var(--text3);">Round ${i+1}</span>
+              <label class="toggle-switch"><input type="checkbox" checked><div class="toggle-track"></div></label>
+            </div>`).join('')}
+        </div>
+      </div>
+      <div class="panel">
+        <div class="panel-header"><span class="panel-title">Competency Framework</span></div>
+        <div style="padding:20px;display:flex;flex-direction:column;gap:10px;">
+          <div style="font-size:12px;color:var(--text3);margin-bottom:4px;">These competencies appear in every feedback form for structured evaluation.</div>
+          ${COMPETENCIES.map(c=>`
+            <div style="display:flex;align-items:center;justify-content:space-between;padding:8px 12px;background:var(--bg3);border-radius:8px;">
+              <span style="font-size:13px;font-weight:500;">${c}</span>
+              <label class="toggle-switch"><input type="checkbox" checked><div class="toggle-track"></div></label>
+            </div>`).join('')}
+        </div>
+      </div>`;
+
+  } else if(tabId==='s-templates') {
+    const templates = s.emailTemplates || {
+      invite: 'Dear {candidate_name},\n\nWe are pleased to invite you for an interview for the {job_title} position at {company_name}.\n\nInterview Details:\n📅 Date: {interview_date}\n⏰ Time: {interview_time}\n📍 Location: {interview_location}\n👤 Interviewer: {interviewer_name}\n\nPlease confirm your availability by replying to this email.\n\nBest regards,\n{sender_name}',
+      reject: 'Dear {candidate_name},\n\nThank you for your interest in the {job_title} position at {company_name} and for the time you invested in the interview process.\n\nAfter careful consideration, we have decided to move forward with another candidate whose experience more closely matches our current needs.\n\nWe appreciate your time and wish you the best in your job search.\n\nBest regards,\n{sender_name}',
+      offer: 'Dear {candidate_name},\n\nCongratulations! We are delighted to offer you the position of {job_title} at {company_name}.\n\nOffer Details:\n💰 Salary: {salary}\n📅 Start Date: {start_date}\n\nPlease review and confirm your acceptance within 5 business days.\n\nWe look forward to welcoming you to the team!\n\nBest regards,\n{sender_name}',
+    };
+    el.innerHTML = `
+      <div style="font-size:18px;font-weight:800;margin-bottom:20px;">✉️ Email Templates</div>
+      <div style="font-size:13px;color:var(--text3);margin-bottom:6px;">Available variables: <code style="background:var(--bg3);padding:2px 6px;border-radius:4px;font-size:11px;">{candidate_name} {job_title} {company_name} {interview_date} {interview_time} {interview_location} {interviewer_name} {salary} {start_date} {sender_name}</code></div>
+      <div style="margin-bottom:16px;display:flex;gap:8px;">
+        <button class="btn ${s.activeTemplate!=='reject'&&s.activeTemplate!=='offer'?'btn-primary':'btn-ghost'} btn-sm" onclick="switchEmailTemplate('invite')">📅 Interview Invite</button>
+        <button class="btn ${s.activeTemplate==='reject'?'btn-primary':'btn-ghost'} btn-sm" onclick="switchEmailTemplate('reject')">❌ Rejection</button>
+        <button class="btn ${s.activeTemplate==='offer'?'btn-primary':'btn-ghost'} btn-sm" onclick="switchEmailTemplate('offer')">🎉 Offer Letter</button>
+      </div>
+      <div class="panel">
+        <div class="panel-header">
+          <span class="panel-title" id="template-title">📅 Interview Invitation Template</span>
+          <button class="btn btn-primary btn-sm" onclick="saveEmailTemplate()">Save Template</button>
+        </div>
+        <div style="padding:20px;">
+          <div class="form-group" style="margin-bottom:12px;"><label>Subject Line</label>
+            <input type="text" id="email-subject" value="${s.emailSubjectInvite||'Interview Invitation — {job_title} at {company_name}'}">
+          </div>
+          <div class="form-group"><label>Email Body</label>
+            <textarea id="email-body" style="min-height:220px;font-family:'JetBrains Mono';font-size:12px;">${templates.invite}</textarea>
+          </div>
+          <div style="margin-top:10px;background:var(--bg3);border-radius:8px;padding:10px 14px;">
+            <div style="font-size:11px;font-weight:700;color:var(--text3);margin-bottom:6px;">PREVIEW</div>
+            <div id="email-preview" style="font-size:12px;color:var(--text2);line-height:1.7;white-space:pre-wrap;">${templates.invite.replace(/{[\w_]+}/g, m=>`<span style="color:var(--accent);">${m}</span>`)}</div>
+          </div>
+        </div>
+      </div>`;
+
+  } else if(tabId==='s-apikey') {
+    const key = localStorage.getItem('tf_apikey')||'';
+    el.innerHTML = `
+      <div style="font-size:18px;font-weight:800;margin-bottom:20px;">🔑 AI & Integrations</div>
+      <div class="panel" style="margin-bottom:16px;">
+        <div class="panel-header"><span class="panel-title">Anthropic AI — Resume Parsing</span></div>
+        <div style="padding:20px;display:flex;flex-direction:column;gap:14px;">
+          <div style="background:var(--accent-dim);border:1px solid var(--accent);border-radius:8px;padding:12px 14px;">
+            <div style="font-size:13px;font-weight:600;color:var(--accent);margin-bottom:4px;">🤖 What this does</div>
+            <div style="font-size:12px;color:var(--text2);line-height:1.6;">When you upload a resume, AI automatically reads it and fills in the candidate's name, email, phone, location, experience, skills, and writes a summary. Saves you minutes per candidate.</div>
+          </div>
+          <div class="form-group"><label>Anthropic API Key</label>
+            <div style="display:flex;gap:8px;">
+              <input type="password" id="apikey-input" value="${key}" placeholder="sk-ant-api..." style="flex:1;">
+              <button class="btn btn-primary btn-sm" onclick="saveApiKeyFromSettings()">Save</button>
+              ${key?`<button class="btn btn-ghost btn-sm" style="color:var(--red);" onclick="clearApiKeySettings()">Clear</button>`:''}
+            </div>
+            ${key?`<div style="font-size:12px;color:var(--green);margin-top:6px;">✓ API key saved — resume parsing is active</div>`:'<div style="font-size:12px;color:var(--text3);margin-top:6px;">Get a free key at <a href="https://console.anthropic.com" target="_blank" style="color:var(--accent);">console.anthropic.com</a></div>'}
+          </div>
+        </div>
+      </div>
+      <div class="panel">
+        <div class="panel-header"><span class="panel-title">Coming Soon</span></div>
+        <div style="padding:20px;display:flex;flex-direction:column;gap:10px;">
+          ${['📧 Gmail — Send emails directly from candidate profiles','📅 Google Calendar — Sync interview schedules','💼 LinkedIn — Import candidates from LinkedIn','📊 Slack — Get notifications in your Slack workspace'].map(i=>`
+            <div style="display:flex;align-items:center;justify-content:space-between;padding:10px 12px;background:var(--bg3);border-radius:8px;opacity:0.6;">
+              <span style="font-size:13px;">${i}</span>
+              <span class="badge badge-gray" style="font-size:10px;">Soon</span>
+            </div>`).join('')}
+        </div>
+      </div>`;
+
+  } else if(tabId==='s-notifs') {
+    el.innerHTML = `
+      <div style="font-size:18px;font-weight:800;margin-bottom:20px;">🔔 Notifications</div>
+      <div class="panel">
+        <div class="panel-header"><span class="panel-title">Notification Preferences</span></div>
+        <div style="padding:20px;display:flex;flex-direction:column;gap:14px;">
+          ${[
+            {key:'notifNewApp',    label:'New application received',         desc:'When a candidate is added to any job'},
+            {key:'notifInterview', label:'Interview scheduled',              desc:'When a new interview is booked'},
+            {key:'notifFeedback',  label:'Feedback submitted',               desc:'When an interviewer submits feedback'},
+            {key:'notifStage',     label:'Candidate stage change',           desc:'When a candidate moves to a new stage'},
+            {key:'notifOffer',     label:'Offer accepted or rejected',       desc:'When a candidate responds to an offer'},
+            {key:'notifHired',     label:'Candidate hired',                  desc:'When a candidate is marked as hired'},
+            {key:'notifExpiry',    label:'Job posting expiry warning',       desc:'3 days before a job posting expires'},
+          ].map(n=>`
+            <div style="display:flex;align-items:center;justify-content:space-between;padding:10px 0;border-bottom:1px solid var(--border);">
+              <div>
+                <div style="font-size:13px;font-weight:600;">${n.label}</div>
+                <div style="font-size:12px;color:var(--text3);">${n.desc}</div>
+              </div>
+              <label class="toggle-switch">
+                <input type="checkbox" ${getSettings()[n.key]!==false?'checked':''} onchange="saveSettings({'${n.key}':this.checked})">
+                <div class="toggle-track"></div>
+              </label>
+            </div>`).join('')}
+        </div>
+      </div>`;
+
+  } else if(tabId==='s-appearance') {
+    const as = getSettings();
+    el.innerHTML = `
+      <div style="font-size:18px;font-weight:800;margin-bottom:20px;">🎨 Appearance</div>
+      <div class="panel" style="margin-bottom:16px;">
+        <div class="panel-header"><span class="panel-title">Theme</span></div>
+        <div style="padding:20px;display:flex;gap:12px;flex-wrap:wrap;">
+          ${[
+            {id:'dark',  label:'Dark',       bg:'#0d0f14', accent:'#4f8ef7'},
+            {id:'darker',label:'Deep Black', bg:'#060608', accent:'#4f8ef7'},
+            {id:'blue',  label:'Navy Blue',  bg:'#0a1628', accent:'#60a5fa'},
+            {id:'green', label:'Forest',     bg:'#0a1a0f', accent:'#34d399'},
+          ].map(t=>`
+            <div onclick="applyTheme('${t.id}')" style="cursor:pointer;border:2px solid ${as.theme===t.id?'var(--accent)':'var(--border)'};border-radius:10px;overflow:hidden;width:100px;">
+              <div style="height:50px;background:${t.bg};display:flex;align-items:center;justify-content:center;">
+                <div style="width:20px;height:20px;border-radius:50%;background:${t.accent};"></div>
+              </div>
+              <div style="padding:6px;text-align:center;font-size:11px;font-weight:600;background:var(--bg3);">${t.label}</div>
+            </div>`).join('')}
+        </div>
+      </div>
+      <div class="panel" style="margin-bottom:16px;">
+        <div class="panel-header"><span class="panel-title">Accent Color</span></div>
+        <div style="padding:20px;display:flex;gap:10px;flex-wrap:wrap;">
+          ${[
+            {color:'#4f8ef7',label:'Blue'},
+            {color:'#a78bfa',label:'Purple'},
+            {color:'#34d399',label:'Green'},
+            {color:'#fbbf24',label:'Amber'},
+            {color:'#f472b6',label:'Pink'},
+            {color:'#fb7185',label:'Rose'},
+            {color:'#06b6d4',label:'Cyan'},
+          ].map(c=>`
+            <div onclick="applyAccent('${c.color}')" title="${c.label}"
+              style="width:36px;height:36px;border-radius:50%;background:${c.color};cursor:pointer;
+              border:3px solid ${as.accent===c.color?'white':'transparent'};
+              box-shadow:${as.accent===c.color?'0 0 0 2px '+c.color:'none'};
+              transition:all 0.15s;"></div>`).join('')}
+        </div>
+      </div>
+      <div class="panel">
+        <div class="panel-header"><span class="panel-title">Dashboard Name</span></div>
+        <div style="padding:20px;display:flex;flex-direction:column;gap:12px;">
+          <div class="form-group"><label>Your Name (shown in sidebar)</label>
+            <input type="text" id="s-yourname" value="${as.yourName||''}" placeholder="e.g. Jamie Lee">
+          </div>
+          <div class="form-group"><label>Your Role</label>
+            <input type="text" id="s-yourrole" value="${as.yourRole||''}" placeholder="e.g. HR Manager">
+          </div>
+          <button class="btn btn-primary btn-sm" style="align-self:flex-start;" onclick="saveAppearance()">Save</button>
+        </div>
+      </div>`;
+
+  } else if(tabId==='s-danger') {
+    el.innerHTML = `
+      <div style="font-size:18px;font-weight:800;margin-bottom:20px;color:var(--red);">⚠️ Danger Zone</div>
+      <div style="display:flex;flex-direction:column;gap:14px;">
+        <div class="panel" style="border-color:var(--red-dim);">
+          <div style="padding:20px;display:flex;align-items:center;justify-content:space-between;">
+            <div>
+              <div style="font-size:14px;font-weight:700;">Export All Data</div>
+              <div style="font-size:12px;color:var(--text3);margin-top:3px;">Download a full backup of all your candidates, jobs and data as CSV files.</div>
+            </div>
+            <button class="btn btn-ghost btn-sm" onclick="exportCSV('candidates')">⬇ Export</button>
+          </div>
+        </div>
+        <div class="panel" style="border-color:var(--amber-dim);">
+          <div style="padding:20px;display:flex;align-items:center;justify-content:space-between;">
+            <div>
+              <div style="font-size:14px;font-weight:700;">Clear All Candidates</div>
+              <div style="font-size:12px;color:var(--text3);margin-top:3px;">Delete all candidate records. Jobs will be kept. This cannot be undone.</div>
+            </div>
+            <button class="btn btn-ghost btn-sm" style="color:var(--amber);border-color:var(--amber-dim);" onclick="clearCandidates()">Clear</button>
+          </div>
+        </div>
+        <div class="panel" style="border-color:var(--red-dim);">
+          <div style="padding:20px;display:flex;align-items:center;justify-content:space-between;">
+            <div>
+              <div style="font-size:14px;font-weight:700;">Reset Everything</div>
+              <div style="font-size:12px;color:var(--text3);margin-top:3px;">Delete ALL data and restore the original sample data. Cannot be undone.</div>
+            </div>
+            <button class="btn btn-ghost btn-sm" style="color:var(--red);border-color:var(--red-dim);" onclick="openModal('resetConfirm')">Reset All Data</button>
+          </div>
+        </div>
+      </div>`;
+  }
+}
+
+// Settings helper functions
+function saveCompanyProfile() {
+  const updates = {
+    companyName: document.getElementById('s-companyName')?.value,
+    industry: document.getElementById('s-industry')?.value,
+    size: document.getElementById('s-size')?.value,
+    country: document.getElementById('s-country')?.value,
+    website: document.getElementById('s-website')?.value,
+    careersUrl: document.getElementById('s-careersUrl')?.value,
+    companyDesc: document.getElementById('s-companyDesc')?.value,
+    currency: document.getElementById('s-currency')?.value,
+    salaryFormat: document.getElementById('s-salaryFormat')?.value,
+  };
+  saveSettings(updates);
+  // Update sidebar name if set
+  if(updates.companyName) document.querySelector('.logo-text').innerHTML = updates.companyName.split(' ')[0] + '<span>' + (updates.companyName.split(' ').slice(1).join(' ')||'Flow') + '</span>';
+}
+
+function saveAppearance() {
+  const name = document.getElementById('s-yourname')?.value;
+  const role = document.getElementById('s-yourrole')?.value;
+  saveSettings({ yourName: name, yourRole: role });
+  if(name) document.getElementById('sidebar-name').textContent = name;
+  if(role) document.querySelector('.user-role').textContent = role;
+}
+
+function applyTheme(id) {
+  const themes = {
+    dark:   { bg:'#0d0f14', bg2:'#13161e', bg3:'#1a1e2a', bg4:'#212636' },
+    darker: { bg:'#060608', bg2:'#0d0f12', bg3:'#131518', bg4:'#1a1c20' },
+    blue:   { bg:'#0a1628', bg2:'#0f1e38', bg3:'#152448', bg4:'#1a2a55' },
+    green:  { bg:'#0a1a0f', bg2:'#0f2218', bg3:'#142a1e', bg4:'#1a3526' },
+  };
+  const t = themes[id]; if(!t) return;
+  Object.entries(t).forEach(([k,v])=>document.documentElement.style.setProperty(`--${k}`,v));
+  saveSettings({ theme: id });
+  switchSettingsTab('s-appearance');
+  showToast('Theme applied!');
+}
+
+function applyAccent(color) {
+  document.documentElement.style.setProperty('--accent', color);
+  document.documentElement.style.setProperty('--accent2', color);
+  saveSettings({ accent: color });
+  switchSettingsTab('s-appearance');
+  showToast('Accent color updated!');
+}
+
+function saveApiKeyFromSettings() {
+  const val = document.getElementById('apikey-input')?.value.trim();
+  if(!val||!val.startsWith('sk-')) { showToast('Please enter a valid key (starts with sk-)'); return; }
+  localStorage.setItem('tf_apikey', val);
+  switchSettingsTab('s-apikey');
+  showToast('API key saved!');
+}
+
+function clearApiKeySettings() {
+  if(!confirm('Remove API key? Resume AI parsing will be disabled.')) return;
+  localStorage.removeItem('tf_apikey');
+  switchSettingsTab('s-apikey');
+  showToast('API key removed');
+}
+
+function openAddTeamMember() {
+  document.getElementById('modal-title').textContent = '👤 Add Team Member';
+  document.getElementById('modal-body').innerHTML = `
+    <div class="form-row">
+      <div class="form-group"><label>Full Name</label><input type="text" id="tm-name" placeholder="e.g. Sarah Kaur"></div>
+      <div class="form-group"><label>Role / Title</label><input type="text" id="tm-role" placeholder="e.g. HR Manager"></div>
+    </div>
+    <div class="form-group"><label>Department</label>
+      <select id="tm-dept"><option>HR</option><option>Engineering</option><option>Design</option><option>Product</option><option>Management</option><option>Operations</option></select>
+    </div>
+    <div class="form-group" style="display:flex;align-items:center;justify-content:space-between;">
+      <div><div style="font-size:13px;font-weight:600;">Can conduct interviews</div><div style="font-size:12px;color:var(--text3);">Name will appear in interviewer quick-select</div></div>
+      <label class="toggle-switch"><input type="checkbox" id="tm-canInterview" checked><div class="toggle-track"></div></label>
+    </div>`;
+  document.getElementById('modal-footer').innerHTML = `
+    <button class="btn btn-ghost" onclick="closeModal()">Cancel</button>
+    <button class="btn btn-primary" onclick="saveTeamMember()">Add Member</button>`;
+  document.getElementById('modal-overlay').classList.add('open');
+}
+
+function saveTeamMember() {
+  const name = document.getElementById('tm-name')?.value.trim();
+  if(!name) { showToast('Please enter a name'); return; }
+  const s = getSettings();
+  const team = s.team||[];
+  const colors = [['var(--accent-dim)','var(--accent)'],['var(--purple-dim)','var(--purple)'],['var(--green-dim)','var(--green)'],['var(--amber-dim)','var(--amber)']];
+  const col = colors[team.length%colors.length];
+  team.push({
+    name, role: document.getElementById('tm-role')?.value,
+    dept: document.getElementById('tm-dept')?.value,
+    canInterview: document.getElementById('tm-canInterview')?.checked,
+    color: col[0], textColor: col[1]
+  });
+  saveSettings({ team });
+  saveInterviewerName(name);
+  closeModal();
+  switchSettingsTab('s-team');
+}
+
+function removeTeamMember(i) {
+  const s = getSettings();
+  const team = s.team||[];
+  team.splice(i,1);
+  saveSettings({ team });
+  switchSettingsTab('s-team');
+}
+
+function clearCandidates() {
+  if(!confirm('Delete ALL candidates? This cannot be undone.')) return;
+  candidates = [];
+  save();
+  showToast('All candidates deleted');
+  switchSettingsTab('s-danger');
+}
+
+function switchEmailTemplate(type) {
+  const s = getSettings();
+  const templates = s.emailTemplates||{};
+  const labels = { invite:'📅 Interview Invitation Template', reject:'❌ Rejection Email Template', offer:'🎉 Offer Letter Template' };
+  const subjects = { invite:'Interview Invitation — {job_title} at {company_name}', reject:'Update on your {job_title} application', offer:'Job Offer — {job_title} at {company_name}' };
+  document.getElementById('template-title').textContent = labels[type]||'';
+  document.getElementById('email-subject').value = s[`emailSubject_${type}`]||subjects[type]||'';
+  const body = templates[type]||'';
+  document.getElementById('email-body').value = body;
+  document.getElementById('email-preview').innerHTML = body.replace(/{[\w_]+}/g, m=>`<span style="color:var(--accent);">${m}</span>`);
+  saveSettings({ activeTemplate: type });
+}
+
+function saveEmailTemplate() {
+  const s = getSettings();
+  const type = s.activeTemplate||'invite';
+  const templates = s.emailTemplates||{};
+  templates[type] = document.getElementById('email-body')?.value||'';
+  saveSettings({ emailTemplates: templates, [`emailSubject_${type}`]: document.getElementById('email-subject')?.value||'' });
+  // Update preview
+  const body = templates[type];
+  const preview = document.getElementById('email-preview');
+  if(preview) preview.innerHTML = body.replace(/{[\w_]+}/g, m=>`<span style="color:var(--accent);">${m}</span>`);
+}
+
+// Apply saved settings on load
+function applySavedSettings() {
+  const s = getSettings();
+  if(s.accent) { document.documentElement.style.setProperty('--accent',s.accent); document.documentElement.style.setProperty('--accent2',s.accent); }
+  if(s.theme) applyThemeQuiet(s.theme);
+  if(s.yourName) { const el=document.getElementById('sidebar-name'); if(el) el.textContent=s.yourName; }
+  if(s.yourRole) { const el=document.querySelector('.user-role'); if(el) el.textContent=s.yourRole; }
+}
+
+function applyThemeQuiet(id) {
+  const themes = {
+    dark:{bg:'#0d0f14',bg2:'#13161e',bg3:'#1a1e2a',bg4:'#212636'},
+    darker:{bg:'#060608',bg2:'#0d0f12',bg3:'#131518',bg4:'#1a1c20'},
+    blue:{bg:'#0a1628',bg2:'#0f1e38',bg3:'#152448',bg4:'#1a2a55'},
+    green:{bg:'#0a1a0f',bg2:'#0f2218',bg3:'#142a1e',bg4:'#1a3526'},
+  };
+  const t=themes[id]; if(!t) return;
+  Object.entries(t).forEach(([k,v])=>document.documentElement.style.setProperty(`--${k}`,v));
+}
+
+// Legacy stubs for old IDs still referenced
+function renderSettings_legacy() {
+  const el = document.getElementById('stage-settings');
+  if(el) el.innerHTML='';
+  const el2 = document.getElementById('notif-settings');
+  if(el2) el2.innerHTML='';
+  const el3 = document.getElementById('danger-zone');
+  if(el3) el3.innerHTML='';
+}
+
 
 function populateJobFilters() {
   const selects = ['cand-job-filter','pipe-job-filter'];
@@ -3148,6 +3643,7 @@ function showToast(msg) {
 // ===================== INIT =====================
 populateJobFilters();
 renderDashboard();
+applySavedSettings();
 </script>
 
 <!-- FIREBASE -->
