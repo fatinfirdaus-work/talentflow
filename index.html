@@ -740,21 +740,22 @@
       </div>
       <div class="nav-item" data-label="Jobs" onclick="showPage('jobs', this)">
         <span class="icon">💼</span> Jobs
-        <span class="nav-badge">12</span>
+        <span class="nav-badge" id="badge-jobs"></span>
       </div>
       <div class="nav-item" data-label="Candidates" onclick="showPage('candidates', this)">
         <span class="icon">👥</span> Candidates
-        <span class="nav-badge">84</span>
+        <span class="nav-badge" id="badge-candidates"></span>
       </div>
       <div class="nav-item" data-label="Pipeline" onclick="showPage('pipeline', this)">
         <span class="icon">🔀</span> Pipeline
       </div>
       <div class="nav-item" data-label="Interviews" onclick="showPage('interviews', this)">
         <span class="icon">📅</span> Interviews
-        <span class="nav-badge">5</span>
+        <span class="nav-badge" id="badge-interviews"></span>
       </div>
       <div class="nav-item" data-label="Offers" onclick="showPage('offers', this)">
         <span class="icon">📄</span> Offers
+        <span class="nav-badge" id="badge-offers"></span>
       </div>
     </div>
     <div class="nav-section">
@@ -764,7 +765,7 @@
       </div>
       <div class="nav-item" data-label="Inbox" onclick="showPage('inbox', this)">
         <span class="icon">📬</span> Inbox
-        <span class="nav-badge" style="background:var(--red)">3</span>
+        <span class="nav-badge" id="badge-inbox" style="background:var(--red)"></span>
       </div>
       <div class="nav-item" data-label="Settings" onclick="showPage('settings', this)">
         <span class="icon">⚙️</span> Settings
@@ -1288,6 +1289,7 @@ function save() {
     localStorage.setItem('tf_offers', JSON.stringify(offers));
     localStorage.setItem('tf_activities', JSON.stringify(activities));
   } catch(e) { console.warn('Save failed', e); }
+  updateSidebarBadges();
 }
 function load() {
   try {
@@ -1411,6 +1413,43 @@ function setCandStageForJob(c, jobId, newStage) {
 }
 
 
+// ===================== TIME & BADGES =====================
+function timeAgo(ts) {
+  if(!ts) return '';
+  const now = Date.now();
+  const t = typeof ts === 'number' ? ts : new Date(ts).getTime();
+  const diff = Math.floor((now - t) / 1000);
+  if(diff < 10)  return 'Just now';
+  if(diff < 60)  return diff + 's ago';
+  if(diff < 3600) return Math.floor(diff/60) + 'm ago';
+  if(diff < 86400) return Math.floor(diff/3600) + 'h ago';
+  if(diff < 86400*7) return Math.floor(diff/86400) + 'd ago';
+  return new Date(t).toLocaleDateString('en-MY', {day:'numeric',month:'short',year:'numeric'});
+}
+
+function updateSidebarBadges() {
+  const set = (id, val) => {
+    const el = document.getElementById(id);
+    if(!el) return;
+    el.textContent = val > 0 ? val : '';
+    el.style.display = val > 0 ? '' : 'none';
+  };
+  // Jobs: count open/active jobs
+  set('badge-jobs', jobs.filter(j => j.status === 'Active').length);
+  // Candidates: total candidates
+  set('badge-candidates', candidates.length);
+  // Interviews: upcoming (not cancelled, not completed)
+  const upcomingIVs = candidates.reduce((acc, c) => {
+    return acc + (c.interviews||[]).filter(iv => iv.status !== 'Cancelled' && iv.status !== 'Completed').length;
+  }, 0);
+  set('badge-interviews', upcomingIVs);
+  // Offers: pending offers
+  set('badge-offers', offers.filter(o => o.status === 'Pending').length);
+  // Inbox: unread activities (last 24h)
+  const unread = activities.filter(a => a.ts && (Date.now() - a.ts) < 86400000).length;
+  set('badge-inbox', Math.min(unread, 99));
+}
+
 function renderDashboard() {
   const activeJobs = jobs.filter(j=>j.status==='Active').length;
   const totalCands = candidates.length;
@@ -1458,14 +1497,14 @@ function renderDashboard() {
     </div>`).join('');
 
   // Activity
-  document.getElementById('activity-feed').innerHTML = activities.map(a=>`
+  document.getElementById('activity-feed').innerHTML = activities.slice(0, 20).map(a=>`
     <div class="activity-item">
       <div class="activity-dot" style="background:${a.color}"></div>
       <div class="activity-content">
         <div class="activity-text">${a.text}</div>
-        <div class="activity-time">${a.time}</div>
+        <div class="activity-time">${timeAgo(a.ts || a.time)}</div>
       </div>
-    </div>`).join('');
+    </div>`).join('') || '<div style="padding:20px;text-align:center;color:var(--text3);font-size:13px;">No recent activity</div>';
 
   // Weekly chart
   const vals = [5,8,4,10,7,3,5];
@@ -2067,7 +2106,7 @@ function updateOfferStatus(idx, status) {
   if(c && status==='Accepted') {
     c.stage = 'Hired';
     addToTimeline(c, 'Offer Accepted 🎉', 'var(--green)');
-    activities.unshift({ text:`<strong>${c.name}</strong> accepted the offer! 🎉`, time:'Just now', color:'var(--green)', ts:Date.now() });
+    activities.unshift({ text:`<strong>${c.name}</strong> accepted the offer! 🎉`, color:'var(--green)', ts:Date.now() });
   }
   save(); renderOffers();
   showToast(`Offer marked as ${status}!`);
@@ -4033,7 +4072,7 @@ function saveInterview(id) {
   if(!c.interviews) c.interviews=[];
   c.interviews.push({ round, type, date, time, duration, interviewer, interviewers:interviewerNames, location, notes, status:'Scheduled' });
   addToTimeline(c, `${round} scheduled`, 'var(--accent)');
-  activities.unshift({ text:`<strong>${round}</strong> scheduled for <strong>${c.name}</strong> on ${date}`, time:'Just now', color:'var(--accent)', ts:Date.now() });
+  activities.unshift({ text:`<strong>${round}</strong> scheduled for <strong>${c.name}</strong> on ${date}`, color:'var(--accent)', ts:Date.now() });
   save(); closeModal();
   // Go back to profile if we're on it
   if(document.getElementById('page-candprofile').classList.contains('active')) refreshRightPanel(id);
@@ -4183,7 +4222,7 @@ function saveFeedback(id) {
   if(!c.feedback) c.feedback=[];
   c.feedback.push({ interviewer, round, date, rating, recommendation, notes, strengths, concerns, skillRatings, createdAt: new Date().toISOString() });
   addToTimeline(c, `${round} feedback by ${interviewer} — ${recommendation}`, 'var(--purple)');
-  activities.unshift({ text:`<strong>${interviewer}</strong> submitted feedback for <strong>${c.name}</strong> — <strong>${recommendation}</strong>`, time:'Just now', color:'var(--purple)', ts:Date.now() });
+  activities.unshift({ text:`<strong>${interviewer}</strong> submitted feedback for <strong>${c.name}</strong> — <strong>${recommendation}</strong>`, color:'var(--purple)', ts:Date.now() });
   save();
   closeModal();
   // Refresh only the right panel to avoid reloading the PDF
@@ -4285,7 +4324,7 @@ function saveOffer(id) {
   offers.push(offer);
   c.stage = 'Offer';
   addToTimeline(c, 'Offer created', 'var(--purple)');
-  activities.unshift({ text:`Offer created for <strong>${c.name}</strong> at ${salary}`, time:'Just now', color:'var(--purple)', ts:Date.now() });
+  activities.unshift({ text:`Offer created for <strong>${c.name}</strong> at ${salary}`, color:'var(--purple)', ts:Date.now() });
   save(); closeModal(); openCandProfile(id);
   showToast('Offer created!');
 }
@@ -5022,7 +5061,7 @@ function quickMoveStage(id, stage, jobId) {
   const targetJobId = jobId || c.jobId;
   setCandStageForJob(c, targetJobId, stage);
   addToTimeline(c, `Moved to ${stage}` + (jobId ? ` (${getJob(jobId)?.title||''})` : ''), stageColors[stage]||'var(--accent)');
-  activities.unshift({ text:`<strong>${c.name}</strong> moved to <strong>${stage}</strong>`, time:'Just now', color:stageColors[stage], ts:Date.now() });
+  activities.unshift({ text:`<strong>${c.name}</strong> moved to <strong>${stage}</strong>`, color:stageColors[stage], ts:Date.now() });
   save();
   const tracker = document.getElementById('cp-stage-tracker');
   if(tracker) tracker.innerHTML = buildStageTrackerHTML(c, targetJobId);
@@ -5124,7 +5163,7 @@ function confirmMoveStage(id) {
   if(sel && c) {
     const targetJobId = jobIdEl ? parseInt(jobIdEl.value)||c.jobId : c.jobId;
     setCandStageForJob(c, targetJobId, sel.value);
-    activities.unshift({ text:`<strong>${c.name}</strong> moved to <strong>${c.stage}</strong>`, time:'Just now', color: stageColors[c.stage]||'var(--accent)', ts:Date.now() });
+    activities.unshift({ text:`<strong>${c.name}</strong> moved to <strong>${c.stage}</strong>`, color: stageColors[c.stage]||'var(--accent)', ts:Date.now() });
     save();
   }
   closeModal();
@@ -5488,7 +5527,7 @@ function saveCandidate() {
   candidates.push(newCand);
   const job = getJob(jobId);
   if(job) job.applicants = (job.applicants||0) + 1;
-  activities.unshift({ text:`New candidate <strong>${name}</strong> added for <strong>${job?job.title:'a role'}</strong>${newCand.hasResume?' 📄':''}`, time:'Just now', color:'var(--accent)' });
+  activities.unshift({ text:`New candidate <strong>${name}</strong> added for <strong>${job?job.title:'a role'}</strong>${newCand.hasResume?' 📄':''}`, color:'var(--accent)' });
   save();
   populateJobFilters();
   closeModal();
@@ -6498,6 +6537,12 @@ renderDashboard();
 applySavedSettings();
 initSidebarState();
 initMobileNav();
+updateSidebarBadges();
+// Refresh timestamps every 60 seconds so "2m ago" etc stay accurate
+setInterval(() => {
+  if(document.getElementById('activity-feed')) renderDashboard();
+  updateSidebarBadges();
+}, 60000);
 
 function initMobileNav() {
   // Show mobile nav on small screens
@@ -6791,6 +6836,7 @@ window.save = async () => {
     await batch.commit();
   } catch(e) { console.error('Save error', e); showToast('⚠️ Save failed — check connection'); }
   showSyncing(false);
+  updateSidebarBadges();
 };
 
 // Save projects to Firebase when saveProjects is called
