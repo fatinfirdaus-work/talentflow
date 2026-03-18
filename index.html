@@ -95,6 +95,15 @@
   .page { display: none; }
   .page.active { display: block; }
 
+  /* Width constraints for wide pages */
+  #page-interviews > div { max-width: 1300px; }
+  #page-offers #offers-grid { max-width: 1000px; }
+  #page-analytics > div { max-width: 1300px; }
+  #page-inbox > div { max-width: 800px; }
+
+  /* Jobs page - scrollable list */
+  #page-jobs .panel { overflow-y: auto; max-height: calc(100vh - 140px); }
+
   /* ── STATS ROW ── */
   .stats-row { display: grid; grid-template-columns: repeat(4,1fr); gap: 14px; margin-bottom: 22px; }
   .stat-card { background: var(--bg2); border: 1px solid var(--border); border-radius: var(--radius); padding: 16px 18px; }
