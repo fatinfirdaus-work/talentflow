@@ -69,8 +69,8 @@
   .main { margin-left: var(--sidebar-w); flex: 1; display: flex; flex-direction: column; height: 100vh; overflow: hidden; }
 
   /* ── TOPBAR ── */
-  .topbar { background: var(--bg2); border-bottom: 1px solid var(--border); padding: 0 22px; height: 52px; display: flex; align-items: center; gap: 14px; flex-shrink: 0; }
-  .topbar-title { font-size: 16px; font-weight: 700; letter-spacing: -0.3px; flex: 1; }
+  .topbar { background: var(--bg2); border-bottom: 1px solid var(--border); padding: 0 22px; height: 52px; display: flex; align-items: center; gap: 14px; flex-shrink: 0; overflow: hidden; }
+  .topbar-title { font-size: 16px; font-weight: 700; letter-spacing: -0.3px; flex: 1; min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
   .topbar-actions { display: flex; align-items: center; gap: 8px; }
 
   /* ── BUTTONS ── */
@@ -92,31 +92,34 @@
   /* ── CONTENT & PAGES ── */
   .content { flex: 1; overflow-y: auto; }
 
-  /* Default: all pages get 24px padding, full width */
+  /* ALL pages: no padding - each page handles its own spacing consistently */
   .page { display: none; }
-  .page.active { display: block; padding: 24px; box-sizing: border-box; }
+  .page.active { display: block; }
 
-  /* Jobs: sticky toolbar on top, list scrolls below */
-  #page-jobs.active { padding: 0; display: flex; flex-direction: column; }
+  /* Standard pages: inner content gets 24px padding via .page-inner class */
+  .page-inner { padding: 24px; }
+
+  /* Jobs: sticky toolbar + scrollable list */
+  #page-jobs.active { display: flex; flex-direction: column; }
   #page-jobs.active .panel { flex: 1; overflow-y: auto; min-height: 0; }
 
-  /* Candidates: flex row, full height, no padding */
-  #page-candidates.active { padding: 0; display: flex; flex-direction: row; overflow: hidden; height: calc(100vh - 52px); }
+  /* Candidates: flex row, full height */
+  #page-candidates.active { display: flex; flex-direction: row; overflow: hidden; height: calc(100vh - 52px); }
 
-  /* Pipeline: flex column for kanban scroll */
-  #page-pipeline.active { padding: 0; display: flex; flex-direction: column; }
+  /* Pipeline: flex column for kanban */
+  #page-pipeline.active { display: flex; flex-direction: column; }
   #page-pipeline.active .kanban-wrap { flex: 1; overflow: auto; padding: 20px; }
 
-  /* Projects: flex column, no padding (handled internally) */
-  #page-projects.active { padding: 0; display: flex; flex-direction: column; }
+  /* Projects: flex column */
+  #page-projects.active { display: flex; flex-direction: column; }
 
-  /* Settings: full height, grid layout handled internally, NO grid override here */
-  #page-settings.active { padding: 0; height: calc(100vh - 52px); overflow: hidden; display: flex; }
+  /* Settings: full height, side-by-side layout */
+  #page-settings.active { display: flex; height: calc(100vh - 52px); overflow: hidden; }
 
   /* Full-height detail pages */
   #page-candprofile.active,
   #page-jobdetail.active,
-  #page-projectdetail.active { padding: 0; overflow: hidden; height: calc(100vh - 52px); }
+  #page-projectdetail.active { overflow: hidden; height: calc(100vh - 52px); }
 
   /* ── STATS ROW ── */
   .stats-row { display: grid; grid-template-columns: repeat(4,1fr); gap: 14px; margin-bottom: 22px; }
@@ -917,6 +920,7 @@
 
     <!-- DASHBOARD PAGE -->
     <div class="page active" id="page-dashboard">
+      <div class="page-inner">
       <div class="stats-row">
         <div class="stat-card">
           <div class="stat-label">Open Positions</div>
@@ -988,11 +992,12 @@
         </div>
       </div>
     
-    </div>
+    
+      </div>
 
     <!-- JOBS PAGE -->
     <div class="page" id="page-jobs">
-      <div style="display:flex;align-items:center;gap:8px;padding:12px 18px;border-bottom:1px solid var(--border);background:var(--bg2);flex-wrap:nowrap;overflow-x:auto;">
+      <div style="display:flex;align-items:center;gap:8px;padding:12px 24px;border-bottom:1px solid var(--border);background:var(--bg2);flex-wrap:nowrap;overflow-x:auto;">
         <!-- Job search -->
         <div style="display:flex;align-items:center;background:var(--bg3);border:1px solid var(--border);border-radius:7px;overflow:hidden;min-width:160px;flex:1;max-width:260px;flex-shrink:0;">
           <span style="padding:0 8px;color:var(--text3);font-size:13px;">🔍</span>
@@ -1018,7 +1023,7 @@
         </select>
         <span style="color:var(--text3);font-size:12px;margin-left:auto;white-space:nowrap;flex-shrink:0;" id="jobs-count"></span>
       </div>
-      <div class="panel" style="overflow:hidden;margin:18px;border-radius:var(--radius);">
+      <div class="panel" style="overflow:hidden;margin:18px 24px;border-radius:var(--radius);">
         <div id="jobs-list"></div>
       </div>
     </div>
@@ -1031,7 +1036,7 @@
     <!-- CANDIDATES PAGE -->
     <!-- PROJECTS PAGE -->
     <div class="page" id="page-projects">
-      <div class="filters-bar" style="justify-content:space-between;padding:12px 24px;margin-bottom:0;">
+      <div class="filters-bar" style="justify-content:space-between;padding:12px 24px;">
         <div style="display:flex;gap:8px;align-items:center;">
           <input class="search-bar" id="projects-search" placeholder="🔍 Search projects..." oninput="renderProjects()" style="width:220px;">
           <select class="filter-select" id="projects-status-filter" onchange="renderProjects()">
@@ -1043,7 +1048,7 @@
         </div>
         <button class="btn btn-primary" onclick="openNewProject()">+ New Project</button>
       </div>
-      <div id="projects-content" style="padding:0 24px 24px;overflow-y:auto;"></div>
+      <div id="projects-content" style="padding:0 24px 24px;flex:1;overflow-y:auto;"></div>
     </div>
 
     <!-- PROJECT DETAIL PAGE -->
@@ -1072,8 +1077,8 @@
         <div style="flex:1;display:flex;flex-direction:column;overflow:hidden;min-width:0;">
 
           <!-- Stage tabs (like Feishu top pipeline) -->
-          <div style="border-bottom:1px solid var(--border);background:var(--bg2);flex-shrink:0;overflow-x:auto;">
-            <div id="cand-stage-tabs" style="display:flex;padding:0 18px;min-width:max-content;"></div>
+          <div style="border-bottom:1px solid var(--border);background:var(--bg2);flex-shrink:0;overflow-x:auto;scrollbar-width:none;">
+            <div id="cand-stage-tabs" style="display:flex;padding:0 18px;"></div>
           </div>
 
           <!-- Search + filters bar -->
@@ -1167,6 +1172,7 @@
 
     <!-- INTERVIEWS PAGE -->
     <div class="page" id="page-interviews">
+      <div class="page-inner">
       <div style="display:grid;grid-template-columns:1fr 420px;gap:20px;">
         <div>
           <div class="panel" style="margin-bottom:20px;">
@@ -1185,16 +1191,20 @@
         </div>
       </div>
     
-    </div>
+    
+      </div>
 
     <!-- OFFERS PAGE -->
     <div class="page" id="page-offers">
+      <div class="page-inner">
       <div id="offers-grid" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(340px,1fr));gap:16px;"></div>
     
-    </div>
+    
+      </div>
 
     <!-- ANALYTICS PAGE -->
     <div class="page" id="page-analytics">
+      <div class="page-inner">
       <div class="stats-row" style="margin-bottom:24px;">
         <div class="stat-card">
           <div class="stat-label">Time to Hire (avg)</div>
@@ -1227,10 +1237,12 @@
           <div class="funnel" id="analytics-funnel"></div>
         </div>
       </div>
-    </div>
+    
+      </div>
 
     <!-- REPORTS PAGE -->
     <div class="page" id="page-reports">
+      <div class="page-inner">
       <!-- Quick export bar -->
       <div style="display:flex;align-items:center;gap:10px;margin-bottom:24px;flex-wrap:wrap;">
         <span style="font-size:13px;color:var(--text3);margin-right:4px;">Quick Export:</span>
@@ -1316,10 +1328,12 @@
           </table>
         </div>
       </div>
-    </div>
+    
+      </div>
 
     <!-- INBOX PAGE -->
     <div class="page" id="page-inbox">
+      <div class="page-inner">
       <div class="panel">
         <div class="panel-header">
           <span class="panel-title">📬 Inbox</span>
@@ -1335,7 +1349,8 @@
         </div>
         <div id="inbox-list"></div>
       </div>
-    </div>
+    
+      </div>
 
     <!-- SETTINGS PAGE -->
     <div class="page" id="page-settings">
