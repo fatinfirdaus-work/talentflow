@@ -589,6 +589,9 @@
     </div>
     <div class="nav-section">
       <div class="nav-label">Recruiting</div>
+      <div class="nav-item" onclick="showPage('projects', this)">
+        <span class="icon">📁</span> Projects
+      </div>
       <div class="nav-item" onclick="showPage('jobs', this)">
         <span class="icon">💼</span> Jobs
         <span class="nav-badge">12</span>
@@ -749,6 +752,28 @@
     </div>
 
     <!-- CANDIDATES PAGE -->
+    <!-- PROJECTS PAGE -->
+    <div class="page" id="page-projects">
+      <div class="filters-bar" style="justify-content:space-between;">
+        <div style="display:flex;gap:8px;align-items:center;">
+          <input class="search-bar" id="projects-search" placeholder="🔍 Search projects..." oninput="renderProjects()" style="width:220px;">
+          <select class="filter-select" id="projects-status-filter" onchange="renderProjects()">
+            <option value="">All Status</option>
+            <option value="Active">Active</option>
+            <option value="On Hold">On Hold</option>
+            <option value="Completed">Completed</option>
+          </select>
+        </div>
+        <button class="btn btn-primary" onclick="openNewProject()">+ New Project</button>
+      </div>
+      <div class="content" id="projects-content" style="padding:24px;overflow-y:auto;"></div>
+    </div>
+
+    <!-- PROJECT DETAIL PAGE -->
+    <div class="page" id="page-projectdetail">
+      <div id="projectdetail-content"></div>
+    </div>
+
     <div class="page" id="page-candidates">
       <div class="filters-bar">
         <select class="filter-select" id="cand-stage-filter" onchange="renderCandidates()">
@@ -978,6 +1003,7 @@
         <!-- Settings sidebar -->
         <div style="border-right:1px solid var(--border);padding:16px 8px;" id="settings-sidebar">
           <div onclick="switchSettingsTab('s-company')" id="stab-s-company" class="nav-item active"><span class="icon">🏢</span>Company Profile</div>
+          <div onclick="switchSettingsTab('s-departments')" id="stab-s-departments" class="nav-item"><span class="icon">🏷️</span>Departments</div>
           <div onclick="switchSettingsTab('s-team')" id="stab-s-team" class="nav-item"><span class="icon">👥</span>Team Members</div>
           <div onclick="switchSettingsTab('s-pipeline')" id="stab-s-pipeline" class="nav-item"><span class="icon">🔀</span>Hiring Pipeline</div>
           <div onclick="switchSettingsTab('s-rounds')" id="stab-s-rounds" class="nav-item"><span class="icon">📋</span>Interview Rounds</div>
@@ -1113,6 +1139,81 @@ const stageBadge = {
 function getJob(id) { return jobs.find(j=>j.id===id); }
 function getCand(id) { return candidates.find(c=>c.id===id); }
 
+// Multi-job helpers
+// Returns all job applications for a candidate
+function getCandJobs(c) {
+  if(!c) return [];
+  // Migrate: if no jobApplications array, build from primary jobId
+  if(!c.jobApplications || !c.jobApplications.length) {
+    if(c.jobId) {
+      c.jobApplications = [{ jobId: c.jobId, stage: c.stage || 'Applied', applied: c.applied }];
+    } else {
+      c.jobApplications = [];
+    }
+  }
+  return c.jobApplications;
+}
+
+// Get stage for a specific job application
+function getCandStageForJob(c, jobId) {
+  const apps = getCandJobs(c);
+  const app = apps.find(a => a.jobId === jobId);
+  return app ? app.stage : c.stage;
+}
+
+// Get all jobIds a candidate has applied to
+function getCandJobIds(c) {
+  return getCandJobs(c).map(a => a.jobId);
+}
+
+// Add or update a job application for a candidate
+function addCandJobApplication(c, jobId, stage) {
+  const apps = getCandJobs(c);
+  const existing = apps.find(a => a.jobId === jobId);
+  if(existing) {
+    existing.stage = stage || existing.stage;
+  } else {
+    apps.push({ jobId, stage: stage || 'Applied', applied: new Date().toISOString().split('T')[0] });
+    // Update job applicant count
+    const j = getJob(jobId);
+    if(j) j.applicants = (j.applicants||0) + 1;
+  }
+  c.jobApplications = apps;
+  // Keep primary jobId as first application
+  if(!c.jobId) c.jobId = jobId;
+}
+
+// Remove a job application from a candidate
+function removeCandJobApplication(c, jobId) {
+  const apps = getCandJobs(c);
+  c.jobApplications = apps.filter(a => a.jobId !== jobId);
+  // Decrease job applicant count
+  const j = getJob(jobId);
+  if(j && j.applicants > 0) j.applicants--;
+  // Update primary jobId if we removed it
+  if(c.jobId === jobId) {
+    c.jobId = c.jobApplications.length ? c.jobApplications[0].jobId : null;
+  }
+}
+
+// Move candidate stage for a specific job
+function setCandStageForJob(c, jobId, newStage) {
+  const apps = getCandJobs(c);
+  const app = apps.find(a => a.jobId === jobId);
+  if(app) {
+    app.stage = newStage;
+  } else {
+    apps.push({ jobId, stage: newStage, applied: c.applied });
+    c.jobApplications = apps;
+  }
+  // Keep c.stage in sync with primary job
+  if(c.jobId === jobId || !c.jobId) {
+    c.stage = newStage;
+    c.jobId = jobId;
+  }
+}
+
+
 function renderDashboard() {
   const activeJobs = jobs.filter(j=>j.status==='Active').length;
   const totalCands = candidates.length;
@@ -1208,26 +1309,35 @@ function renderCandidates() {
   const stageF = document.getElementById('cand-stage-filter').value;
   const jobF = document.getElementById('cand-job-filter').value;
   const sort = document.getElementById('cand-sort').value;
-  if(stageF) list = list.filter(c=>c.stage===stageF);
-  if(jobF) list = list.filter(c=>c.jobId===parseInt(jobF));
+  const jobId = jobF ? parseInt(jobF) : null;
+
+  // Multi-job aware filtering
+  if(stageF) list = list.filter(c => jobId ? getCandStageForJob(c, jobId) === stageF : c.stage === stageF);
+  if(jobId) list = list.filter(c => getCandJobIds(c).includes(jobId));
+
   if(sort==='name') list.sort((a,b)=>a.name.localeCompare(b.name));
   else if(sort==='score') list.sort((a,b)=>b.score-a.score);
   else list.sort((a,b)=>new Date(b.applied)-new Date(a.applied));
+
   document.getElementById('cand-count').textContent = list.length + ' candidates';
   document.getElementById('cand-tbody').innerHTML = list.length ? list.map(c=>{
-    const job = getJob(c.jobId);
+    const displayJobId = jobId || c.jobId;
+    const job = getJob(displayJobId);
+    const allApps = getCandJobs(c);
+    const displayStage = jobId ? getCandStageForJob(c, jobId) : c.stage;
+    const extraJobs = allApps.length > 1 ? `<span style="font-size:10px;color:var(--accent);font-weight:700;margin-left:4px;">+${allApps.length-1}</span>` : '';
     return `<tr>
       <td><div class="td-name">
         <div class="cand-avatar" style="background:${c.color}33;color:${c.color}">${c.initials}</div>
         <div><div style="font-weight:600;cursor:pointer;color:var(--accent)" onclick="openCandProfile(${c.id})">${c.name}</div><div style="font-size:11px;color:var(--text3)">${c.email||''}</div></div>
       </div></td>
-      <td style="color:var(--text2);cursor:pointer" onclick="openJobDetail(${c.jobId})">${job?job.title:'–'}</td>
-      <td><span class="badge ${stageBadge[c.stage]}">${c.stage}</span></td>
+      <td style="color:var(--text2);cursor:pointer" onclick="openJobDetail(${displayJobId})">${job?job.title:'–'}${extraJobs}</td>
+      <td><span class="badge ${stageBadge[displayStage]||'badge-gray'}">${displayStage}</span></td>
       <td><span style="font-family:'JetBrains Mono';font-size:13px;font-weight:600;color:${c.score>=80?'var(--green)':c.score>=60?'var(--amber)':'var(--red)'}">${c.score}</span></td>
       <td style="color:var(--text3);font-size:12px;font-family:'JetBrains Mono'">${c.applied}</td>
       <td><div style="display:flex;gap:6px">
         <button class="btn btn-primary btn-sm" onclick="openCandProfile(${c.id})">View</button>
-        <button class="btn btn-ghost btn-sm" onclick="openMoveStage(${c.id})">Move</button>
+        <button class="btn btn-ghost btn-sm" onclick="openMoveStage(${c.id},${displayJobId||'null'})">Move</button>
         <button class="btn btn-ghost btn-sm" onclick="openCandInNewTab(${c.id})" title="Open in new tab">↗</button>
       </div></td>
     </tr>`;}).join('')
@@ -1236,10 +1346,23 @@ function renderCandidates() {
 
 function renderPipeline() {
   const jobF = document.getElementById('pipe-job-filter').value;
-  let list = jobF ? candidates.filter(c=>c.jobId===parseInt(jobF)) : candidates;
+  const jobId = jobF ? parseInt(jobF) : null;
+
+  // Multi-job aware: if a job filter is set, show candidates applied to that job
+  // with their stage FOR THAT JOB specifically
+  let list;
+  if(jobId) {
+    list = candidates.filter(c => getCandJobIds(c).includes(jobId));
+  } else {
+    list = candidates;
+  }
+
   const board = document.getElementById('kanban-board');
   board.innerHTML = stages.map(s=>{
-    const cards = list.filter(c=>c.stage===s);
+    const cards = list.filter(c => {
+      const stageForJob = jobId ? getCandStageForJob(c, jobId) : c.stage;
+      return stageForJob === s;
+    });
     return `<div class="kanban-col">
       <div class="kanban-col-header">
         <span class="kanban-col-title" style="color:${stageColors[s]}">${s}</span>
@@ -1247,10 +1370,12 @@ function renderPipeline() {
       </div>
       <div class="kanban-cards">
         ${cards.length ? cards.map(c=>{
-          const job = getJob(c.jobId);
+          const displayJobId = jobId || c.jobId;
+          const job = getJob(displayJobId);
+          const apps = getCandJobs(c);
           return `<div class="cand-card" onclick="openCandProfile(${c.id})">
             <div class="cand-name">${c.name}</div>
-            <div class="cand-role">${job?job.title:'–'}</div>
+            <div class="cand-role">${job?job.title:'–'}${apps.length>1?` <span style="font-size:9px;color:var(--accent);font-weight:700;">+${apps.length-1} more</span>`:''}</div>
             <div class="score-bar"><div class="score-fill" style="width:${c.score}%;background:${c.score>=80?'var(--green)':c.score>=60?'var(--amber)':'var(--red)'}"></div></div>
             <div class="cand-footer">
               <div class="cand-avatar" style="background:${c.color}33;color:${c.color}">${c.initials}</div>
@@ -1573,6 +1698,58 @@ function markAllRead() {
 function getSettings() {
   try { return JSON.parse(localStorage.getItem('tf_settings')||'{}'); } catch(e){ return {}; }
 }
+
+// ---- DEPARTMENTS (customisable) ----
+const DEFAULT_DEPTS = ['Engineering','Design','Product','Marketing','Sales','Operations','HR','Finance','Legal'];
+function getDepts() {
+  try {
+    const s = getSettings();
+    return s.departments && s.departments.length ? s.departments : [...DEFAULT_DEPTS];
+  } catch(e) { return [...DEFAULT_DEPTS]; }
+}
+function getDeptOptions(selected) {
+  return getDepts().map(d => '<option' + (d===selected?' selected':'') + '>' + d + '</option>').join('');
+}
+function addDept() {
+  const depts = getDepts();
+  depts.push('New Department');
+  saveSettings({ departments: depts });
+  switchSettingsTab('s-departments');
+  setTimeout(()=>{
+    const inputs = document.querySelectorAll('[data-dept-idx]');
+    const last = inputs[inputs.length-1];
+    if(last) { last.select(); last.focus(); }
+  }, 100);
+}
+function renameDept(i, val) {
+  if(!val.trim()) return;
+  const depts = getDepts();
+  depts[i] = val.trim();
+  saveSettings({ departments: depts });
+}
+function deleteDept(i) {
+  const depts = getDepts();
+  if(depts.length <= 1) { showToast('Need at least one department'); return; }
+  depts.splice(i,1);
+  saveSettings({ departments: depts });
+  switchSettingsTab('s-departments');
+}
+function saveDepts() {
+  const inputs = document.querySelectorAll('[data-dept-idx]');
+  const depts = Array.from(inputs).map(el=>el.value.trim()).filter(Boolean);
+  if(!depts.length) { showToast('Need at least one department'); return; }
+  saveSettings({ departments: depts });
+  showToast('Departments saved! ✅');
+  switchSettingsTab('s-departments');
+}
+function resetDepts() {
+  if(!confirm('Reset departments to defaults?')) return;
+  const s = getSettings();
+  delete s.departments;
+  localStorage.setItem('tf_settings', JSON.stringify(s));
+  switchSettingsTab('s-departments');
+  showToast('Reset to defaults');
+}
 function saveSettings(updates) {
   const s = {...getSettings(), ...updates};
   localStorage.setItem('tf_settings', JSON.stringify(s));
@@ -1649,6 +1826,31 @@ function switchSettingsTab(tabId) {
             </div>
           </div>
           <button class="btn btn-primary" style="align-self:flex-start" onclick="saveCompanyProfile()">Save Changes</button>
+        </div>
+      </div>`;
+
+  } else if(tabId==='s-departments') {
+    const depts = getDepts();
+    el.innerHTML = `
+      <div style="font-size:18px;font-weight:800;margin-bottom:4px;">🏷️ Departments</div>
+      <div style="font-size:13px;color:var(--text3);margin-bottom:20px;">Customise the department list used across jobs and team members.</div>
+      <div class="panel" style="margin-bottom:16px;">
+        <div class="panel-header">
+          <span class="panel-title">Departments</span>
+          <button class="btn btn-primary btn-sm" onclick="addDept()">+ Add</button>
+        </div>
+        <div id="dept-list" style="padding:12px 16px;display:flex;flex-direction:column;gap:8px;">
+          ${depts.map((d,i)=>`
+            <div style="display:flex;align-items:center;gap:10px;background:var(--bg3);border:1px solid var(--border);border-radius:8px;padding:10px 14px;">
+              <span style="font-size:14px;">🏷️</span>
+              <input type="text" value="${d}" data-dept-idx="${i}" onchange="renameDept(${i},this.value)"
+                style="flex:1;background:transparent;border:none;border-bottom:1px solid var(--border2);outline:none;font-size:13px;font-weight:600;color:var(--text);font-family:inherit;padding:2px 4px;">
+              <button class="btn btn-ghost btn-sm" style="color:var(--red);padding:4px 8px;" onclick="deleteDept(${i})">✕</button>
+            </div>`).join('')}
+        </div>
+        <div style="padding:12px 16px;border-top:1px solid var(--border);display:flex;gap:8px;">
+          <button class="btn btn-primary btn-sm" onclick="saveDepts()">💾 Save</button>
+          <button class="btn btn-ghost btn-sm" onclick="resetDepts()">↺ Reset to Default</button>
         </div>
       </div>`;
 
@@ -2168,7 +2370,7 @@ function showPage(name, navEl, pushHistory=true) {
   const titleEl = document.getElementById('topbar-title');
   if(titleEl) {
     titleEl.style.opacity = '0';
-    const titles = {dashboard:'Dashboard',jobs:'Jobs',candidates:'Candidates',pipeline:'Pipeline',
+    const titles = {dashboard:'Dashboard',jobs:'Jobs',projects:'Projects',candidates:'Candidates',pipeline:'Pipeline',
       interviews:'Interviews',offers:'Offers',analytics:'Analytics',reports:'Reports',inbox:'Inbox',settings:'Settings'};
     setTimeout(()=>{ titleEl.textContent = titles[name]||name; titleEl.style.opacity='1'; }, 100);
   }
@@ -2192,6 +2394,7 @@ function showPage(name, navEl, pushHistory=true) {
 
   if(name==='dashboard') renderDashboard();
   else if(name==='jobs') renderJobs();
+  else if(name==='projects') renderProjects();
   else if(name==='candidates') renderCandidates();
   else if(name==='pipeline') renderPipeline();
   else if(name==='interviews') renderInterviews();
@@ -2280,385 +2483,70 @@ function openCandInNewTab(id) {
   window.open(url, '_blank');
 }
 
-function renderCandProfileContent(id) {
-  const c = getCand(id);
-  if(!c) return;
-  const job = getJob(c.jobId);
-  const allInterviews = c.interviews || [];
-  const allFeedback = c.feedback || [];
-  const stars = Array(5).fill(0).map((_,i)=>'<span style="color:' + (i<(c.rating||0)?'var(--amber)':'var(--border2)') + ';font-size:15px;cursor:pointer" onclick="rateCand(' + c.id + ',' + (i+1) + ')">' + (i<(c.rating||0)?'★':'☆') + '</span>').join('');
-
-  const el = document.getElementById('candprofile-content');
-  el.style.cssText = 'height:calc(100vh - 56px);display:flex;flex-direction:column;overflow:hidden;';
-
-  // Build left tab contents using string concat to avoid nested backtick issues
-  const resumeTab = buildResumeTabHTML(c);
-  const detailsTab = buildDetailsTabHTML(c);
-  const historyTab = buildHistoryHTML(c, allInterviews, allFeedback);
-
-  el.innerHTML =
-    // TOPBAR
-    '<div style="padding:10px 20px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:8px;background:var(--bg2);flex-shrink:0;flex-wrap:wrap;">' +
-    '<span style="cursor:pointer;color:var(--text3);font-size:13px;" onclick="showPage(\'candidates\',null)">← Candidates</span>' +
-    '<span style="color:var(--border2)">›</span>' +
-    '<span style="font-size:13px;color:var(--accent);cursor:pointer" onclick="showPage(\'jobs\',null);setTimeout(()=>openJobDetail(' + c.jobId + '),100)">' + (job?job.title:'Job') + '</span>' +
-    '<span style="color:var(--border2)">›</span>' +
-    '<span style="font-size:13px;font-weight:600">' + c.name + '</span>' +
-    '<div style="margin-left:auto;display:flex;gap:6px;flex-wrap:wrap;">' +
-    '<button class="btn btn-ghost btn-sm" onclick="openEditCandidate(' + c.id + ')">✏️ Edit</button>' +
-    '<button class="btn btn-ghost btn-sm" onclick="openAddNote(' + c.id + ')">📝 Note</button>' +
-    '<button class="btn btn-ghost btn-sm" onclick="openScheduleInterview(' + c.id + ')">📅 Schedule</button>' +
-    '<button class="btn btn-ghost btn-sm" onclick="openCreateOffer(' + c.id + ')">📄 Offer</button>' +
-    '<button class="btn btn-ghost btn-sm" onclick="openCandInNewTab(' + c.id + ')" title="Open in new tab">↗ New Tab</button>' +
-    '<button class="btn btn-primary btn-sm" onclick="openMoveStage(' + c.id + ')">Move Stage ↕</button>' +
-    '<button class="btn btn-ghost btn-sm" style="color:var(--red);border-color:var(--red-dim)" onclick="rejectCandidate(' + c.id + ')">✕ Reject</button>' +
-    '</div></div>' +
-
-    // MAIN LAYOUT
-    '<div style="display:grid;grid-template-columns:1fr 420px;flex:1;overflow:hidden;min-height:0;">' +
-
-    // LEFT PANEL
-    '<div id="cp-left-panel" style="overflow-y:auto;border-right:1px solid var(--border);display:flex;flex-direction:column;">' +
-
-    // Candidate header
-    '<div style="padding:20px 24px;border-bottom:1px solid var(--border);">' +
-    '<div style="display:flex;align-items:flex-start;gap:16px;margin-bottom:14px;">' +
-    '<div style="width:68px;height:68px;border-radius:50%;background:' + c.color + '33;color:' + c.color + ';display:flex;align-items:center;justify-content:center;font-size:24px;font-weight:800;flex-shrink:0;">' + c.initials + '</div>' +
-    '<div style="flex:1;">' +
-    '<div style="font-size:18px;font-weight:800;margin-bottom:4px;">' + c.name + '<span style="font-size:13px;font-weight:400;color:var(--text3);margin-left:8px;">' + stars + '</span></div>' +
-    '<div style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:8px;">' +
-    (c.source?'<span class="badge badge-amber" style="font-size:11px">' + c.source + '</span>':'') +
-    '<span class="badge ' + (stageBadge[c.stage]||'badge-gray') + '">' + c.stage + '</span>' +
-    (c.hasResume?'<span class="badge badge-gray">📄 Resume</span>':'') +
-    '</div>' +
-    '<div style="display:flex;flex-wrap:wrap;gap:16px;font-size:12px;color:var(--text3);">' +
-    (c.exp?'<span>💼 ' + c.exp + '</span>':'') +
-    (c.location?'<span>📍 ' + c.location + '</span>':'') +
-    (c.applied?'<span>📅 Applied ' + c.applied + '</span>':'') +
-    '</div></div></div>' +
-    '<div style="display:flex;flex-wrap:wrap;gap:16px;font-size:12px;padding:10px 0;border-top:1px solid var(--border);">' +
-    (c.phone?'<a href="tel:' + c.phone + '" style="color:var(--accent);">📞 ' + c.phone + '</a>':'') +
-    (c.email?'<a href="mailto:' + c.email + '" style="color:var(--accent);">✉️ ' + c.email + '</a>':'') +
-    (c.currentTitle?'<span style="color:var(--text2);">🏢 ' + c.currentTitle + '</span>':'') +
-    '</div>' +
-    '<div style="display:flex;gap:6px;margin-top:12px;flex-wrap:wrap;">' +
-    '<button class="btn btn-ghost btn-sm" style="color:var(--red);border-color:var(--red-dim)" onclick="rejectCandidate(' + c.id + ')">Reject</button>' +
-    '<button class="btn btn-ghost btn-sm" onclick="shareCandidate(' + c.id + ')">Share</button>' +
-    '<button class="btn btn-ghost btn-sm" onclick="openScheduleInterview(' + c.id + ')">Schedule Interview</button>' +
-    '<button class="btn btn-primary btn-sm" onclick="openMoveStage(' + c.id + ')">Move Stage</button>' +
-    (c.stage!=='Offer'&&c.stage!=='Hired'?'<button class="btn btn-ghost btn-sm" onclick="openCreateOffer(' + c.id + ')">Create Offer</button>':'') +
-    '</div></div>' +
-
-    // Left tabs
-    '<div style="display:flex;border-bottom:1px solid var(--border);background:var(--bg2);flex-shrink:0;">' +
-    '<div class="cp-tab active" onclick="switchLeftTab(this,\'lt-resume\')">Resume ' + (c.hasResume?'(1)':'(0)') + '</div>' +
-    '<div class="cp-tab" onclick="switchLeftTab(this,\'lt-details\')">Details</div>' +
-    '<div class="cp-tab" onclick="switchLeftTab(this,\'lt-extra\')">Additional Info</div>' +
-    '<div class="cp-tab" onclick="switchLeftTab(this,\'lt-history\')">Action History</div>' +
-    '</div>' +
-
-    // Resume tab
-    '<div id="lt-resume" class="cp-tab-content active" style="flex-direction:column;overflow:hidden;">' + resumeTab + '</div>' +
-
-    // Details tab
-    '<div id="lt-details" class="cp-tab-content" style="padding:20px 24px;">' + detailsTab + '</div>' +
-
-    // Additional info tab
-    '<div id="lt-extra" class="cp-tab-content" style="padding:20px 24px;">' +
-    '<div style="text-align:center;padding:32px 0;color:var(--text3);">' +
-    '<div style="font-size:32px;margin-bottom:10px;">📋</div>' +
-    'Cover letters, portfolio links, and custom fields can be added when editing the candidate.' +
-    '<div style="margin-top:16px;"><button class="btn btn-primary btn-sm" onclick="openEditCandidate(' + c.id + ')">Edit Candidate</button></div>' +
-    '</div></div>' +
-
-    // History tab
-    '<div id="lt-history" class="cp-tab-content" style="padding:0;">' + historyTab + '</div>' +
-
-    '</div>' + // end left panel
-
-    // RIGHT PANEL
-    '<div id="cp-right-panel" style="overflow-y:auto;background:var(--bg2);display:flex;flex-direction:column;">' +
-
-    // Job info bar
-    '<div style="padding:12px 16px;border-bottom:1px solid var(--border);background:var(--bg3);">' +
-    '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:4px;">' +
-    '<span style="font-size:13px;font-weight:700;cursor:pointer;color:var(--accent);" onclick="showPage(\'jobs\',null);setTimeout(()=>openJobDetail(' + c.jobId + '),100)">' + (job?job.title:'Unknown Job') + '</span>' +
-    '<span class="badge ' + (job&&job.status==='Active'?'badge-green':job&&job.status==='Paused'?'badge-amber':'badge-gray') + '" style="font-size:10px">' + (job?job.status:'–') + '</span>' +
-    '</div>' +
-    '<div style="font-size:11px;color:var(--text3);">' + (job?job.dept:'') + ' · ' + (job?job.location:'') + ' · Applied ' + c.applied + '</div>' +
-    '</div>' +
-
-    // Stage tracker
-    '<div style="padding:14px 16px;border-bottom:1px solid var(--border);">' +
-    '<div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.5px;color:var(--text3);margin-bottom:10px;">Hiring Stage</div>' +
-    '<div id="cp-stage-tracker" style="display:flex;align-items:center;overflow-x:auto;padding-bottom:4px;">' +
-    buildStageTrackerHTML(c) +
-    '</div></div>' +
-
-    // Similar candidates
-    '<div style="padding:12px 16px;border-bottom:1px solid var(--border);">' +
-    '<div style="display:flex;align-items:center;justify-content:space-between;cursor:pointer;" onclick="this.nextElementSibling.style.display=this.nextElementSibling.style.display===\'none\'?\'block\':\'none\'">' +
-    '<div style="font-size:12px;font-weight:600;color:var(--text2);">👥 Similar candidates (' + candidates.filter(x=>x.id!==c.id&&x.jobId===c.jobId).length + ')</div>' +
-    '<span style="color:var(--text3);">▾</span></div>' +
-    '<div style="display:none;margin-top:10px;">' +
-    (candidates.filter(x=>x.id!==c.id&&x.jobId===c.jobId).slice(0,4).map(x=>'<div style="display:flex;align-items:center;gap:8px;padding:6px 0;cursor:pointer;border-bottom:1px solid var(--border);" onclick="openCandProfile(' + x.id + ')"><div style="width:26px;height:26px;border-radius:50%;background:' + x.color + '33;color:' + x.color + ';display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:700;flex-shrink:0;">' + x.initials + '</div><div style="flex:1;font-size:12px;font-weight:600;">' + x.name + '</div><span class="badge ' + (stageBadge[x.stage]||'badge-gray') + '" style="font-size:10px">' + x.stage + '</span></div>').join('') || '<div style="color:var(--text3);font-size:12px;">None</div>') +
-    '</div></div>' +
-
-    // Interviews
-    '<div id="cp-interviews-section">' + buildInterviewsHTML(c, allInterviews, allFeedback) + '</div>' +
-
-    // Offers
-    buildOffersHTML(c) +
-
-    // Add general feedback
-    '<div style="padding:14px 16px;">' +
-    '<button class="btn btn-ghost btn-sm" style="width:100%;" onclick="openAddFeedback(' + c.id + ')">+ Add General Feedback</button>' +
-    '</div>' +
-
-    '</div>' + // end right panel
-    '</div>'; // end main layout
-
-  // Load PDF
-  if(c.hasResume) setTimeout(()=>loadInlinePdf(id), 200);
-}
-
-function buildResumeTabHTML(c) {
-  if(!c.hasResume) {
-    return '<div style="flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;color:var(--text3);padding:40px;">' +
-      '<div style="font-size:48px;margin-bottom:12px;">📂</div>' +
-      '<div style="font-size:14px;font-weight:600;color:var(--text);margin-bottom:6px;">No resume uploaded</div>' +
-      '<button class="btn btn-primary" onclick="openEditCandidate(' + c.id + ')">Upload Resume</button></div>';
-  }
-  return '<div style="display:flex;align-items:center;gap:8px;padding:10px 16px;background:var(--bg2);border-bottom:1px solid var(--border);flex-shrink:0;flex-wrap:wrap;">' +
-    '<span style="font-size:13px;font-weight:600;flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">📎 ' + (c.resumeFilename||'Resume') + '</span>' +
-    '<div style="display:flex;align-items:center;gap:6px;background:var(--bg3);border:1px solid var(--border);border-radius:8px;padding:4px 8px;">' +
-    '<button onclick="pdfPrevPage()" class="btn btn-ghost btn-sm" style="padding:2px 8px;font-size:14px;">‹</button>' +
-    '<span style="font-size:12px;font-family:JetBrains Mono,monospace;color:var(--text2);"><span id="pdf-page-num">1</span> / <span id="pdf-page-total">–</span></span>' +
-    '<button onclick="pdfNextPage()" class="btn btn-ghost btn-sm" style="padding:2px 8px;font-size:14px;">›</button></div>' +
-    '<div style="display:flex;align-items:center;gap:4px;background:var(--bg3);border:1px solid var(--border);border-radius:8px;padding:4px 8px;">' +
-    '<button onclick="pdfZoomOut()" class="btn btn-ghost btn-sm" style="padding:2px 8px;">−</button>' +
-    '<span id="pdf-zoom-label" style="font-size:12px;font-family:JetBrains Mono,monospace;color:var(--text2);min-width:40px;text-align:center;">100%</span>' +
-    '<button onclick="pdfZoomIn()" class="btn btn-ghost btn-sm" style="padding:2px 8px;">+</button>' +
-    '<button onclick="pdfZoomFit()" class="btn btn-ghost btn-sm" style="padding:2px 8px;font-size:11px;">⊡</button></div>' +
-    '<button class="btn btn-ghost btn-sm" onclick="downloadResume(' + c.id + ')">⬇</button>' +
-    '<button class="btn btn-ghost btn-sm" onclick="viewResume(' + c.id + ')">↗</button></div>' +
-    '<div id="pdf-container" style="flex:1;overflow:auto;background:#525659;display:flex;flex-direction:column;align-items:center;padding:16px;">' +
-    '<div style="text-align:center;color:#ccc;padding:40px;"><div style="font-size:32px;margin-bottom:10px;">⏳</div><div>Loading resume...</div></div></div>';
-}
-
-function buildDetailsTabHTML(c) {
-  const skillsHTML = (c.skills||[]).map(s=>'<span class="skill-tag">' + s + '</span>').join('') || '<span style="color:var(--text3);font-size:12px">None</span>';
-  const scoreColor = c.score>=80?'var(--green)':c.score>=60?'var(--amber)':'var(--red)';
-  const notesHTML = '<div id="notes-section-' + c.id + '">' +
-    '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;">' +
-    '<div class="cp-field-label">Notes</div>' +
-    '<button class="btn btn-primary btn-sm" onclick="openAddNote(' + c.id + ')">+ Add Note</button></div>' +
-    renderNotesList(c) + '</div>';
-
-  return '<div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:20px;">' +
-    '<div><div class="cp-field-label">Full Name</div><div class="cp-field-val">' + c.name + '</div></div>' +
-    '<div><div class="cp-field-label">Email</div><div class="cp-field-val"><a href="mailto:' + (c.email||'') + '" style="color:var(--accent)">' + (c.email||'–') + '</a></div></div>' +
-    '<div><div class="cp-field-label">Phone</div><div class="cp-field-val">' + (c.phone||'–') + '</div></div>' +
-    '<div><div class="cp-field-label">Location</div><div class="cp-field-val">' + (c.location||'–') + '</div></div>' +
-    '<div><div class="cp-field-label">Experience</div><div class="cp-field-val">' + (c.exp||'–') + '</div></div>' +
-    '<div><div class="cp-field-label">Current Title</div><div class="cp-field-val">' + (c.currentTitle||'–') + '</div></div>' +
-    '<div><div class="cp-field-label">Source</div><div class="cp-field-val">' + (c.source||'–') + '</div></div>' +
-    '<div><div class="cp-field-label">Applied Date</div><div class="cp-field-val">' + (c.applied||'–') + '</div></div>' +
-    '</div>' +
-    '<div style="margin-bottom:16px;"><div class="cp-field-label" style="margin-bottom:6px;">Skills</div><div class="skill-tags">' + skillsHTML + '</div></div>' +
-    '<div style="margin-bottom:16px;"><div class="cp-field-label" style="margin-bottom:6px;">AI Match Score</div>' +
-    '<div style="display:flex;align-items:center;gap:12px;"><span style="font-size:28px;font-weight:800;font-family:JetBrains Mono,monospace;color:' + scoreColor + '">' + c.score + '</span>' +
-    '<div style="flex:1;"><div class="score-bar" style="height:6px;"><div class="score-fill" style="width:' + c.score + '%;background:' + scoreColor + '"></div></div>' +
-    '<div style="font-size:11px;color:var(--text3);margin-top:3px;">' + (c.score>=80?'Strong match':c.score>=60?'Moderate match':'Weak match') + '</div></div></div></div>' +
-    notesHTML;
-}
-
-
-// ===================== URL ROUTING =====================
-function navigateToHash(hash) {
-  if(!hash || hash==='#' || hash==='') { showPage('dashboard', null, false); return; }
-  const path = hash.replace('#','');
-  if(path.startsWith('candidate/')) {
-    const id = parseInt(path.split('/')[1]);
-    if(!isNaN(id)) {
-      // Wait for data to load if needed
-      const tryOpen = () => {
-        const c = getCand(id);
-        if(c) { openCandProfile(id, false); }
-        else { showPage('candidates', null, false); }
-      };
-      if(candidates.length > 0) tryOpen();
-      else setTimeout(tryOpen, 1500); // wait for Firebase load
-    }
-  } else {
-    const valid = ['dashboard','jobs','candidates','pipeline','interviews','offers','analytics','reports','inbox','settings'];
-    showPage(valid.includes(path)?path:'dashboard', null, false);
-  }
-}
-
-window.addEventListener('popstate', e => {
-  if(e.state?.page==='candidate') openCandProfile(e.state.id, false);
-  else if(e.state?.page) showPage(e.state.page, null, false);
-  else navigateToHash(location.hash);
-});
-
-function restoreFromURL() {
-  if(location.hash && location.hash !== '#') navigateToHash(location.hash);
-}
-
-
-
-// ===================== NOTES SYSTEM =====================
-function getNotes(c) {
-  // Support both old string notes and new array format
-  if(!c.notesList) {
-    c.notesList = [];
-    if(c.notes) {
-      // Migrate old single note
-      c.notesList.push({ id: Date.now(), text: c.notes, createdAt: c.applied || new Date().toISOString(), editedAt: null });
-      c.notes = '';
-    }
-  }
-  return c.notesList;
-}
-
-function renderNotesList(c) {
+// ===================== TEAM NOTES (right panel, separate from interview feedback) =====================
+function renderTeamNotesList(c) {
   const notes = getNotes(c);
-  if(!notes.length) return `<div style="text-align:center;padding:20px;color:var(--text3);font-size:13px;background:var(--bg3);border-radius:8px;">No notes yet — click + Add Note to get started</div>`;
-  return notes.slice().reverse().map((n,i)=>`
-    <div id="note-card-${n.id}" style="background:var(--bg3);border:1px solid var(--border);border-radius:10px;padding:14px 16px;margin-bottom:10px;transition:border-color 0.15s;" onmouseover="this.style.borderColor='var(--border2)'" onmouseout="this.style.borderColor='var(--border)'">
-      <div style="display:flex;align-items:flex-start;gap:8px;">
-        <div style="flex:1;min-width:0;">
-          <div id="note-text-${n.id}" style="font-size:13px;color:var(--text);line-height:1.7;white-space:pre-wrap;word-break:break-word;">${escapeHtml(n.text)}</div>
-          <div style="display:none;" id="note-edit-${n.id}">
-            <textarea id="note-textarea-${n.id}" style="width:100%;min-height:80px;margin-top:6px;resize:vertical;">${n.text}</textarea>
-            <div style="display:flex;gap:6px;margin-top:8px;">
-              <button class="btn btn-primary btn-sm" onclick="saveNoteEdit(${c.id},'${n.id}')">Save</button>
-              <button class="btn btn-ghost btn-sm" onclick="cancelNoteEdit('${n.id}')">Cancel</button>
-            </div>
-          </div>
-          <div style="display:flex;align-items:center;gap:10px;margin-top:8px;flex-wrap:wrap;">
-            <span style="font-size:11px;color:var(--text3);font-family:'JetBrains Mono';">📝 ${formatDateTime(n.createdAt)}</span>
-            ${n.editedAt?`<span style="font-size:11px;color:var(--text3);font-family:'JetBrains Mono';">✏️ edited ${formatDateTime(n.editedAt)}</span>`:''}
-          </div>
-        </div>
-        <div style="display:flex;gap:4px;flex-shrink:0;">
-          <button class="btn btn-ghost btn-sm" style="padding:4px 8px;font-size:11px;" onclick="startNoteEdit('${n.id}')">✏️</button>
-          <button class="btn btn-ghost btn-sm" style="padding:4px 8px;font-size:11px;color:var(--red);" onclick="deleteNote(${c.id},'${n.id}')">✕</button>
-        </div>
-      </div>
-    </div>`).join('');
+  if(!notes.length) return '<div style="text-align:center;padding:16px;color:var(--text3);font-size:12px;background:var(--bg3);border-radius:8px;">No team notes yet — click + Add Note</div>';
+  return notes.slice().reverse().map(n =>
+    '<div id="tnote-' + n.id + '" style="background:var(--bg3);border:1px solid var(--border);border-radius:8px;padding:12px 14px;margin-bottom:8px;">' +
+      '<div style="display:flex;align-items:flex-start;gap:8px;">' +
+        '<div style="flex:1;">' +
+          '<div id="tnote-text-' + n.id + '" style="font-size:13px;color:var(--text);line-height:1.7;white-space:pre-wrap;">' + escapeHtml(n.text) + '</div>' +
+          '<div id="tnote-edit-' + n.id + '" style="display:none;">' +
+            '<textarea id="tnote-ta-' + n.id + '" style="width:100%;min-height:70px;margin-top:6px;resize:vertical;">' + n.text + '</textarea>' +
+            '<div style="display:flex;gap:6px;margin-top:6px;">' +
+              '<button class="btn btn-primary btn-sm" onclick="saveTeamNoteEdit(' + c.id + ',\'' + n.id + '\')">Save</button>' +
+              '<button class="btn btn-ghost btn-sm" onclick="cancelTeamNoteEdit(\'' + n.id + '\')">Cancel</button>' +
+            '</div>' +
+          '</div>' +
+          '<div style="font-size:10px;color:var(--text3);font-family:JetBrains Mono,monospace;margin-top:6px;">📝 ' + formatDateTime(n.createdAt) + (n.editedAt ? ' · ✏️ edited ' + formatDateTime(n.editedAt) : '') + '</div>' +
+        '</div>' +
+        '<div style="display:flex;gap:4px;flex-shrink:0;">' +
+          '<button class="btn btn-ghost btn-sm" style="padding:4px 7px;font-size:11px;" onclick="startTeamNoteEdit(\'' + n.id + '\')">✏️</button>' +
+          '<button class="btn btn-ghost btn-sm" style="padding:4px 7px;font-size:11px;color:var(--red);" onclick="deleteTeamNote(' + c.id + ',\'' + n.id + '\')">✕</button>' +
+        '</div>' +
+      '</div>' +
+    '</div>'
+  ).join('');
 }
 
-function escapeHtml(str) {
-  return String(str||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+function startTeamNoteEdit(nid) {
+  document.getElementById('tnote-text-'+nid).style.display = 'none';
+  document.getElementById('tnote-edit-'+nid).style.display = 'block';
+  document.getElementById('tnote-ta-'+nid)?.focus();
 }
-
-function formatDateTime(isoStr) {
-  if(!isoStr) return '–';
-  try {
-    const d = new Date(isoStr);
-    const date = d.toLocaleDateString('en-MY', {day:'numeric',month:'short',year:'numeric'});
-    const time = d.toLocaleTimeString('en-MY', {hour:'2-digit',minute:'2-digit'});
-    return `${date} · ${time}`;
-  } catch(e) { return isoStr; }
+function cancelTeamNoteEdit(nid) {
+  document.getElementById('tnote-text-'+nid).style.display = 'block';
+  document.getElementById('tnote-edit-'+nid).style.display = 'none';
 }
-
-function openAddNote(id) {
-  const c = getCand(id); if(!c) return;
-  document.getElementById('modal-title').textContent = '📝 Add Note — ' + c.name;
-  document.getElementById('modal-body').innerHTML = `
-    <div class="form-group">
-      <label>Note</label>
-      <textarea id="new-note-text" style="min-height:140px;" placeholder="Write your note here... (supports multiple lines)"></textarea>
-    </div>
-    <div style="font-size:12px;color:var(--text3);">📅 Will be saved with today's date and time automatically.</div>`;
-  document.getElementById('modal-footer').innerHTML = `
-    <button class="btn btn-ghost" onclick="closeModal()">Cancel</button>
-    <button class="btn btn-primary" onclick="saveNewNote(${id})">Save Note</button>`;
-  document.getElementById('modal-overlay').classList.add('open');
-  setTimeout(()=>document.getElementById('new-note-text')?.focus(), 100);
-}
-
-function saveNewNote(id) {
-  const c = getCand(id); if(!c) return;
-  const text = document.getElementById('new-note-text')?.value.trim();
-  if(!text) { showToast('Please write something first'); return; }
-  const notes = getNotes(c);
-  const newNote = { id: Date.now(), text, createdAt: new Date().toISOString(), editedAt: null };
-  notes.push(newNote);
-  c.notesList = notes;
-  addToTimeline(c, 'Note added', 'var(--amber)');
-  save();
-  closeModal();
-  // Refresh just the notes section without reloading whole page
-  const el = document.getElementById(`notes-section-${id}`);
-  if(el) {
-    el.innerHTML = `
-      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;">
-        <div class="cp-field-label">Notes</div>
-        <button class="btn btn-primary btn-sm" onclick="openAddNote(${id})">+ Add Note</button>
-      </div>
-      ${renderNotesList(c)}`;
-  }
-  showToast('Note saved! 📝');
-}
-
-function startNoteEdit(noteId) {
-  document.getElementById(`note-text-${noteId}`).style.display = 'none';
-  document.getElementById(`note-edit-${noteId}`).style.display = 'block';
-  document.getElementById(`note-textarea-${noteId}`)?.focus();
-}
-
-function cancelNoteEdit(noteId) {
-  document.getElementById(`note-text-${noteId}`).style.display = 'block';
-  document.getElementById(`note-edit-${noteId}`).style.display = 'none';
-}
-
-function saveNoteEdit(candId, noteId) {
+function saveTeamNoteEdit(candId, noteId) {
   const c = getCand(candId); if(!c) return;
   const notes = getNotes(c);
-  const note = notes.find(n=>String(n.id)===String(noteId));
+  const note = notes.find(n => String(n.id) === String(noteId));
   if(!note) return;
-  const newText = document.getElementById(`note-textarea-${noteId}`)?.value.trim();
+  const newText = document.getElementById('tnote-ta-'+noteId)?.value.trim();
   if(!newText) return;
   note.text = newText;
   note.editedAt = new Date().toISOString();
   c.notesList = notes;
   save();
-  // Update in place without full page reload
-  document.getElementById(`note-text-${noteId}`).textContent = newText;
-  cancelNoteEdit(noteId);
-  // Refresh the section to show updated edit time
-  const el = document.getElementById(`notes-section-${candId}`);
-  if(el) el.innerHTML = `
-    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;">
-      <div class="cp-field-label">Notes</div>
-      <button class="btn btn-primary btn-sm" onclick="openAddNote(${candId})">+ Add Note</button>
-    </div>
-    ${renderNotesList(c)}`;
+  cancelTeamNoteEdit(noteId);
+  refreshTeamNotes(candId);
   showToast('Note updated!');
 }
-
-function deleteNote(candId, noteId) {
+function deleteTeamNote(candId, noteId) {
   if(!confirm('Delete this note?')) return;
   const c = getCand(candId); if(!c) return;
-  const notes = getNotes(c);
-  c.notesList = notes.filter(n=>String(n.id)!==String(noteId));
+  c.notesList = getNotes(c).filter(n => String(n.id) !== String(noteId));
   save();
-  const el = document.getElementById(`notes-section-${candId}`);
-  if(el) el.innerHTML = `
-    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;">
-      <div class="cp-field-label">Notes</div>
-      <button class="btn btn-primary btn-sm" onclick="openAddNote(${candId})">+ Add Note</button>
-    </div>
-    ${renderNotesList(c)}`;
+  refreshTeamNotes(candId);
   showToast('Note deleted');
 }
-
-// Legacy wrapper (still called from some places)
-function openEditNotes(id) { openAddNote(id); }
-function saveNotes(id) { saveNewNote(id); }
+function refreshTeamNotes(candId) {
+  const c = getCand(candId); if(!c) return;
+  const el = document.getElementById('team-notes-list-'+candId);
+  if(el) el.innerHTML = renderTeamNotesList(c);
+}
 
 
 // ===================== PARTIAL REFRESH HELPERS =====================
@@ -2683,12 +2571,8 @@ function refreshRightPanel(id) {
   const ivSection = document.getElementById('cp-interviews-section');
   if(ivSection) ivSection.innerHTML = buildInterviewsHTML(c, allInterviews, allFeedback);
 
-  // Update interview count in tab
-  const tabs = document.querySelectorAll('.cp-right-tab');
-  tabs.forEach(t=>{ if(t.dataset.tab==='cp-interviews') t.textContent=`Interviews (${allInterviews.length})`; });
-
-  // Update feedback tab count
-  tabs.forEach(t=>{ if(t.dataset.tab==='cp-feedback') t.textContent=`Feedback (${allFeedback.length})`; });
+  // Refresh team notes
+  refreshTeamNotes(id);
 
   // Update stage tracker
   const stageTracker = document.getElementById('cp-stage-tracker');
@@ -2699,22 +2583,24 @@ function refreshRightPanel(id) {
   if(history) history.innerHTML = buildHistoryHTML(c, allInterviews, allFeedback);
 }
 
-// Rebuild stage tracker HTML
-function buildStageTrackerHTML(c) {
+function buildStageTrackerHTML(c, jobId) {
+  const targetJobId = jobId || c.jobId;
+  const currentStage = getCandStageForJob(c, targetJobId);
   const enabledStages = stages.filter(s=>s!=='Rejected');
   return enabledStages.map((s,i,arr)=>{
-    const isActive = c.stage===s;
-    const isPast = stages.indexOf(c.stage) > stages.indexOf(s) && c.stage!=='Rejected';
-    return `<div style="display:flex;align-items:center;flex-shrink:0;">
-      <div onclick="quickMoveStage(${c.id},'${s}')" style="display:flex;flex-direction:column;align-items:center;gap:3px;cursor:pointer;padding:0 4px;">
-        <div style="width:28px;height:28px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;
-          background:${isActive?stageColors[s]:isPast?'var(--green-dim)':'var(--bg4)'};
-          color:${isActive?stageColors[s]:isPast?'var(--green)':'var(--text3)'};
-          border:2px solid ${isActive?stageColors[s]:isPast?'var(--green)':'var(--border)'};
-          transition:all 0.2s;">${isPast?'✓':i+1}</div>
-        <div style="font-size:9px;color:${isActive?stageColors[s]:'var(--text3)'};font-weight:${isActive?'700':'400'};white-space:nowrap;">${s}</div>
-      </div>
-      ${i<arr.length-1?`<div style="width:16px;height:2px;background:${isPast?'var(--green)':'var(--border)'};flex-shrink:0;margin-bottom:14px;"></div>`:''}</div>`;
+    const isActive = currentStage===s;
+    const isPast = stages.indexOf(currentStage) > stages.indexOf(s) && currentStage!=='Rejected';
+    return '<div style="display:flex;align-items:center;flex-shrink:0;">' +
+      '<div onclick="quickMoveStage(' + c.id + ',\'' + s + '\',' + (targetJobId||'null') + ')" style="display:flex;flex-direction:column;align-items:center;gap:3px;cursor:pointer;padding:0 4px;">' +
+      '<div style="width:28px;height:28px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;' +
+      'background:' + (isActive?stageColors[s]:isPast?'var(--green-dim)':'var(--bg4)') + ';' +
+      'color:' + (isActive?stageColors[s]:isPast?'var(--green)':'var(--text3)') + ';' +
+      'border:2px solid ' + (isActive?stageColors[s]:isPast?'var(--green)':'var(--border)') + ';' +
+      'transition:all 0.2s;">' + (isPast?'✓':i+1) + '</div>' +
+      '<div style="font-size:9px;color:' + (isActive?stageColors[s]:'var(--text3)') + ';font-weight:' + (isActive?'700':'400') + ';white-space:nowrap;">' + s + '</div>' +
+      '</div>' +
+      (i<arr.length-1?'<div style="width:16px;height:2px;background:' + (isPast?'var(--green)':'var(--border)') + ';flex-shrink:0;margin-bottom:14px;"></div>':'') +
+      '</div>';
   }).join('');
 }
 
@@ -2829,6 +2715,442 @@ function buildInterviewsHTML(c, allInterviews, allFeedback) {
 }
 
 // Build offers HTML
+
+function getNotes(c) {
+  // Support both old string notes and new array format
+  if(!c.notesList) {
+    c.notesList = [];
+    if(c.notes) {
+      // Migrate old single note
+      c.notesList.push({ id: Date.now(), text: c.notes, createdAt: c.applied || new Date().toISOString(), editedAt: null });
+      c.notes = '';
+    }
+  }
+  return c.notesList;
+}
+
+
+function renderNotesList(c) {
+  const notes = getNotes(c);
+  if(!notes.length) return `<div style="text-align:center;padding:20px;color:var(--text3);font-size:13px;background:var(--bg3);border-radius:8px;">No notes yet — click + Add Note to get started</div>`;
+  return notes.slice().reverse().map((n,i)=>`
+    <div id="note-card-${n.id}" style="background:var(--bg3);border:1px solid var(--border);border-radius:10px;padding:14px 16px;margin-bottom:10px;transition:border-color 0.15s;" onmouseover="this.style.borderColor='var(--border2)'" onmouseout="this.style.borderColor='var(--border)'">
+      <div style="display:flex;align-items:flex-start;gap:8px;">
+        <div style="flex:1;min-width:0;">
+          <div id="note-text-${n.id}" style="font-size:13px;color:var(--text);line-height:1.7;white-space:pre-wrap;word-break:break-word;">${escapeHtml(n.text)}</div>
+          <div style="display:none;" id="note-edit-${n.id}">
+            <textarea id="note-textarea-${n.id}" style="width:100%;min-height:80px;margin-top:6px;resize:vertical;">${n.text}</textarea>
+            <div style="display:flex;gap:6px;margin-top:8px;">
+              <button class="btn btn-primary btn-sm" onclick="saveNoteEdit(${c.id},'${n.id}')">Save</button>
+              <button class="btn btn-ghost btn-sm" onclick="cancelNoteEdit('${n.id}')">Cancel</button>
+            </div>
+          </div>
+          <div style="display:flex;align-items:center;gap:10px;margin-top:8px;flex-wrap:wrap;">
+            <span style="font-size:11px;color:var(--text3);font-family:'JetBrains Mono';">📝 ${formatDateTime(n.createdAt)}</span>
+            ${n.editedAt?`<span style="font-size:11px;color:var(--text3);font-family:'JetBrains Mono';">✏️ edited ${formatDateTime(n.editedAt)}</span>`:''}
+          </div>
+        </div>
+        <div style="display:flex;gap:4px;flex-shrink:0;">
+          <button class="btn btn-ghost btn-sm" style="padding:4px 8px;font-size:11px;" onclick="startNoteEdit('${n.id}')">✏️</button>
+          <button class="btn btn-ghost btn-sm" style="padding:4px 8px;font-size:11px;color:var(--red);" onclick="deleteNote(${c.id},'${n.id}')">✕</button>
+        </div>
+      </div>
+    </div>`).join('');
+}
+
+
+function escapeHtml(str) {
+  return String(str||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+}
+
+
+function formatDateTime(isoStr) {
+  if(!isoStr) return '–';
+  try {
+    const d = new Date(isoStr);
+    const date = d.toLocaleDateString('en-MY', {day:'numeric',month:'short',year:'numeric'});
+    const time = d.toLocaleTimeString('en-MY', {hour:'2-digit',minute:'2-digit'});
+    return `${date} · ${time}`;
+  } catch(e) { return isoStr; }
+}
+
+
+function buildResumeTabHTML(c) {
+  if(!c.hasResume) {
+    return '<div style="flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;color:var(--text3);padding:40px;">' +
+      '<div style="font-size:48px;margin-bottom:12px;">📂</div>' +
+      '<div style="font-size:14px;font-weight:600;color:var(--text);margin-bottom:6px;">No resume uploaded</div>' +
+      '<button class="btn btn-primary" onclick="openEditCandidate(' + c.id + ')">Upload Resume</button></div>';
+  }
+  return '<div style="display:flex;align-items:center;gap:8px;padding:10px 16px;background:var(--bg2);border-bottom:1px solid var(--border);flex-shrink:0;flex-wrap:wrap;">' +
+    '<span style="font-size:13px;font-weight:600;flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">📎 ' + (c.resumeFilename||'Resume') + '</span>' +
+    '<div style="display:flex;align-items:center;gap:6px;background:var(--bg3);border:1px solid var(--border);border-radius:8px;padding:4px 8px;">' +
+    '<button onclick="pdfPrevPage()" class="btn btn-ghost btn-sm" style="padding:2px 8px;font-size:14px;">‹</button>' +
+    '<span style="font-size:12px;font-family:JetBrains Mono,monospace;color:var(--text2);"><span id="pdf-page-num">1</span> / <span id="pdf-page-total">–</span></span>' +
+    '<button onclick="pdfNextPage()" class="btn btn-ghost btn-sm" style="padding:2px 8px;font-size:14px;">›</button></div>' +
+    '<div style="display:flex;align-items:center;gap:4px;background:var(--bg3);border:1px solid var(--border);border-radius:8px;padding:4px 8px;">' +
+    '<button onclick="pdfZoomOut()" class="btn btn-ghost btn-sm" style="padding:2px 8px;">−</button>' +
+    '<span id="pdf-zoom-label" style="font-size:12px;font-family:JetBrains Mono,monospace;color:var(--text2);min-width:40px;text-align:center;">100%</span>' +
+    '<button onclick="pdfZoomIn()" class="btn btn-ghost btn-sm" style="padding:2px 8px;">+</button>' +
+    '<button onclick="pdfZoomFit()" class="btn btn-ghost btn-sm" style="padding:2px 8px;font-size:11px;">⊡</button></div>' +
+    '<button class="btn btn-ghost btn-sm" onclick="downloadResume(' + c.id + ')">⬇</button>' +
+    '<button class="btn btn-ghost btn-sm" onclick="viewResume(' + c.id + ')">↗</button></div>' +
+    '<div id="pdf-container" style="flex:1;overflow:auto;background:#525659;display:flex;flex-direction:column;align-items:center;padding:16px;">' +
+    '<div style="text-align:center;color:#ccc;padding:40px;"><div style="font-size:32px;margin-bottom:10px;">⏳</div><div>Loading resume...</div></div></div>';
+}
+
+
+function buildDetailsTabHTML(c) {
+  const skillsHTML = (c.skills||[]).map(s=>'<span class="skill-tag">' + s + '</span>').join('') || '<span style="color:var(--text3);font-size:12px">None</span>';
+  const scoreColor = c.score>=80?'var(--green)':c.score>=60?'var(--amber)':'var(--red)';
+  const notesHTML = '<div id="notes-section-' + c.id + '">' +
+    '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;">' +
+    '<div class="cp-field-label">Notes</div>' +
+    '<button class="btn btn-primary btn-sm" onclick="openAddNote(' + c.id + ')">+ Add Note</button></div>' +
+    renderNotesList(c) + '</div>';
+
+  return '<div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:20px;">' +
+    '<div><div class="cp-field-label">Full Name</div><div class="cp-field-val">' + c.name + '</div></div>' +
+    '<div><div class="cp-field-label">Email</div><div class="cp-field-val"><a href="mailto:' + (c.email||'') + '" style="color:var(--accent)">' + (c.email||'–') + '</a></div></div>' +
+    '<div><div class="cp-field-label">Phone</div><div class="cp-field-val">' + (c.phone||'–') + '</div></div>' +
+    '<div><div class="cp-field-label">Location</div><div class="cp-field-val">' + (c.location||'–') + '</div></div>' +
+    '<div><div class="cp-field-label">Experience</div><div class="cp-field-val">' + (c.exp||'–') + '</div></div>' +
+    '<div><div class="cp-field-label">Current Title</div><div class="cp-field-val">' + (c.currentTitle||'–') + '</div></div>' +
+    '<div><div class="cp-field-label">Source</div><div class="cp-field-val">' + (c.source||'–') + '</div></div>' +
+    '<div><div class="cp-field-label">Applied Date</div><div class="cp-field-val">' + (c.applied||'–') + '</div></div>' +
+    '</div>' +
+    '<div style="margin-bottom:16px;"><div class="cp-field-label" style="margin-bottom:6px;">Skills</div><div class="skill-tags">' + skillsHTML + '</div></div>' +
+    '<div style="margin-bottom:16px;"><div class="cp-field-label" style="margin-bottom:6px;">AI Match Score</div>' +
+    '<div style="display:flex;align-items:center;gap:12px;"><span style="font-size:28px;font-weight:800;font-family:JetBrains Mono,monospace;color:' + scoreColor + '">' + c.score + '</span>' +
+    '<div style="flex:1;"><div class="score-bar" style="height:6px;"><div class="score-fill" style="width:' + c.score + '%;background:' + scoreColor + '"></div></div>' +
+    '<div style="font-size:11px;color:var(--text3);margin-top:3px;">' + (c.score>=80?'Strong match':c.score>=60?'Moderate match':'Weak match') + '</div></div></div></div>' +
+    notesHTML;
+}
+
+
+// ===================== URL ROUTING =====================
+
+function renderCandProfileContent(id) {
+  const c = getCand(id);
+  if(!c) return;
+  const job = getJob(c.jobId);
+  const allInterviews = c.interviews || [];
+  const allFeedback = c.feedback || [];
+  const stars = Array(5).fill(0).map((_,i)=>'<span style="color:' + (i<(c.rating||0)?'var(--amber)':'var(--border2)') + ';font-size:15px;cursor:pointer" onclick="rateCand(' + c.id + ',' + (i+1) + ')">' + (i<(c.rating||0)?'★':'☆') + '</span>').join('');
+
+  const el = document.getElementById('candprofile-content');
+  el.style.cssText = 'height:calc(100vh - 56px);display:flex;flex-direction:column;overflow:hidden;';
+
+  // Build left tab contents using string concat to avoid nested backtick issues
+  const resumeTab = buildResumeTabHTML(c);
+  const detailsTab = buildDetailsTabHTML(c);
+  const historyTab = buildHistoryHTML(c, allInterviews, allFeedback);
+
+  el.innerHTML =
+    // TOPBAR
+    '<div style="padding:10px 20px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:8px;background:var(--bg2);flex-shrink:0;flex-wrap:wrap;">' +
+    '<span style="cursor:pointer;color:var(--text3);font-size:13px;" onclick="showPage(\'candidates\',null)">← Candidates</span>' +
+    '<span style="color:var(--border2)">›</span>' +
+    '<span style="font-size:13px;color:var(--accent);cursor:pointer" onclick="showPage(\'jobs\',null);setTimeout(()=>openJobDetail(' + c.jobId + '),100)">' + (job?job.title:'Job') + '</span>' +
+    '<span style="color:var(--border2)">›</span>' +
+    '<span style="font-size:13px;font-weight:600">' + c.name + '</span>' +
+    '<div style="margin-left:auto;display:flex;gap:6px;flex-wrap:wrap;">' +
+    '<button class="btn btn-ghost btn-sm" onclick="openEditCandidate(' + c.id + ')">✏️ Edit</button>' +
+    '<button class="btn btn-ghost btn-sm" onclick="openAddNote(' + c.id + ')">📝 Note</button>' +
+    '<button class="btn btn-ghost btn-sm" onclick="openScheduleInterview(' + c.id + ')">📅 Schedule</button>' +
+    '<button class="btn btn-ghost btn-sm" onclick="openCreateOffer(' + c.id + ')">📄 Offer</button>' +
+    '<button class="btn btn-ghost btn-sm" onclick="openCandInNewTab(' + c.id + ')" title="Open in new tab">↗ New Tab</button>' +
+    '<button class="btn btn-primary btn-sm" onclick="openMoveStage(' + c.id + ')">Move Stage ↕</button>' +
+    '<button class="btn btn-ghost btn-sm" style="color:var(--red);border-color:var(--red-dim)" onclick="rejectCandidate(' + c.id + ')">✕ Reject</button>' +
+    '<button class="btn btn-ghost btn-sm" style="color:var(--red);border-color:var(--red-dim)" onclick="deleteCandidate(' + c.id + ')">🗑 Delete</button>' +
+    '</div></div>' +
+
+    // MAIN LAYOUT
+    '<div style="display:grid;grid-template-columns:1fr 420px;flex:1;overflow:hidden;min-height:0;">' +
+
+    // LEFT PANEL
+    '<div id="cp-left-panel" style="overflow-y:auto;border-right:1px solid var(--border);display:flex;flex-direction:column;">' +
+
+    // Candidate header
+    '<div style="padding:20px 24px;border-bottom:1px solid var(--border);">' +
+    '<div style="display:flex;align-items:flex-start;gap:16px;margin-bottom:14px;">' +
+    '<div style="width:68px;height:68px;border-radius:50%;background:' + c.color + '33;color:' + c.color + ';display:flex;align-items:center;justify-content:center;font-size:24px;font-weight:800;flex-shrink:0;">' + c.initials + '</div>' +
+    '<div style="flex:1;">' +
+    '<div style="font-size:18px;font-weight:800;margin-bottom:4px;">' + c.name + '<span style="font-size:13px;font-weight:400;color:var(--text3);margin-left:8px;">' + stars + '</span></div>' +
+    '<div style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:8px;">' +
+    (c.source?'<span class="badge badge-amber" style="font-size:11px">' + c.source + '</span>':'') +
+    '<span class="badge ' + (stageBadge[c.stage]||'badge-gray') + '">' + c.stage + '</span>' +
+    (c.hasResume?'<span class="badge badge-gray">📄 Resume</span>':'') +
+    '</div>' +
+    '<div style="display:flex;flex-wrap:wrap;gap:16px;font-size:12px;color:var(--text3);">' +
+    (c.exp?'<span>💼 ' + c.exp + '</span>':'') +
+    (c.location?'<span>📍 ' + c.location + '</span>':'') +
+    (c.applied?'<span>📅 Applied ' + c.applied + '</span>':'') +
+    '</div></div></div>' +
+    '<div style="display:flex;flex-wrap:wrap;gap:16px;font-size:12px;padding:10px 0;border-top:1px solid var(--border);">' +
+    (c.phone?'<a href="tel:' + c.phone + '" style="color:var(--accent);">📞 ' + c.phone + '</a>':'') +
+    (c.email?'<a href="mailto:' + c.email + '" style="color:var(--accent);">✉️ ' + c.email + '</a>':'') +
+    (c.currentTitle?'<span style="color:var(--text2);">🏢 ' + c.currentTitle + '</span>':'') +
+    '</div>' +
+    '<div style="display:flex;gap:6px;margin-top:12px;flex-wrap:wrap;">' +
+    '<button class="btn btn-ghost btn-sm" style="color:var(--red);border-color:var(--red-dim)" onclick="rejectCandidate(' + c.id + ')">Reject</button>' +
+    '<button class="btn btn-ghost btn-sm" onclick="shareCandidate(' + c.id + ')">Share</button>' +
+    '<button class="btn btn-ghost btn-sm" onclick="openScheduleInterview(' + c.id + ')">Schedule Interview</button>' +
+    '<button class="btn btn-primary btn-sm" onclick="openMoveStage(' + c.id + ')">Move Stage</button>' +
+    (c.stage!=='Offer'&&c.stage!=='Hired'?'<button class="btn btn-ghost btn-sm" onclick="openCreateOffer(' + c.id + ')">Create Offer</button>':'') +
+    '</div></div>' +
+
+    // Left tabs
+    '<div style="display:flex;border-bottom:1px solid var(--border);background:var(--bg2);flex-shrink:0;">' +
+    '<div class="cp-tab active" onclick="switchLeftTab(this,\'lt-resume\')">Resume ' + (c.hasResume?'(1)':'(0)') + '</div>' +
+    '<div class="cp-tab" onclick="switchLeftTab(this,\'lt-details\')">Details</div>' +
+    '<div class="cp-tab" onclick="switchLeftTab(this,\'lt-extra\')">Additional Info</div>' +
+    '<div class="cp-tab" onclick="switchLeftTab(this,\'lt-history\')">Action History</div>' +
+    '</div>' +
+
+    // Resume tab
+    '<div id="lt-resume" class="cp-tab-content active" style="flex-direction:column;overflow:hidden;">' + resumeTab + '</div>' +
+
+    // Details tab
+    '<div id="lt-details" class="cp-tab-content" style="padding:20px 24px;">' + detailsTab + '</div>' +
+
+    // Additional info tab
+    '<div id="lt-extra" class="cp-tab-content" style="padding:20px 24px;">' +
+    '<div style="text-align:center;padding:32px 0;color:var(--text3);">' +
+    '<div style="font-size:32px;margin-bottom:10px;">📋</div>' +
+    'Cover letters, portfolio links, and custom fields can be added when editing the candidate.' +
+    '<div style="margin-top:16px;"><button class="btn btn-primary btn-sm" onclick="openEditCandidate(' + c.id + ')">Edit Candidate</button></div>' +
+    '</div></div>' +
+
+    // History tab
+    '<div id="lt-history" class="cp-tab-content" style="padding:0;">' + historyTab + '</div>' +
+
+    '</div>' + // end left panel
+
+    // RIGHT PANEL
+    '<div id="cp-right-panel" style="overflow-y:auto;background:var(--bg2);display:flex;flex-direction:column;">' +
+
+    // All job applications section
+    '<div id="cp-job-applications">' + buildJobApplicationsHTML(c) + '</div>' +
+
+    // Similar candidates
+    '<div style="padding:12px 16px;border-bottom:1px solid var(--border);">' +
+    '<div style="display:flex;align-items:center;justify-content:space-between;cursor:pointer;" onclick="this.nextElementSibling.style.display=this.nextElementSibling.style.display===\'none\'?\'block\':\'none\'">' +
+    '<div style="font-size:12px;font-weight:600;color:var(--text2);">👥 Similar candidates (' + candidates.filter(x=>x.id!==c.id&&getCandJobIds(x).some(jid=>getCandJobIds(c).includes(jid))).length + ')</div>' +
+    '<span style="color:var(--text3);">▾</span></div>' +
+    '<div style="display:none;margin-top:10px;">' +
+    (candidates.filter(x=>x.id!==c.id&&getCandJobIds(x).some(jid=>getCandJobIds(c).includes(jid))).slice(0,4).map(x=>'<div style="display:flex;align-items:center;gap:8px;padding:6px 0;cursor:pointer;border-bottom:1px solid var(--border);" onclick="openCandProfile(' + x.id + ')"><div style="width:26px;height:26px;border-radius:50%;background:' + x.color + '33;color:' + x.color + ';display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:700;flex-shrink:0;">' + x.initials + '</div><div style="flex:1;font-size:12px;font-weight:600;">' + x.name + '</div><span class="badge ' + (stageBadge[x.stage]||'badge-gray') + '" style="font-size:10px">' + x.stage + '</span></div>').join('') || '<div style="color:var(--text3);font-size:12px;">None</div>') +
+    '</div></div>' +
+
+    // Interviews (feedback per interview round)
+    '<div id="cp-interviews-section">' + buildInterviewsHTML(c, allInterviews, allFeedback) + '</div>' +
+
+    // TEAM NOTES — separate from interview feedback, visible to everyone
+    '<div id="cp-team-notes-section" style="border-top:2px solid var(--border);">' +
+    '<div style="padding:14px 16px;display:flex;align-items:center;justify-content:space-between;">' +
+    '<div>' +
+    '<div style="font-size:13px;font-weight:700;">📌 Team Notes</div>' +
+    '<div style="font-size:11px;color:var(--text3);margin-top:2px;">Visible to everyone · Not tied to an interview round</div>' +
+    '</div>' +
+    '<button class="btn btn-primary btn-sm" onclick="openAddNote(' + c.id + ')">+ Add Note</button>' +
+    '</div>' +
+    '<div style="padding:0 16px 16px;" id="team-notes-list-' + c.id + '">' + renderTeamNotesList(c) + '</div>' +
+    '</div>' +
+
+    // Offers
+    buildOffersHTML(c) +
+
+    '</div>' + // end right panel
+    '</div>'; // end main layout
+
+  // Load PDF after DOM is ready
+  if(c.hasResume) {
+    requestAnimationFrame(()=>{ setTimeout(()=>loadInlinePdf(id), 100); });
+  }
+}
+
+// Build all job applications for right panel
+function buildJobApplicationsHTML(c) {
+  const apps = getCandJobs(c);
+  let html = '<div style="padding:12px 16px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;">' +
+    '<div style="font-size:13px;font-weight:700;">💼 Job Applications (' + apps.length + ')</div>' +
+    '<button class="btn btn-primary btn-sm" onclick="openApplyToJobModal(' + c.id + ')">+ Apply to Job</button>' +
+    '</div>';
+
+  if(!apps.length) {
+    html += '<div style="text-align:center;padding:24px;color:var(--text3);font-size:12px;">No job applications yet</div>';
+    return html;
+  }
+
+  apps.forEach((app, idx) => {
+    const j = getJob(app.jobId);
+    if(!j) return;
+    const isFirst = idx === 0;
+    const currentStage = app.stage || 'Applied';
+    const stageColor = stageColors[currentStage] || 'var(--accent)';
+    const badgeClass = stageBadge[currentStage] || 'badge-gray';
+
+    html += '<div style="border-bottom:1px solid var(--border);">';
+
+    // Job header row
+    html += '<div style="padding:12px 16px;display:flex;align-items:center;gap:10px;">';
+    html += '<div style="width:34px;height:34px;border-radius:8px;background:' + (j.color||'#4f8ef7') + '22;color:' + (j.color||'#4f8ef7') + ';display:flex;align-items:center;justify-content:center;font-size:15px;flex-shrink:0;">' + (j.icon||'💼') + '</div>';
+    html += '<div style="flex:1;min-width:0;">';
+    html += '<div style="font-size:13px;font-weight:700;cursor:pointer;color:var(--accent);" onclick="showPage(\'jobs\',null);setTimeout(()=>openJobDetail(' + j.id + '),100)">' + j.title + '</div>';
+    html += '<div style="font-size:11px;color:var(--text3);">' + j.dept + ' · ' + j.location + (app.applied ? ' · Applied ' + app.applied : '') + '</div>';
+    html += '</div>';
+    html += '<span class="badge ' + (j.status==='Active'?'badge-green':j.status==='Paused'?'badge-amber':'badge-gray') + '" style="font-size:10px;">' + j.status + '</span>';
+    if(!isFirst) {
+      html += '<button class="btn btn-ghost btn-sm" style="color:var(--red);padding:4px 6px;font-size:10px;flex-shrink:0;" onclick="removeJobApplication(' + c.id + ',' + j.id + ')" title="Remove application">✕</button>';
+    }
+    html += '</div>';
+
+    // Stage tracker for this specific job
+    html += '<div style="padding:8px 16px 14px;overflow-x:auto;">';
+    html += '<div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:0.5px;color:var(--text3);margin-bottom:8px;">Stage</div>';
+    html += '<div style="display:flex;align-items:center;">' + buildStageTrackerHTML(c, app.jobId) + '</div>';
+    html += '<div style="margin-top:10px;display:flex;gap:6px;">';
+    html += '<button class="btn btn-ghost btn-sm" style="font-size:11px;" onclick="openMoveStage(' + c.id + ',' + app.jobId + ')">↕ Move Stage</button>';
+    html += '</div>';
+    html += '</div>';
+
+    html += '</div>';
+  });
+
+  return html;
+}
+
+function navigateToHash(hash) {
+  if(!hash || hash==='#' || hash==='') { showPage('dashboard', null, false); return; }
+  const path = hash.replace('#','');
+  if(path.startsWith('candidate/')) {
+    const id = parseInt(path.split('/')[1]);
+    if(!isNaN(id)) {
+      const tryOpen = () => { const c = getCand(id); if(c) openCandProfile(id,false); else showPage('candidates',null,false); };
+      if(candidates.length > 0) tryOpen(); else setTimeout(tryOpen, 1500);
+    }
+  } else if(path.startsWith('project/')) {
+    const id = parseInt(path.split('/')[1]);
+    if(!isNaN(id)) {
+      const tryOpen = () => { const p = getProject(id); if(p) openProjectDetail(id); else showPage('projects',null,false); };
+      if(projects.length > 0) tryOpen(); else setTimeout(tryOpen, 1500);
+    }
+  } else {
+    const valid = ['dashboard','jobs','projects','candidates','pipeline','interviews','offers','analytics','reports','inbox','settings'];
+    showPage(valid.includes(path)?path:'dashboard', null, false);
+  }
+}
+
+window.addEventListener('popstate', e => {
+  if(e.state?.page==='candidate') openCandProfile(e.state.id, false);
+  else if(e.state?.page==='projectdetail') openProjectDetail(e.state.id);
+  else if(e.state?.page) showPage(e.state.page, null, false);
+  else navigateToHash(location.hash);
+});
+
+function restoreFromURL() {
+  if(location.hash && location.hash !== '#') navigateToHash(location.hash);
+}
+
+
+
+// ===================== NOTES SYSTEM =====================
+function openAddNote(id) {
+  const c = getCand(id); if(!c) return;
+  document.getElementById('modal-title').textContent = '📝 Add Note — ' + c.name;
+  document.getElementById('modal-body').innerHTML = `
+    <div class="form-group">
+      <label>Note</label>
+      <textarea id="new-note-text" style="min-height:140px;" placeholder="Write your note here... (supports multiple lines)"></textarea>
+    </div>
+    <div style="font-size:12px;color:var(--text3);">📅 Will be saved with today's date and time automatically.</div>`;
+  document.getElementById('modal-footer').innerHTML = `
+    <button class="btn btn-ghost" onclick="closeModal()">Cancel</button>
+    <button class="btn btn-primary" onclick="saveNewNote(${id})">Save Note</button>`;
+  document.getElementById('modal-overlay').classList.add('open');
+  setTimeout(()=>document.getElementById('new-note-text')?.focus(), 100);
+}
+
+function saveNewNote(id) {
+  const c = getCand(id); if(!c) return;
+  const text = document.getElementById('new-note-text')?.value.trim();
+  if(!text) { showToast('Please write something first'); return; }
+  const notes = getNotes(c);
+  const newNote = { id: Date.now(), text, createdAt: new Date().toISOString(), editedAt: null };
+  notes.push(newNote);
+  c.notesList = notes;
+  addToTimeline(c, 'Note added', 'var(--amber)');
+  save();
+  closeModal();
+  // Refresh left panel notes section
+  const el = document.getElementById('notes-section-'+id);
+  if(el) el.innerHTML =
+    '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;">' +
+    '<div class="cp-field-label">Notes</div>' +
+    '<button class="btn btn-primary btn-sm" onclick="openAddNote(' + id + ')">+ Add Note</button></div>' +
+    renderNotesList(c);
+  // Refresh right panel team notes section
+  refreshTeamNotes(id);
+  showToast('Note saved! 📝');
+}
+
+function startNoteEdit(noteId) {
+  document.getElementById(`note-text-${noteId}`).style.display = 'none';
+  document.getElementById(`note-edit-${noteId}`).style.display = 'block';
+  document.getElementById(`note-textarea-${noteId}`)?.focus();
+}
+
+function cancelNoteEdit(noteId) {
+  document.getElementById(`note-text-${noteId}`).style.display = 'block';
+  document.getElementById(`note-edit-${noteId}`).style.display = 'none';
+}
+
+function saveNoteEdit(candId, noteId) {
+  const c = getCand(candId); if(!c) return;
+  const notes = getNotes(c);
+  const note = notes.find(n=>String(n.id)===String(noteId));
+  if(!note) return;
+  const newText = document.getElementById(`note-textarea-${noteId}`)?.value.trim();
+  if(!newText) return;
+  note.text = newText;
+  note.editedAt = new Date().toISOString();
+  c.notesList = notes;
+  save();
+  // Update in place without full page reload
+  document.getElementById(`note-text-${noteId}`).textContent = newText;
+  cancelNoteEdit(noteId);
+  // Refresh the section to show updated edit time
+  const el = document.getElementById(`notes-section-${candId}`);
+  if(el) el.innerHTML = `
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;">
+      <div class="cp-field-label">Notes</div>
+      <button class="btn btn-primary btn-sm" onclick="openAddNote(${candId})">+ Add Note</button>
+    </div>
+    ${renderNotesList(c)}`;
+  showToast('Note updated!');
+}
+
+function deleteNote(candId, noteId) {
+  if(!confirm('Delete this note?')) return;
+  const c = getCand(candId); if(!c) return;
+  const notes = getNotes(c);
+  c.notesList = notes.filter(n=>String(n.id)!==String(noteId));
+  save();
+  const el = document.getElementById(`notes-section-${candId}`);
+  if(el) el.innerHTML = `
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;">
+      <div class="cp-field-label">Notes</div>
+      <button class="btn btn-primary btn-sm" onclick="openAddNote(${candId})">+ Add Note</button>
+    </div>
+    ${renderNotesList(c)}`;
+  showToast('Note deleted');
+}
+
+// Legacy wrapper (still called from some places)
+function openEditNotes(id) { openAddNote(id); }
+function saveNotes(id) { saveNewNote(id); }
+
+
 function buildOffersHTML(c) {
   const candOffers = offers.filter(o => o.candidateId === c.id);
   if (!candOffers.length) return '';
@@ -2900,18 +3222,6 @@ function switchCpTab(el, tabId) {
   el.classList.add('active');
   el.closest('.cp-right').querySelectorAll('.cp-tab-content').forEach(t=>t.classList.remove('active'));
   document.getElementById(tabId).classList.add('active');
-}
-
-function quickMoveStage(id, stage) {
-  const c = getCand(id); if(!c) return;
-  c.stage = stage;
-  addToTimeline(c, `Moved to ${stage}`, stageColors[stage]||'var(--accent)');
-  activities.unshift({ text:`<strong>${c.name}</strong> moved to <strong>${stage}</strong>`, time:'Just now', color:stageColors[stage], ts:Date.now() });
-  save();
-  // Update stage tracker in place
-  const tracker = document.getElementById('cp-stage-tracker');
-  if(tracker) tracker.innerHTML = buildStageTrackerHTML(c);
-  showToast(`Moved to ${stage}!`);
 }
 
 function updateOfferStatusProfile(candId, status) {
@@ -3379,6 +3689,7 @@ function openJobDetail(id) {
         <button class="btn btn-ghost btn-sm" onclick="copyJobLink(${j.id})">🔗 Copy Link</button>
         <button class="btn btn-ghost btn-sm" style="color:var(--amber)" onclick="toggleJobStatus(${j.id},'${j.status==='Active'?'Paused':'Active'}')">${j.status==='Active'?'⏸ Pause':'▶ Activate'}</button>
         <button class="btn btn-ghost btn-sm" style="color:var(--red)" onclick="toggleJobStatus(${j.id},'Closed')">✕ Close</button>
+        <button class="btn btn-ghost btn-sm" style="color:var(--red);border-color:var(--red-dim)" onclick="deleteJob(${j.id})">🗑 Delete</button>
       </div>
     </div>
     <div class="detail-section">
@@ -3388,6 +3699,14 @@ function openJobDetail(id) {
       <div class="detail-row"><span class="detail-row-label">Salary</span><span class="detail-row-val" style="font-family:'JetBrains Mono'">${j.salary}</span></div>
       <div class="detail-row"><span class="detail-row-label">Posted</span><span class="detail-row-val" style="font-family:'JetBrains Mono';font-size:12px">${j.posted}</span></div>
       <div class="detail-row"><span class="detail-row-label">Applicants</span><span class="detail-row-val">${j.applicants}</span></div>
+      <div class="detail-row">
+        <span class="detail-row-label">Projects</span>
+        <span class="detail-row-val">
+          ${projects.filter(p=>(p.jobIds||[]).includes(j.id)).map(p=>
+            `<span onclick="openProjectDetail(${p.id})" style="background:${p.color}22;color:${p.color};border-radius:4px;padding:2px 8px;font-size:11px;font-weight:600;cursor:pointer;margin-right:4px;">${p.icon||'📁'} ${p.name}</span>`
+          ).join('') || '<span style="color:var(--text3);font-size:12px;">None</span>'}
+        </span>
+      </div>
     </div>
     <div class="detail-section">
       <div class="detail-section-title">Required Skills</div>
@@ -3447,7 +3766,7 @@ function openEditJob(id) {
     <div class="form-row">
       <div class="form-group"><label>Job Title</label><input type="text" id="ej-title" value="${j.title}"></div>
       <div class="form-group"><label>Department</label>
-        <select id="ej-dept"><option ${j.dept==='Engineering'?'selected':''}>Engineering</option><option ${j.dept==='Design'?'selected':''}>Design</option><option ${j.dept==='Product'?'selected':''}>Product</option><option ${j.dept==='Marketing'?'selected':''}>Marketing</option><option ${j.dept==='Sales'?'selected':''}>Sales</option><option ${j.dept==='Operations'?'selected':''}>Operations</option></select>
+        <select id="ej-dept">${getDeptOptions(j.dept)}</select>
       </div>
     </div>
     <div class="form-row">
@@ -3500,28 +3819,60 @@ function openModal(type, data={}) {
 
   if(type==='add') {
     title.textContent = 'Post New Job';
+    const customStages = getCustomStages().filter(s=>s.enabled&&!['Applied','Hired','Rejected'].includes(s.name));
     body.innerHTML = `
       <div class="form-row">
-        <div class="form-group"><label>Job Title</label><input type="text" placeholder="e.g. Senior Engineer"></div>
+        <div class="form-group"><label>Job Title</label><input type="text" id="nj-title" placeholder="e.g. Senior Engineer"></div>
         <div class="form-group"><label>Department</label>
-          <select><option>Engineering</option><option>Design</option><option>Product</option><option>Marketing</option><option>Sales</option><option>Operations</option></select>
+          <select id="nj-dept">${getDeptOptions('')}</select>
         </div>
       </div>
       <div class="form-row">
         <div class="form-group"><label>Employment Type</label>
-          <select><option>Full-time</option><option>Part-time</option><option>Contract</option><option>Internship</option></select>
+          <select id="nj-type"><option>Full-time</option><option>Part-time</option><option>Contract</option><option>Internship</option></select>
         </div>
-        <div class="form-group"><label>Location</label><input type="text" placeholder="City or Remote"></div>
+        <div class="form-group"><label>Location</label><input type="text" id="nj-location" placeholder="City or Remote"></div>
       </div>
       <div class="form-row">
-        <div class="form-group"><label>Salary Min</label><input type="number" placeholder="80000"></div>
-        <div class="form-group"><label>Salary Max</label><input type="number" placeholder="120000"></div>
+        <div class="form-group"><label>Salary Min</label><input type="number" id="nj-salmin" placeholder="80000"></div>
+        <div class="form-group"><label>Salary Max</label><input type="number" id="nj-salmax" placeholder="120000"></div>
       </div>
-      <div class="form-group"><label>Priority</label>
-        <select><option>High</option><option>Medium</option><option>Low</option></select>
+      <div class="form-row">
+        <div class="form-group"><label>Priority</label>
+          <select id="nj-priority"><option>High</option><option selected>Medium</option><option>Low</option></select>
+        </div>
+        <div class="form-group"><label>Headcount</label>
+          <input type="number" id="nj-headcount" placeholder="1" min="1" value="1">
+        </div>
       </div>
-      <div class="form-group"><label>Job Description</label><textarea placeholder="Describe responsibilities, requirements..."></textarea></div>
-      <div class="form-group"><label>Required Skills (comma separated)</label><input type="text" placeholder="React, TypeScript, Node.js"></div>`;
+      <div class="form-group"><label>Job Description</label><textarea id="nj-desc" placeholder="Responsibilities, requirements..."></textarea></div>
+      <div class="form-group"><label>Required Skills (comma separated)</label><input type="text" id="nj-skills" placeholder="React, TypeScript, Node.js"></div>
+
+      <!-- HIRING STAGES FOR THIS JOB -->
+      <div style="background:var(--bg3);border-radius:10px;padding:14px;margin-top:4px;">
+        <div style="font-size:12px;font-weight:700;color:var(--text2);text-transform:uppercase;letter-spacing:0.5px;margin-bottom:10px;">Hiring Stages for this Job</div>
+        <div style="font-size:12px;color:var(--text3);margin-bottom:10px;">Toggle which stages apply — you can customise further after creating the job.</div>
+        <div style="display:flex;flex-wrap:wrap;gap:8px;" id="nj-stages">
+          ${getCustomStages().filter(s=>s.enabled).map(s=>`
+            <label style="display:flex;align-items:center;gap:6px;background:var(--bg4);border:1px solid var(--border);border-radius:6px;padding:5px 10px;cursor:pointer;">
+              <input type="checkbox" name="nj-stage" value="${s.name}" ${['Applied','Hired','Rejected'].includes(s.name)?'checked disabled':'checked'} style="accent-color:${s.color}">
+              <span style="font-size:12px;font-weight:600;color:${s.color}">${s.name}</span>
+            </label>`).join('')}
+        </div>
+      </div>
+
+      <!-- ASSESSMENTS -->
+      <div style="background:var(--bg3);border-radius:10px;padding:14px;margin-top:8px;">
+        <div style="font-size:12px;font-weight:700;color:var(--text2);text-transform:uppercase;letter-spacing:0.5px;margin-bottom:10px;">Assessments / Tests</div>
+        <div style="display:flex;flex-wrap:wrap;gap:8px;margin-bottom:10px;">
+          ${['Technical Test','Take-home Assignment','Portfolio Review','Personality Assessment','Background Check','Reference Check'].map(a=>`
+            <label style="display:flex;align-items:center;gap:6px;background:var(--bg4);border:1px solid var(--border);border-radius:6px;padding:5px 10px;cursor:pointer;">
+              <input type="checkbox" name="nj-assessment" value="${a}">
+              <span style="font-size:12px;color:var(--text2)">${a}</span>
+            </label>`).join('')}
+        </div>
+        <div class="form-group"><label>Custom Assessment (optional)</label><input type="text" id="nj-custom-assess" placeholder="e.g. 30-min coding challenge"></div>
+      </div>`;
     footer.innerHTML = `<button class="btn btn-ghost" onclick="closeModal()">Cancel</button><button class="btn btn-primary" onclick="saveJob()">Post Job</button>`;
   } else if(type==='addCandidate') {
     title.textContent = 'Add Candidate';
@@ -3611,56 +3962,184 @@ function openModal(type, data={}) {
 }
 
 function saveJob() {
-  const inputs = document.querySelectorAll('#modal-body input, #modal-body select, #modal-body textarea');
-  const title = inputs[0]?.value.trim() || 'New Job Position';
-  const dept = inputs[1]?.value || 'Engineering';
-  const type = inputs[2]?.value || 'Full-time';
-  const location = inputs[3]?.value.trim() || 'Remote';
-  const salMin = inputs[4]?.value;
-  const salMax = inputs[5]?.value;
-  const priority = inputs[6]?.value || 'Medium';
-  const skillsRaw = inputs[8]?.value || '';
+  const title = document.getElementById('nj-title')?.value.trim() || 'New Job Position';
+  const dept = document.getElementById('nj-dept')?.value || getDepts()[0];
+  const type = document.getElementById('nj-type')?.value || 'Full-time';
+  const location = document.getElementById('nj-location')?.value.trim() || 'Remote';
+  const salMin = document.getElementById('nj-salmin')?.value;
+  const salMax = document.getElementById('nj-salmax')?.value;
+  const priority = document.getElementById('nj-priority')?.value || 'Medium';
+  const headcount = parseInt(document.getElementById('nj-headcount')?.value)||1;
+  const desc = document.getElementById('nj-desc')?.value||'';
+  const skillsRaw = document.getElementById('nj-skills')?.value||'';
+  // Collect selected stages
+  const jobStages = Array.from(document.querySelectorAll('input[name="nj-stage"]:checked')).map(el=>el.value);
+  // Collect assessments
+  const assessments = Array.from(document.querySelectorAll('input[name="nj-assessment"]:checked')).map(el=>el.value);
+  const customAssess = document.getElementById('nj-custom-assess')?.value.trim();
+  if(customAssess) assessments.push(customAssess);
+
   const colors = ['#4f8ef7','#a78bfa','#34d399','#fbbf24','#f472b6','#fb7185','#06b6d4','#84cc16'];
-  const icons = ['💼','⚙️','🎨','📈','🔧','📊','💰','🖥️'];
+  const icons  = {'Engineering':'⚙️','Design':'🎨','Product':'📊','Marketing':'📈','Sales':'💰','Operations':'🔧','HR':'👥','Finance':'💵','Legal':'⚖️'};
   const newId = Math.max(0, ...jobs.map(j=>j.id)) + 1;
   jobs.push({
-    id: newId,
-    title: title,
-    dept: dept,
-    type: type,
-    location: location,
-    status: 'Active',
-    applicants: 0,
-    salary: salMin && salMax ? `$${Number(salMin).toLocaleString()}–$${Number(salMax).toLocaleString()}` : 'TBD',
+    id: newId, title, dept, type, location, status:'Active', applicants:0, headcount,
+    salary: salMin&&salMax ? `RM${Number(salMin).toLocaleString()}–RM${Number(salMax).toLocaleString()}` : 'TBD',
     posted: new Date().toISOString().split('T')[0],
-    color: colors[newId % colors.length],
-    icon: icons[newId % icons.length],
-    skills: skillsRaw ? skillsRaw.split(',').map(s=>s.trim()).filter(Boolean) : [],
-    priority: priority
+    color: colors[newId%colors.length],
+    icon: icons[dept]||'💼',
+    skills: skillsRaw?skillsRaw.split(',').map(s=>s.trim()).filter(Boolean):[],
+    priority, description:desc, jobStages, assessments
   });
-  save();
-  populateJobFilters();
-  closeModal();
-  renderJobs();
-  showToast('Job posted and saved!');
+  save(); populateJobFilters(); closeModal(); renderJobs();
+  showToast('Job posted and saved! 🎉');
 }
 
-function openMoveStage(id) { openModal('moveStage', {id}); }
+function quickMoveStage(id, stage, jobId) {
+  const c = getCand(id); if(!c) return;
+  const targetJobId = jobId || c.jobId;
+  setCandStageForJob(c, targetJobId, stage);
+  addToTimeline(c, `Moved to ${stage}` + (jobId ? ` (${getJob(jobId)?.title||''})` : ''), stageColors[stage]||'var(--accent)');
+  activities.unshift({ text:`<strong>${c.name}</strong> moved to <strong>${stage}</strong>`, time:'Just now', color:stageColors[stage], ts:Date.now() });
+  save();
+  const tracker = document.getElementById('cp-stage-tracker');
+  if(tracker) tracker.innerHTML = buildStageTrackerHTML(c, targetJobId);
+  showToast(`Moved to ${stage}!`);
+}
+
+function openApplyToJobModal(candId) {
+  const c = getCand(candId); if(!c) return;
+  const alreadyApplied = getCandJobIds(c);
+  const available = jobs.filter(j => j.status !== 'Closed' && !alreadyApplied.includes(j.id));
+
+  document.getElementById('modal-title').textContent = '💼 Apply to Another Job — ' + c.name;
+  if(!available.length) {
+    document.getElementById('modal-body').innerHTML =
+      '<div style="text-align:center;padding:24px;color:var(--text3);">' +
+      '<div style="font-size:32px;margin-bottom:10px;">✅</div>' +
+      'This candidate has already applied to all active jobs!</div>';
+    document.getElementById('modal-footer').innerHTML = '<button class="btn btn-ghost" onclick="closeModal()">Close</button>';
+    document.getElementById('modal-overlay').classList.add('open');
+    return;
+  }
+
+  document.getElementById('modal-body').innerHTML =
+    '<div style="font-size:12px;color:var(--text3);margin-bottom:12px;">Select a job to add this candidate to. They will start at the Applied stage.</div>' +
+    '<div style="display:flex;flex-direction:column;gap:8px;max-height:400px;overflow-y:auto;">' +
+    available.map(j => {
+      const jCands = candidates.filter(x => getCandJobIds(x).includes(j.id));
+      return '<label style="display:flex;align-items:center;gap:10px;background:var(--bg3);border:1px solid var(--border);border-radius:8px;padding:10px 14px;cursor:pointer;transition:border-color 0.15s;" onmouseover="this.style.borderColor=\'var(--border2)\'" onmouseout="this.style.borderColor=\'var(--border)\'">' +
+        '<input type="radio" name="apply-job" value="' + j.id + '" style="accent-color:var(--accent);">' +
+        '<div style="width:32px;height:32px;border-radius:8px;background:' + (j.color||'#4f8ef7') + '22;color:' + (j.color||'#4f8ef7') + ';display:flex;align-items:center;justify-content:center;font-size:14px;flex-shrink:0;">' + (j.icon||'💼') + '</div>' +
+        '<div style="flex:1;">' +
+        '<div style="font-size:13px;font-weight:700;">' + j.title + '</div>' +
+        '<div style="font-size:11px;color:var(--text3);">' + j.dept + ' · ' + j.location + ' · ' + jCands.length + ' candidates</div>' +
+        '</div>' +
+        '<span class="badge ' + (j.status==='Active'?'badge-green':'badge-amber') + '" style="font-size:10px;">' + j.status + '</span>' +
+        '</label>';
+    }).join('') +
+    '</div>' +
+    '<div class="form-group" style="margin-top:12px;"><label>Starting Stage</label>' +
+    '<select id="apply-stage">' + stages.map(s=>'<option' + (s==='Applied'?' selected':'') + '>' + s + '</option>').join('') + '</select></div>';
+
+  document.getElementById('modal-footer').innerHTML =
+    '<button class="btn btn-ghost" onclick="closeModal()">Cancel</button>' +
+    '<button class="btn btn-primary" onclick="confirmApplyToJob(' + candId + ')">Add Application</button>';
+  document.getElementById('modal-overlay').classList.add('open');
+}
+
+function confirmApplyToJob(candId) {
+  const c = getCand(candId); if(!c) return;
+  const sel = document.querySelector('input[name="apply-job"]:checked');
+  if(!sel) { showToast('Please select a job'); return; }
+  const jobId = parseInt(sel.value);
+  const stage = document.getElementById('apply-stage')?.value || 'Applied';
+  addCandJobApplication(c, jobId, stage);
+  addToTimeline(c, 'Applied to ' + (getJob(jobId)?.title||'job'), 'var(--accent)');
+  save();
+  closeModal();
+  // Refresh job applications section
+  const el = document.getElementById('cp-job-applications');
+  if(el) el.innerHTML = buildJobApplicationsHTML(c);
+  showToast('Application added! ✅');
+}
+
+function removeJobApplication(candId, jobId) {
+  const c = getCand(candId); if(!c) return;
+  const j = getJob(jobId);
+  if(!confirm('Remove ' + c.name + '\'s application for "' + (j?.title||'this job') + '"?')) return;
+  removeCandJobApplication(c, jobId);
+  addToTimeline(c, 'Removed from ' + (j?.title||'job'), 'var(--red)');
+  save();
+  const el = document.getElementById('cp-job-applications');
+  if(el) el.innerHTML = buildJobApplicationsHTML(c);
+  showToast('Application removed');
+}
+
+function openMoveStage(id, jobId) {
+  const c = getCand(id); if(!c) return;
+  const targetJobId = jobId || c.jobId;
+  const currentStage = getCandStageForJob(c, targetJobId);
+  const jobTitle = getJob(targetJobId)?.title || '';
+  document.getElementById('modal-title').textContent = 'Move Stage' + (jobTitle ? ' — ' + jobTitle : '');
+  document.getElementById('modal-body').innerHTML =
+    '<div class="form-group"><label>Select Stage</label>' +
+    '<select id="move-stage-select">' +
+    stages.map(s=>`<option ${currentStage===s?'selected':''}>${s}</option>`).join('') +
+    '</select></div>' +
+    '<input type="hidden" id="move-stage-jobid" value="' + (targetJobId||'') + '">' +
+    '<div class="form-group"><label>Note (optional)</label><textarea placeholder="Add a note about this stage change..."></textarea></div>';
+  document.getElementById('modal-footer').innerHTML =
+    '<button class="btn btn-ghost" onclick="closeModal()">Cancel</button>' +
+    '<button class="btn btn-primary" onclick="confirmMoveStage(' + id + ')">Confirm Move</button>';
+  document.getElementById('modal-overlay').classList.add('open');
+}
+
 function confirmMoveStage(id) {
   const sel = document.getElementById('move-stage-select');
-  if(sel) {
-    const c = getCand(id);
-    if(c) {
-      c.stage = sel.value;
-      activities.unshift({ text:`<strong>${c.name}</strong> moved to <strong>${c.stage}</strong>`, time:'Just now', color: stageColors[c.stage]||'var(--accent)' });
-      save();
-    }
+  const jobIdEl = document.getElementById('move-stage-jobid');
+  const c = getCand(id);
+  if(sel && c) {
+    const targetJobId = jobIdEl ? parseInt(jobIdEl.value)||c.jobId : c.jobId;
+    setCandStageForJob(c, targetJobId, sel.value);
+    activities.unshift({ text:`<strong>${c.name}</strong> moved to <strong>${c.stage}</strong>`, time:'Just now', color: stageColors[c.stage]||'var(--accent)', ts:Date.now() });
+    save();
   }
   closeModal();
-  renderCandidates();
-  renderPipeline();
+  renderCandidates(); renderPipeline();
   showToast('Candidate moved and saved!');
-  if(document.getElementById('detail-panel').classList.contains('open')) openCandProfile(id);
+  if(document.getElementById('page-candprofile').classList.contains('active')) refreshRightPanel(id);
+}
+
+function deleteJob(id) {
+  const j = getJob(id); if(!j) return;
+  const candCount = candidates.filter(c=>c.jobId===id).length;
+  const msg = candCount>0
+    ? 'Delete "' + j.title + '"? This job has ' + candCount + ' candidate(s). They will become unlinked. This cannot be undone.'
+    : 'Delete "' + j.title + '"? This cannot be undone.';
+  if(!confirm(msg)) return;
+  jobs = jobs.filter(x=>x.id!==id);
+  save(); closeDetail(); renderJobs(); populateJobFilters();
+  showToast('Job deleted');
+}
+
+function deleteCandidate(id) {
+  const c = getCand(id); if(!c) return;
+  if(!confirm('Delete ' + c.name + '? All their data including feedback and notes will be permanently removed. This cannot be undone.')) return;
+  // Remove resume from storage
+  try { localStorage.removeItem('tf_resume_'+id); } catch(e){}
+  candidates = candidates.filter(x=>x.id!==id);
+  // Update job applicant count
+  const j = getJob(c.jobId);
+  if(j&&j.applicants>0) j.applicants--;
+  save();
+  // Navigate away if on their profile
+  if(document.getElementById('page-candprofile').classList.contains('active')) {
+    showPage('candidates', null);
+  } else {
+    closeDetail(); renderCandidates();
+  }
+  showToast(c.name + ' deleted');
 }
 
 function closeModal() { document.getElementById('modal-overlay').classList.remove('open'); }
@@ -3834,6 +4313,7 @@ function saveCandidate() {
 
   const newCand = {
     id: newId, name, email, phone, jobId, stage,
+    jobApplications: [{ jobId, stage, applied: new Date().toISOString().split('T')[0] }],
     score: Math.min(100, Math.max(0, score)),
     applied: new Date().toISOString().split('T')[0],
     initials, color: colors[newId % colors.length],
@@ -3909,7 +4389,7 @@ function renderReports() {
   const jobF = document.getElementById('report-job-filter')?.value;
   const stageF = document.getElementById('report-stage-filter')?.value;
   let filtered = [...candidates];
-  if(jobF) filtered = filtered.filter(c=>c.jobId===parseInt(jobF));
+  if(jobF) filtered = filtered.filter(c=>getCandJobIds(c).includes(parseInt(jobF)));
   if(stageF) filtered = filtered.filter(c=>c.stage===stageF);
 
   // --- SUMMARY ---
@@ -4021,7 +4501,7 @@ function exportCSV(type) {
     const stageF = document.getElementById('report-stage-filter')?.value;
     let list = [...candidates];
     if(type==='filtered') {
-      if(jobF) list = list.filter(c=>c.jobId===parseInt(jobF));
+      if(jobF) list = list.filter(c=>getCandJobIds(c).includes(parseInt(jobF)));
       if(stageF) list = list.filter(c=>c.stage===stageF);
     }
     const headers = ['#','Name','Email','Phone','Location','Applied For','Stage','Score','Experience','Current Title','Source','Skills','Applied Date','Has Resume','Notes'];
@@ -4366,53 +4846,72 @@ async function loadInlinePdf(candId) {
 
   const container = document.getElementById('pdf-container');
   if(!container) return;
-  container.innerHTML = `<div style="text-align:center;color:#ccc;padding:40px;"><div style="font-size:32px;margin-bottom:10px;">⏳</div><div>Loading resume...</div></div>`;
+  container.innerHTML = '<div style="text-align:center;color:#ccc;padding:40px;"><div style="font-size:32px;margin-bottom:10px;">⏳</div><div style="font-size:14px;">Loading resume...</div></div>';
 
   try {
-    // Setup PDF.js worker
     if(window.pdfjsLib) {
       pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+    } else {
+      throw new Error('PDF.js not loaded');
     }
 
-    // Get resume data
-    let pdfData;
-    if(window.getResumeData) {
-      // Cloud (Firebase) mode
-      const r = await getResumeData(candId);
-      if(!r) { container.innerHTML = `<div style="color:#ccc;padding:40px;text-align:center;">Resume not found in cloud storage</div>`; return; }
-      if(r.url) {
-        // Fetch the PDF bytes from Firebase Storage URL
-        const resp = await fetch(r.url);
-        const buf = await resp.arrayBuffer();
-        pdfData = new Uint8Array(buf);
+    let pdfData = null;
+
+    // 1. Try local storage first (fastest, no CORS)
+    try {
+      const stored = JSON.parse(localStorage.getItem('tf_resume_'+candId)||'null');
+      if(stored?.b64) {
+        const bin = atob(stored.b64);
+        pdfData = new Uint8Array(bin.length);
+        for(let i=0;i<bin.length;i++) pdfData[i]=bin.charCodeAt(i);
       }
-    }
-    // Local storage fallback
-    if(!pdfData) {
+    } catch(e) {}
+
+    // 2. Try Firebase Storage URL
+    if(!pdfData && window.getResumeData) {
       try {
-        const stored = JSON.parse(localStorage.getItem(`tf_resume_${candId}`)||'null');
-        if(stored?.b64) {
-          const bin = atob(stored.b64);
-          pdfData = new Uint8Array(bin.length);
-          for(let i=0;i<bin.length;i++) pdfData[i]=bin.charCodeAt(i);
+        const r = await getResumeData(candId);
+        if(r?.url) {
+          const resp = await fetch(r.url);
+          if(resp.ok) {
+            const buf = await resp.arrayBuffer();
+            pdfData = new Uint8Array(buf);
+            // Cache locally for next time
+            try {
+              const b64 = btoa(String.fromCharCode(...pdfData.slice(0,1000000)));
+              localStorage.setItem('tf_resume_'+candId, JSON.stringify({b64, filename: c.resumeFilename}));
+            } catch(e) {}
+          }
         }
-      } catch(e) {}
+      } catch(e) { console.warn('Cloud load failed:', e); }
     }
 
-    if(!pdfData) { container.innerHTML = `<div style="color:#ccc;padding:40px;text-align:center;">📄 Unable to load PDF inline.<br><br><button class="btn btn-primary" onclick="viewResume(${candId})">Open in New Tab</button></div>`; return; }
+    if(!pdfData) {
+      container.innerHTML =
+        '<div style="color:#ccc;padding:32px;text-align:center;">' +
+        '<div style="font-size:32px;margin-bottom:10px;">📄</div>' +
+        '<div style="margin-bottom:8px;font-size:14px;">' + (c.resumeFilename||'Resume') + '</div>' +
+        '<div style="font-size:12px;color:#aaa;margin-bottom:16px;">PDF preview not available. Click below to open.</div>' +
+        '<button class="btn btn-primary" onclick="viewResume('+candId+')">Open Resume in New Tab ↗</button>' +
+        '</div>';
+      return;
+    }
 
     pdfDoc = await pdfjsLib.getDocument({ data: pdfData }).promise;
     pdfPage = 1;
-    document.getElementById('pdf-page-total').textContent = pdfDoc.numPages;
+    pdfZoom = 1.0;
+    const totalEl = document.getElementById('pdf-page-total');
+    if(totalEl) totalEl.textContent = pdfDoc.numPages;
     await renderPdfPage();
 
   } catch(err) {
     console.error('PDF load error:', err);
-    container.innerHTML = `<div style="color:#ccc;padding:40px;text-align:center;">
-      <div style="font-size:32px;margin-bottom:10px;">⚠️</div>
-      <div style="margin-bottom:16px;">Couldn't render PDF inline</div>
-      <button class="btn btn-primary" onclick="viewResume(${candId})">Open in New Tab ↗</button>
-    </div>`;
+    container.innerHTML =
+      '<div style="color:#ccc;padding:32px;text-align:center;">' +
+      '<div style="font-size:32px;margin-bottom:12px;">⚠️</div>' +
+      '<div style="font-size:13px;margin-bottom:16px;">Could not render PDF: ' + err.message + '</div>' +
+      '<button class="btn btn-primary" onclick="viewResume('+candId+')">Open in New Tab ↗</button>' +
+      '</div>';
   }
 }
 
@@ -4460,7 +4959,389 @@ function pdfZoomOut() { pdfZoom = Math.max(pdfZoom - 0.25, 0.5); renderPdfPage()
 function pdfZoomFit() { pdfZoom = 1.0; renderPdfPage(); }
 
 
+// ===================== PROJECTS =====================
+let projects = [];
+
+const PROJECT_COLORS = ['#4f8ef7','#a78bfa','#34d399','#fbbf24','#f472b6','#fb7185','#06b6d4','#c084fc','#ff8c42','#a3e635'];
+
+function getProject(id) { return projects.find(p=>p.id===id); }
+
+function getProjectStats(p) {
+  const jobList = jobs.filter(j=>( p.jobIds||[]).includes(j.id));
+  const totalCands = candidates.filter(c=>jobList.some(j=>j.id===c.jobId)).length;
+  const hired = candidates.filter(c=>jobList.some(j=>j.id===c.jobId)&&c.stage==='Hired').length;
+  const active = jobList.filter(j=>j.status==='Active').length;
+  return { jobs: jobList.length, candidates: totalCands, hired, active };
+}
+
+function renderProjects() {
+  const el = document.getElementById('projects-content');
+  if(!el) return;
+  const search = document.getElementById('projects-search')?.value.toLowerCase()||'';
+  const statusF = document.getElementById('projects-status-filter')?.value||'';
+
+  let filtered = projects.filter(p => {
+    const matchSearch = !search || p.name.toLowerCase().includes(search) || (p.description||'').toLowerCase().includes(search);
+    const matchStatus = !statusF || p.status===statusF;
+    return matchSearch && matchStatus;
+  });
+
+  if(!filtered.length) {
+    el.innerHTML = '<div style="text-align:center;padding:80px 24px;color:var(--text3);">' +
+      '<div style="font-size:48px;margin-bottom:16px;">📁</div>' +
+      '<div style="font-size:18px;font-weight:700;color:var(--text);margin-bottom:8px;">No projects yet</div>' +
+      '<div style="font-size:13px;margin-bottom:24px;">Group your hiring jobs into projects — like "Q1 2026 Hiring" or "Engineering Expansion"</div>' +
+      '<button class="btn btn-primary" onclick="openNewProject()">+ Create First Project</button>' +
+      '</div>';
+    return;
+  }
+
+  el.innerHTML = '<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(320px,1fr));gap:20px;">' +
+    filtered.map(p => {
+      const stats = getProjectStats(p);
+      const progress = stats.jobs > 0 ? Math.round((stats.hired / Math.max(stats.jobs,1)) * 100) : 0;
+      const statusColor = p.status==='Active'?'var(--green)':p.status==='On Hold'?'var(--amber)':'var(--text3)';
+      const statusBadge = p.status==='Active'?'badge-green':p.status==='On Hold'?'badge-amber':'badge-gray';
+      const daysLeft = p.deadline ? Math.ceil((new Date(p.deadline)-new Date())/86400000) : null;
+      const teamMembers = (p.team||[]).slice(0,4);
+
+      return '<div onclick="openProjectDetail(' + p.id + ')" style="background:var(--bg2);border:1px solid var(--border);border-radius:14px;overflow:hidden;cursor:pointer;transition:all 0.2s;" onmouseover="this.style.borderColor=\'var(--border2)\';this.style.transform=\'translateY(-2px)\'" onmouseout="this.style.borderColor=\'var(--border)\';this.style.transform=\'translateY(0)\'">' +
+        // Color banner
+        '<div style="height:6px;background:' + p.color + ';"></div>' +
+        '<div style="padding:20px;">' +
+        // Header
+        '<div style="display:flex;align-items:flex-start;gap:12px;margin-bottom:14px;">' +
+        '<div style="width:42px;height:42px;border-radius:10px;background:' + p.color + '22;color:' + p.color + ';display:flex;align-items:center;justify-content:center;font-size:20px;flex-shrink:0;">' + (p.icon||'📁') + '</div>' +
+        '<div style="flex:1;min-width:0;">' +
+        '<div style="font-size:15px;font-weight:800;margin-bottom:4px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">' + p.name + '</div>' +
+        '<div style="display:flex;align-items:center;gap:8px;">' +
+        '<span class="badge ' + statusBadge + '" style="font-size:10px;">' + p.status + '</span>' +
+        (daysLeft!==null ? '<span style="font-size:11px;color:' + (daysLeft<7?'var(--red)':daysLeft<30?'var(--amber)':'var(--text3)') + ';">📅 ' + (daysLeft<0?'Overdue':daysLeft===0?'Due today':daysLeft+'d left') + '</span>' : '') +
+        '</div>' +
+        '</div>' +
+        // Actions
+        '<div style="display:flex;gap:4px;" onclick="event.stopPropagation()">' +
+        '<button class="btn btn-ghost btn-sm" style="padding:4px 8px;" onclick="openEditProject(' + p.id + ')" title="Edit">✏️</button>' +
+        '<button class="btn btn-ghost btn-sm" style="padding:4px 8px;color:var(--red);" onclick="deleteProject(' + p.id + ')" title="Delete">🗑</button>' +
+        '</div>' +
+        '</div>' +
+        // Description
+        (p.description ? '<div style="font-size:12px;color:var(--text3);margin-bottom:14px;line-height:1.6;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;">' + p.description + '</div>' : '') +
+        // Stats row
+        '<div style="display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-bottom:14px;">' +
+        '<div style="text-align:center;background:var(--bg3);border-radius:8px;padding:8px 4px;">' +
+        '<div style="font-size:16px;font-weight:800;color:var(--accent);">' + stats.jobs + '</div>' +
+        '<div style="font-size:10px;color:var(--text3);">Jobs</div></div>' +
+        '<div style="text-align:center;background:var(--bg3);border-radius:8px;padding:8px 4px;">' +
+        '<div style="font-size:16px;font-weight:800;color:var(--purple);">' + stats.candidates + '</div>' +
+        '<div style="font-size:10px;color:var(--text3);">Candidates</div></div>' +
+        '<div style="text-align:center;background:var(--bg3);border-radius:8px;padding:8px 4px;">' +
+        '<div style="font-size:16px;font-weight:800;color:var(--green);">' + stats.hired + '</div>' +
+        '<div style="font-size:10px;color:var(--text3);">Hired</div></div>' +
+        '<div style="text-align:center;background:var(--bg3);border-radius:8px;padding:8px 4px;">' +
+        '<div style="font-size:16px;font-weight:800;color:var(--amber);">' + (p.budget?'RM'+Number(p.budget).toLocaleString():'–') + '</div>' +
+        '<div style="font-size:10px;color:var(--text3);">Budget</div></div>' +
+        '</div>' +
+        // Progress bar
+        '<div style="margin-bottom:14px;">' +
+        '<div style="display:flex;justify-content:space-between;font-size:11px;color:var(--text3);margin-bottom:4px;">' +
+        '<span>Hiring Progress</span><span>' + stats.hired + '/' + stats.jobs + ' roles filled</span></div>' +
+        '<div style="height:6px;background:var(--bg4);border-radius:3px;overflow:hidden;">' +
+        '<div style="height:100%;width:' + progress + '%;background:' + p.color + ';border-radius:3px;transition:width 0.6s;"></div></div>' +
+        '</div>' +
+        // Team avatars + jobs list
+        '<div style="display:flex;align-items:center;justify-content:space-between;">' +
+        '<div style="display:flex;gap:-4px;">' +
+        teamMembers.map((m,i)=>'<div style="width:26px;height:26px;border-radius:50%;background:' + PROJECT_COLORS[i%PROJECT_COLORS.length] + '33;color:' + PROJECT_COLORS[i%PROJECT_COLORS.length] + ';display:flex;align-items:center;justify-content:center;font-size:9px;font-weight:700;border:2px solid var(--bg2);margin-left:' + (i?'-6px':'0') + ';">' + m.split(' ').map(w=>w[0]).join('').slice(0,2).toUpperCase() + '</div>').join('') +
+        (p.team&&p.team.length>4?'<div style="width:26px;height:26px;border-radius:50%;background:var(--bg4);color:var(--text3);display:flex;align-items:center;justify-content:center;font-size:9px;font-weight:700;border:2px solid var(--bg2);margin-left:-6px;">+' + (p.team.length-4) + '</div>':'') +
+        '</div>' +
+        '<span style="font-size:11px;color:var(--text3);">Click to view →</span>' +
+        '</div>' +
+        '</div>' +
+        '</div>';
+    }).join('') +
+    '</div>';
+}
+
+function openProjectDetail(id) {
+  const p = getProject(id);
+  if(!p) return;
+  history.pushState({page:'projectdetail',id}, '', '#project/'+id);
+
+  document.querySelectorAll('.page').forEach(pg=>pg.classList.remove('active'));
+  document.getElementById('page-projectdetail').classList.add('active');
+  document.querySelectorAll('.nav-item').forEach(n=>{
+    n.classList.remove('active');
+    if(n.textContent.trim().startsWith('Projects')) n.classList.add('active');
+  });
+  document.getElementById('topbar-title').textContent = p.name;
+  renderProjectDetail(id);
+}
+
+function renderProjectDetail(id) {
+  const p = getProject(id);
+  if(!p) return;
+  const el = document.getElementById('projectdetail-content');
+  const stats = getProjectStats(p);
+  const projectJobs = jobs.filter(j=>(p.jobIds||[]).includes(j.id));
+  const allJobs = jobs.filter(j=>j.status!=='Closed');
+
+  el.innerHTML =
+    // Topbar
+    '<div style="padding:12px 20px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:10px;background:var(--bg2);flex-shrink:0;">' +
+    '<span style="cursor:pointer;color:var(--text3);font-size:13px;" onclick="showPage(\'projects\',null)">← Projects</span>' +
+    '<span style="color:var(--border2)">›</span>' +
+    '<span style="font-size:13px;font-weight:600">' + p.name + '</span>' +
+    '<div style="margin-left:auto;display:flex;gap:6px;">' +
+    '<button class="btn btn-ghost btn-sm" onclick="openEditProject(' + id + ')">✏️ Edit</button>' +
+    '<button class="btn btn-primary btn-sm" onclick="openLinkJobsModal(' + id + ')">+ Link Jobs</button>' +
+    '<button class="btn btn-ghost btn-sm" style="color:var(--red);" onclick="deleteProject(' + id + ')">🗑 Delete</button>' +
+    '</div></div>' +
+
+    '<div style="padding:24px;overflow-y:auto;height:calc(100vh - 56px - 49px);">' +
+
+    // Project header card
+    '<div style="background:var(--bg2);border:1px solid var(--border);border-radius:14px;overflow:hidden;margin-bottom:24px;">' +
+    '<div style="height:8px;background:' + p.color + ';"></div>' +
+    '<div style="padding:20px 24px;display:flex;align-items:flex-start;gap:16px;">' +
+    '<div style="width:52px;height:52px;border-radius:12px;background:' + p.color + '22;color:' + p.color + ';display:flex;align-items:center;justify-content:center;font-size:24px;flex-shrink:0;">' + (p.icon||'📁') + '</div>' +
+    '<div style="flex:1;">' +
+    '<div style="font-size:20px;font-weight:800;margin-bottom:6px;">' + p.name + '</div>' +
+    (p.description?'<div style="font-size:13px;color:var(--text2);line-height:1.7;margin-bottom:12px;">' + p.description + '</div>':'') +
+    '<div style="display:flex;flex-wrap:wrap;gap:16px;font-size:12px;color:var(--text3);">' +
+    (p.deadline?'<span>📅 Deadline: <strong style="color:var(--text)">' + p.deadline + '</strong></span>':'') +
+    (p.budget?'<span>💰 Budget: <strong style="color:var(--text)">RM' + Number(p.budget).toLocaleString() + '</strong></span>':'') +
+    '<span class="badge ' + (p.status==='Active'?'badge-green':p.status==='On Hold'?'badge-amber':'badge-gray') + '">' + p.status + '</span>' +
+    '</div></div></div>' +
+    // Stats
+    '<div style="display:grid;grid-template-columns:repeat(4,1fr);border-top:1px solid var(--border);">' +
+    [['💼','Jobs',stats.jobs,'var(--accent)'],['👥','Candidates',stats.candidates,'var(--purple)'],['✅','Hired',stats.hired,'var(--green)'],['🏢','Active Jobs',stats.active,'var(--amber)']].map(([icon,label,val,color],i)=>
+      '<div style="padding:16px;text-align:center' + (i<3?';border-right:1px solid var(--border)':'') + '">' +
+      '<div style="font-size:22px;font-weight:800;color:' + color + '">' + val + '</div>' +
+      '<div style="font-size:11px;color:var(--text3);">' + icon + ' ' + label + '</div></div>'
+    ).join('') +
+    '</div></div>' +
+
+    // Team members
+    ((p.team||[]).length ? '<div class="panel" style="margin-bottom:20px;"><div class="panel-header"><span class="panel-title">👥 Team</span></div><div style="padding:14px 20px;display:flex;flex-wrap:wrap;gap:10px;">' +
+    p.team.map((m,i)=>'<div style="display:flex;align-items:center;gap:8px;background:var(--bg3);border:1px solid var(--border);border-radius:8px;padding:8px 12px;"><div style="width:28px;height:28px;border-radius:50%;background:' + PROJECT_COLORS[i%PROJECT_COLORS.length] + '33;color:' + PROJECT_COLORS[i%PROJECT_COLORS.length] + ';display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;">' + m.split(' ').map(w=>w[0]).join('').slice(0,2).toUpperCase() + '</div><span style="font-size:13px;font-weight:600;">' + m + '</span></div>').join('') +
+    '</div></div>' : '') +
+
+    // Linked Jobs
+    '<div class="panel" style="margin-bottom:20px;">' +
+    '<div class="panel-header"><span class="panel-title">💼 Jobs in this Project (' + projectJobs.length + ')</span>' +
+    '<button class="btn btn-primary btn-sm" onclick="openLinkJobsModal(' + id + ')">+ Link Jobs</button></div>' +
+    (projectJobs.length ? projectJobs.map(j=>{
+      const jCands = candidates.filter(c=>c.jobId===j.id);
+      const jHired = jCands.filter(c=>c.stage==='Hired').length;
+      return '<div style="display:flex;align-items:center;gap:14px;padding:14px 20px;border-bottom:1px solid var(--border);transition:background 0.15s;" onmouseover="this.style.background=\'var(--bg3)\'" onmouseout="this.style.background=\'\'">' +
+        '<div style="width:36px;height:36px;border-radius:8px;background:' + (j.color||'#4f8ef7') + '22;color:' + (j.color||'#4f8ef7') + ';display:flex;align-items:center;justify-content:center;font-size:16px;">' + (j.icon||'💼') + '</div>' +
+        '<div style="flex:1;cursor:pointer;" onclick="showPage(\'jobs\',null);setTimeout(()=>openJobDetail(' + j.id + '),100)">' +
+        '<div style="font-size:13px;font-weight:700;">' + j.title + '</div>' +
+        '<div style="font-size:11px;color:var(--text3);">' + j.dept + ' · ' + j.location + ' · ' + j.type + '</div></div>' +
+        '<div style="display:flex;gap:16px;font-size:12px;color:var(--text3);">' +
+        '<span>👥 ' + jCands.length + '</span><span>✅ ' + jHired + '</span>' +
+        '</div>' +
+        '<span class="badge ' + (j.status==='Active'?'badge-green':j.status==='Paused'?'badge-amber':'badge-gray') + '">' + j.status + '</span>' +
+        '<button class="btn btn-ghost btn-sm" style="color:var(--red);padding:4px 8px;font-size:11px;" onclick="unlinkJobFromProject(' + id + ',' + j.id + ')">✕ Unlink</button>' +
+        '</div>';
+    }).join('') :
+    '<div style="text-align:center;padding:32px;color:var(--text3);font-size:13px;">No jobs linked yet — click + Link Jobs to add</div>') +
+    '</div>' +
+
+    '</div>';
+}
+
+function openNewProject() {
+  const s = getSettings();
+  const teamOptions = (s.team||[]).map(m=>'<option value="' + m.name + '">' + m.name + '</option>').join('');
+  document.getElementById('modal-title').textContent = '📁 New Project';
+  document.getElementById('modal-body').innerHTML = `
+    <div class="form-row">
+      <div class="form-group"><label>Project Name</label><input type="text" id="np-name" placeholder="e.g. Q1 2026 Engineering Hiring"></div>
+      <div class="form-group"><label>Icon</label>
+        <div style="display:flex;flex-wrap:wrap;gap:6px;margin-top:4px;" id="np-icon-picker">
+          ${['📁','🚀','🎯','💡','⚡','🔥','🌟','🏆','🎪','🛠️','📦','🌐'].map(ic=>`<div onclick="selectProjectIcon('${ic}',this)" data-icon="${ic}" style="width:36px;height:36px;border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:18px;background:var(--bg3);border:2px solid var(--border);cursor:pointer;transition:all 0.15s;">${ic}</div>`).join('')}
+        </div>
+        <input type="hidden" id="np-icon" value="📁">
+      </div>
+    </div>
+    <div class="form-group"><label>Description</label><textarea id="np-desc" placeholder="What is this project about?" style="min-height:70px;"></textarea></div>
+    <div class="form-row">
+      <div class="form-group"><label>Status</label>
+        <select id="np-status"><option>Active</option><option>On Hold</option><option>Completed</option></select>
+      </div>
+      <div class="form-group"><label>Deadline (optional)</label><input type="date" id="np-deadline"></div>
+    </div>
+    <div class="form-row">
+      <div class="form-group"><label>Hiring Budget (MYR, optional)</label><input type="number" id="np-budget" placeholder="e.g. 500000"></div>
+      <div class="form-group"><label>Colour</label>
+        <div style="display:flex;flex-wrap:wrap;gap:6px;margin-top:4px;" id="np-color-picker">
+          ${PROJECT_COLORS.map(c=>`<div onclick="selectProjectColor('${c}',this)" data-color="${c}" style="width:28px;height:28px;border-radius:50%;background:${c};cursor:pointer;border:3px solid transparent;transition:all 0.15s;"></div>`).join('')}
+        </div>
+        <input type="hidden" id="np-color" value="${PROJECT_COLORS[0]}">
+      </div>
+    </div>
+    ${teamOptions ? `<div class="form-group"><label>Assign Team Members</label>
+      <div style="display:flex;flex-wrap:wrap;gap:6px;margin-top:4px;" id="np-team-picker">
+        ${(s.team||[]).map(m=>`<label style="display:flex;align-items:center;gap:6px;background:var(--bg3);border:1px solid var(--border);border-radius:6px;padding:5px 10px;cursor:pointer;">
+          <input type="checkbox" name="np-team" value="${m.name}">
+          <span style="font-size:12px;">${m.name}</span></label>`).join('')}
+      </div></div>` : ''}`;
+  document.getElementById('modal-footer').innerHTML =
+    '<button class="btn btn-ghost" onclick="closeModal()">Cancel</button>' +
+    '<button class="btn btn-primary" onclick="saveNewProject()">Create Project</button>';
+  document.getElementById('modal-overlay').classList.add('open');
+  // Pre-select first colour
+  setTimeout(()=>{
+    const first = document.querySelector('#np-color-picker div');
+    if(first) { first.style.border='3px solid white'; first.style.transform='scale(1.2)'; }
+  }, 50);
+}
+
+function selectProjectIcon(icon, el) {
+  document.getElementById('np-icon').value = icon;
+  document.querySelectorAll('#np-icon-picker div').forEach(d=>{ d.style.borderColor='var(--border)'; d.style.background='var(--bg3)'; });
+  el.style.borderColor = 'var(--accent)'; el.style.background = 'var(--accent-dim)';
+}
+function selectProjectColor(color, el) {
+  document.getElementById('np-color').value = color;
+  document.querySelectorAll('#np-color-picker div').forEach(d=>{ d.style.border='3px solid transparent'; d.style.transform='scale(1)'; });
+  el.style.border = '3px solid white'; el.style.transform = 'scale(1.2)';
+}
+
+function saveNewProject() {
+  const name = document.getElementById('np-name')?.value.trim();
+  if(!name) { showToast('Please enter a project name'); return; }
+  const icon = document.getElementById('np-icon')?.value || '📁';
+  const color = document.getElementById('np-color')?.value || PROJECT_COLORS[0];
+  const desc = document.getElementById('np-desc')?.value||'';
+  const status = document.getElementById('np-status')?.value||'Active';
+  const deadline = document.getElementById('np-deadline')?.value||'';
+  const budget = document.getElementById('np-budget')?.value||'';
+  const team = Array.from(document.querySelectorAll('input[name="np-team"]:checked')).map(el=>el.value);
+  const newId = Math.max(0, ...projects.map(p=>p.id||0)) + 1;
+  projects.push({ id:newId, name, icon, color, description:desc, status, deadline, budget, team, jobIds:[], createdAt:new Date().toISOString() });
+  saveProjects(); closeModal(); renderProjects();
+  showToast('Project created! 🎉');
+}
+
+function openEditProject(id) {
+  const p = getProject(id); if(!p) return;
+  const s = getSettings();
+  document.getElementById('modal-title').textContent = '✏️ Edit Project — ' + p.name;
+  document.getElementById('modal-body').innerHTML = `
+    <div class="form-row">
+      <div class="form-group"><label>Project Name</label><input type="text" id="ep-name" value="${p.name}"></div>
+      <div class="form-group"><label>Icon</label>
+        <div style="display:flex;flex-wrap:wrap;gap:6px;margin-top:4px;" id="ep-icon-picker">
+          ${['📁','🚀','🎯','💡','⚡','🔥','🌟','🏆','🎪','🛠️','📦','🌐'].map(ic=>`<div onclick="document.getElementById('ep-icon').value='${ic}';this.closest('#ep-icon-picker').querySelectorAll('div').forEach(d=>{d.style.borderColor='var(--border)';d.style.background='var(--bg3)'});this.style.borderColor='var(--accent)';this.style.background='var(--accent-dim)'" style="width:36px;height:36px;border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:18px;background:${p.icon===ic?'var(--accent-dim)':'var(--bg3)'};border:2px solid ${p.icon===ic?'var(--accent)':'var(--border)'};cursor:pointer;">${ic}</div>`).join('')}
+        </div>
+        <input type="hidden" id="ep-icon" value="${p.icon||'📁'}">
+      </div>
+    </div>
+    <div class="form-group"><label>Description</label><textarea id="ep-desc" style="min-height:70px;">${p.description||''}</textarea></div>
+    <div class="form-row">
+      <div class="form-group"><label>Status</label>
+        <select id="ep-status"><option ${p.status==='Active'?'selected':''}>Active</option><option ${p.status==='On Hold'?'selected':''}>On Hold</option><option ${p.status==='Completed'?'selected':''}>Completed</option></select>
+      </div>
+      <div class="form-group"><label>Deadline</label><input type="date" id="ep-deadline" value="${p.deadline||''}"></div>
+    </div>
+    <div class="form-row">
+      <div class="form-group"><label>Budget (MYR)</label><input type="number" id="ep-budget" value="${p.budget||''}"></div>
+      <div class="form-group"><label>Colour</label>
+        <div style="display:flex;flex-wrap:wrap;gap:6px;margin-top:4px;">
+          ${PROJECT_COLORS.map(c=>`<div onclick="document.getElementById('ep-color').value='${c}';this.parentElement.querySelectorAll('div').forEach(d=>{d.style.border='3px solid transparent';d.style.transform='scale(1)'});this.style.border='3px solid white';this.style.transform='scale(1.2)'" style="width:28px;height:28px;border-radius:50%;background:${c};cursor:pointer;border:3px solid ${p.color===c?'white':'transparent'};transform:${p.color===c?'scale(1.2)':'scale(1)'};transition:all 0.15s;"></div>`).join('')}
+        </div>
+        <input type="hidden" id="ep-color" value="${p.color||PROJECT_COLORS[0]}">
+      </div>
+    </div>
+    ${(s.team||[]).length ? `<div class="form-group"><label>Team Members</label>
+      <div style="display:flex;flex-wrap:wrap;gap:6px;margin-top:4px;">
+        ${(s.team||[]).map(m=>`<label style="display:flex;align-items:center;gap:6px;background:var(--bg3);border:1px solid var(--border);border-radius:6px;padding:5px 10px;cursor:pointer;">
+          <input type="checkbox" name="ep-team" value="${m.name}" ${(p.team||[]).includes(m.name)?'checked':''}>
+          <span style="font-size:12px;">${m.name}</span></label>`).join('')}
+      </div></div>` : ''}`;
+  document.getElementById('modal-footer').innerHTML =
+    '<button class="btn btn-ghost" onclick="closeModal()">Cancel</button>' +
+    '<button class="btn btn-primary" onclick="saveEditProject(' + id + ')">Save Changes</button>';
+  document.getElementById('modal-overlay').classList.add('open');
+}
+
+function saveEditProject(id) {
+  const p = getProject(id); if(!p) return;
+  p.name = document.getElementById('ep-name')?.value.trim() || p.name;
+  p.icon = document.getElementById('ep-icon')?.value || p.icon;
+  p.color = document.getElementById('ep-color')?.value || p.color;
+  p.description = document.getElementById('ep-desc')?.value || '';
+  p.status = document.getElementById('ep-status')?.value || p.status;
+  p.deadline = document.getElementById('ep-deadline')?.value || '';
+  p.budget = document.getElementById('ep-budget')?.value || '';
+  p.team = Array.from(document.querySelectorAll('input[name="ep-team"]:checked')).map(el=>el.value);
+  saveProjects(); closeModal();
+  if(document.getElementById('page-projectdetail').classList.contains('active')) renderProjectDetail(id);
+  else renderProjects();
+  showToast('Project updated!');
+}
+
+function deleteProject(id) {
+  const p = getProject(id); if(!p) return;
+  if(!confirm('Delete "' + p.name + '"? Jobs will not be deleted, just unlinked.')) return;
+  projects = projects.filter(x=>x.id!==id);
+  saveProjects();
+  if(document.getElementById('page-projectdetail').classList.contains('active')) showPage('projects', null);
+  else renderProjects();
+  showToast('Project deleted');
+}
+
+function openLinkJobsModal(id) {
+  const p = getProject(id); if(!p) return;
+  const availableJobs = jobs.filter(j=>j.status!=='Closed');
+  document.getElementById('modal-title').textContent = '💼 Link Jobs to ' + p.name;
+  document.getElementById('modal-body').innerHTML =
+    '<div style="font-size:12px;color:var(--text3);margin-bottom:12px;">Select jobs to include in this project. Already linked jobs are pre-checked.</div>' +
+    '<div style="display:flex;flex-direction:column;gap:8px;max-height:400px;overflow-y:auto;">' +
+    availableJobs.map(j=>'<label style="display:flex;align-items:center;gap:10px;background:var(--bg3);border:1px solid var(--border);border-radius:8px;padding:10px 14px;cursor:pointer;transition:border-color 0.15s;" onmouseover="this.style.borderColor=\'var(--border2)\'" onmouseout="this.style.borderColor=\'var(--border)\'">' +
+      '<input type="checkbox" name="link-job" value="' + j.id + '" ' + ((p.jobIds||[]).includes(j.id)?'checked':'') + ' style="width:16px;height:16px;">' +
+      '<div style="width:32px;height:32px;border-radius:8px;background:' + (j.color||'#4f8ef7') + '22;color:' + (j.color||'#4f8ef7') + ';display:flex;align-items:center;justify-content:center;font-size:14px;flex-shrink:0;">' + (j.icon||'💼') + '</div>' +
+      '<div style="flex:1;"><div style="font-size:13px;font-weight:700;">' + j.title + '</div>' +
+      '<div style="font-size:11px;color:var(--text3);">' + j.dept + ' · ' + j.location + ' · ' + candidates.filter(c=>c.jobId===j.id).length + ' candidates</div></div>' +
+      '<span class="badge ' + (j.status==='Active'?'badge-green':'badge-amber') + '" style="font-size:10px;">' + j.status + '</span>' +
+      '</label>').join('') +
+    '</div>';
+  document.getElementById('modal-footer').innerHTML =
+    '<button class="btn btn-ghost" onclick="closeModal()">Cancel</button>' +
+    '<button class="btn btn-primary" onclick="saveLinkJobs(' + id + ')">Save Links</button>';
+  document.getElementById('modal-overlay').classList.add('open');
+}
+
+function saveLinkJobs(id) {
+  const p = getProject(id); if(!p) return;
+  p.jobIds = Array.from(document.querySelectorAll('input[name="link-job"]:checked')).map(el=>parseInt(el.value));
+  saveProjects(); closeModal();
+  if(document.getElementById('page-projectdetail').classList.contains('active')) renderProjectDetail(id);
+  else renderProjects();
+  showToast('Jobs linked! (' + p.jobIds.length + ' jobs)');
+}
+
+function unlinkJobFromProject(projectId, jobId) {
+  const p = getProject(projectId); if(!p) return;
+  p.jobIds = (p.jobIds||[]).filter(id=>id!==jobId);
+  saveProjects();
+  renderProjectDetail(projectId);
+  showToast('Job unlinked');
+}
+
+function saveProjects() {
+  localStorage.setItem('tf_projects', JSON.stringify(projects));
+  if(window._saveProjects) window._saveProjects();
+}
+function loadProjectsFromStorage() {
+  try { projects = JSON.parse(localStorage.getItem('tf_projects')||'[]'); } catch(e) { projects=[]; }
+}
+
 populateJobFilters();
+loadProjectsFromStorage();
 initCustomStages();
 renderDashboard();
 applySavedSettings();
@@ -4587,6 +5468,11 @@ async function loadFromFirestore(uid) {
     const actSnap = await getDocs(collection(db, `users/${uid}/activities`));
     if(!actSnap.empty) activities = actSnap.docs.map(d=>({...d.data()})).sort((a,b)=>b.ts-a.ts).slice(0,20);
 
+    // Load projects
+    const projSnap = await getDocs(collection(db, `users/${uid}/projects`));
+    if(!projSnap.empty) projects = projSnap.docs.map(d=>d.data());
+    else loadProjectsFromStorage(); // fallback to localStorage
+
     populateJobFilters();
     renderDashboard();
     showSyncing(false);
@@ -4634,9 +5520,22 @@ window.save = async () => {
     candidates.forEach(c => batch.set(doc(db,`users/${uid}/candidates`,String(c.id)), c));
     activities.slice(0,20).forEach((a,i) => batch.set(doc(db,`users/${uid}/activities`,String(i)), {...a, ts: a.ts||Date.now()}));
     offers.forEach((o,i) => batch.set(doc(db,`users/${uid}/offers`,String(i)), o));
+    projects.forEach((p,i) => batch.set(doc(db,`users/${uid}/projects`,String(p.id||i)), p));
     await batch.commit();
   } catch(e) { console.error('Save error', e); showToast('⚠️ Save failed — check connection'); }
   showSyncing(false);
+};
+
+// Save projects to Firebase when saveProjects is called
+window._saveProjects = async () => {
+  if(!currentUser) return;
+  const uid = currentUser.uid;
+  try {
+    const batch = writeBatch(db);
+    projects.forEach((p,i) => batch.set(doc(db,`users/${uid}/projects`,String(p.id||i)), p));
+    // Remove deleted projects — handled by full save on next full save
+    await batch.commit();
+  } catch(e) { console.error('Projects save error', e); }
 };
 
 // ===================== OVERRIDE RESUME STORAGE =====================
