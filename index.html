@@ -378,7 +378,124 @@
   @keyframes syncPulse { 0%{opacity:1} 50%{opacity:0.4} 100%{opacity:1} }
   .cloud-badge { display:inline-flex;align-items:center;gap:4px;background:var(--green-dim);color:var(--green);border-radius:5px;padding:2px 7px;font-size:10px;font-weight:700; }
   @keyframes fadeIn { from { opacity:0; transform:translateY(8px); } to { opacity:1; transform:translateY(0); } }
-  .page.active { animation: fadeIn 0.2s ease; }
+  @keyframes slideIn { from { opacity:0; transform:translateX(-12px); } to { opacity:1; transform:translateX(0); } }
+  @keyframes slideUp { from { opacity:0; transform:translateY(16px); } to { opacity:1; transform:translateY(0); } }
+  @keyframes popIn { from { opacity:0; transform:scale(0.94); } to { opacity:1; transform:scale(1); } }
+  @keyframes shimmer { 0%{background-position:-400px 0} 100%{background-position:400px 0} }
+  @keyframes countUp { from { opacity:0; transform:translateY(10px); } to { opacity:1; transform:translateY(0); } }
+  @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.5} }
+  @keyframes barGrow { from{width:0} to{width:var(--target-w,100%)} }
+
+  .page.active { animation: fadeIn 0.18s ease both; }
+  .page.active .stat-card { animation: slideUp 0.2s ease both; }
+  .page.active .stat-card:nth-child(1) { animation-delay:0ms; }
+  .page.active .stat-card:nth-child(2) { animation-delay:40ms; }
+  .page.active .stat-card:nth-child(3) { animation-delay:80ms; }
+  .page.active .stat-card:nth-child(4) { animation-delay:120ms; }
+  .page.active .panel { animation: slideUp 0.22s ease both; }
+  .page.active .panel:nth-child(2) { animation-delay:50ms; }
+  .page.active .panel:nth-child(3) { animation-delay:100ms; }
+
+  /* Skeleton loader */
+  .skeleton { background:linear-gradient(90deg,var(--bg3) 25%,var(--bg4) 50%,var(--bg3) 75%);
+    background-size:400px 100%;animation:shimmer 1.2s infinite;border-radius:6px; }
+
+  /* Button interactions */
+  .btn { position:relative; overflow:hidden; }
+  .btn:active { transform:scale(0.97); }
+  .btn-primary:active { transform:scale(0.97); box-shadow:0 0 0 3px rgba(79,142,247,0.25); }
+  .ripple { position:absolute;border-radius:50%;background:rgba(255,255,255,0.25);transform:scale(0);animation:rippleAnim 0.5s ease; pointer-events:none; }
+  @keyframes rippleAnim { to{transform:scale(4);opacity:0} }
+
+  /* Nav hover glow */
+  .nav-item { position:relative; }
+  .nav-item::before { content:'';position:absolute;left:0;top:50%;transform:translateY(-50%);width:3px;height:0;background:var(--accent);border-radius:0 3px 3px 0;transition:height 0.2s; }
+  .nav-item.active::before { height:70%; }
+  .nav-item:hover::before { height:40%; }
+
+  /* Row hover lift */
+  .job-item, tbody tr, .cand-card, .activity-item, .offer-card, .iv-card { transition:all 0.15s ease; }
+  .job-item:hover { transform:translateX(3px); }
+  tbody tr:hover td:first-child { padding-left:20px; }
+
+  /* Kanban card hover */
+  .cand-card:hover { transform:translateY(-2px); box-shadow:0 4px 16px rgba(0,0,0,0.3); }
+
+  /* Score fill animation */
+  .score-fill { transition:width 0.6s cubic-bezier(0.4,0,0.2,1); }
+
+  /* Stage badge pop */
+  .badge { transition:all 0.15s; }
+  .badge:hover { transform:scale(1.05); }
+
+  /* Stat value animation */
+  .stat-val { animation:countUp 0.3s ease both; }
+
+  /* Modal animation */
+  .modal-overlay { transition:opacity 0.2s; }
+  .modal { transition:transform 0.2s cubic-bezier(0.34,1.56,0.64,1); }
+  .modal-overlay.open .modal { transform:scale(1) !important; }
+
+  /* Detail panel smooth */
+  .detail-panel { transition:transform 0.25s cubic-bezier(0.4,0,0.2,1); }
+
+  /* Input focus glow */
+  input:focus, select:focus, textarea:focus { box-shadow:0 0 0 3px rgba(79,142,247,0.15); }
+
+  /* Topbar title transition */
+  #topbar-title { transition:opacity 0.15s; }
+
+  /* Page loading indicator */
+  .page-loader { position:fixed;top:56px;left:var(--sidebar-w);right:0;height:2px;background:linear-gradient(90deg,var(--accent),var(--purple),var(--accent));background-size:200% 100%;z-index:999;animation:loaderSlide 0.4s ease forwards; }
+  @keyframes loaderSlide { from{width:0;opacity:1} 80%{width:100%;opacity:1} to{width:100%;opacity:0} }
+
+  /* Funnel bar animation */
+  .funnel-bar { animation:barGrow 0.8s cubic-bezier(0.4,0,0.2,1) both; }
+
+  /* Card entrance stagger for lists */
+  .job-item { animation:slideIn 0.15s ease both; }
+  .job-item:nth-child(1){animation-delay:0ms}
+  .job-item:nth-child(2){animation-delay:30ms}
+  .job-item:nth-child(3){animation-delay:60ms}
+  .job-item:nth-child(4){animation-delay:90ms}
+  .job-item:nth-child(5){animation-delay:120ms}
+  .job-item:nth-child(6){animation-delay:150ms}
+
+  /* Table row stagger */
+  tbody tr { animation:slideIn 0.15s ease both; }
+  tbody tr:nth-child(1){animation-delay:0ms}
+  tbody tr:nth-child(2){animation-delay:25ms}
+  tbody tr:nth-child(3){animation-delay:50ms}
+  tbody tr:nth-child(4){animation-delay:75ms}
+  tbody tr:nth-child(5){animation-delay:100ms}
+  tbody tr:nth-child(6){animation-delay:125ms}
+  tbody tr:nth-child(7){animation-delay:150ms}
+  tbody tr:nth-child(8){animation-delay:175ms}
+
+  /* Kanban col stagger */
+  .kanban-col { animation:slideUp 0.2s ease both; }
+  .kanban-col:nth-child(1){animation-delay:0ms}
+  .kanban-col:nth-child(2){animation-delay:40ms}
+  .kanban-col:nth-child(3){animation-delay:80ms}
+  .kanban-col:nth-child(4){animation-delay:120ms}
+  .kanban-col:nth-child(5){animation-delay:160ms}
+  .kanban-col:nth-child(6){animation-delay:200ms}
+
+  /* Active nav item text slide */
+  .nav-item.active { animation:slideIn 0.15s ease; }
+
+  /* Notification dot pulse */
+  .notif-dot { animation:pulse 2s infinite; }
+
+  /* Search bar focus expand */
+  .search-bar { transition:width 0.2s ease, box-shadow 0.2s; }
+  .search-bar:focus-within { width:280px; box-shadow:0 0 0 2px var(--accent-dim); }
+
+  /* Smooth scroll in panels */
+  .detail-panel-body, .cp-left, .cp-right, .content { scroll-behavior:smooth; }
+
+  /* Profile page entrance */
+  #candprofile-content { animation:fadeIn 0.2s ease; }
 </style>
 </head>
 <body>
@@ -962,6 +1079,18 @@ function getJob(id) { return jobs.find(j=>j.id===id); }
 function getCand(id) { return candidates.find(c=>c.id===id); }
 
 function renderDashboard() {
+  const activeJobs = jobs.filter(j=>j.status==='Active').length;
+  const totalCands = candidates.length;
+  const inInterview = candidates.filter(c=>c.stage==='Interview').length;
+  const hiredCount = candidates.filter(c=>c.stage==='Hired').length;
+
+  // Animate stat cards
+  const statCards = document.querySelectorAll('#page-dashboard .stat-val');
+  const statData = [activeJobs, totalCands, inInterview, hiredCount];
+  statCards.forEach((el, i) => {
+    if(statData[i]!==undefined) setTimeout(()=>animateCount(el, String(statData[i])), i*60);
+  });
+
   // Jobs list
   const list = document.getElementById('dash-jobs-list');
   list.innerHTML = jobs.filter(j=>j.status==='Active').slice(0,5).map(j=>`
@@ -1943,12 +2072,26 @@ function populateJobFilters() {
 
 // ===================== NAVIGATION =====================
 function showPage(name, navEl) {
+  // Page loader bar
+  document.querySelector('.page-loader')?.remove();
+  const loader = document.createElement('div');
+  loader.className = 'page-loader';
+  document.body.appendChild(loader);
+  setTimeout(()=>loader.remove(), 500);
+
+  // Fade title
+  const titleEl = document.getElementById('topbar-title');
+  if(titleEl) {
+    titleEl.style.opacity = '0';
+    const titles = {dashboard:'Dashboard',jobs:'Jobs',candidates:'Candidates',pipeline:'Pipeline',
+      interviews:'Interviews',offers:'Offers',analytics:'Analytics',reports:'Reports',inbox:'Inbox',settings:'Settings'};
+    setTimeout(()=>{ titleEl.textContent = titles[name]||name; titleEl.style.opacity='1'; }, 100);
+  }
+
   document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
-  document.getElementById('page-'+name).classList.add('active');
+  document.getElementById('page-'+name)?.classList.add('active');
   document.querySelectorAll('.nav-item').forEach(n=>n.classList.remove('active'));
   if(navEl) navEl.classList.add('active');
-  const titles = {dashboard:'Dashboard',jobs:'Jobs',candidates:'Candidates',pipeline:'Pipeline',interviews:'Interviews',offers:'Offers',analytics:'Analytics',reports:'Reports',inbox:'Inbox',settings:'Settings'};
-  document.getElementById('topbar-title').textContent = titles[name]||name;
   closeDetail();
 
   if(name==='dashboard') renderDashboard();
@@ -1961,7 +2104,66 @@ function showPage(name, navEl) {
   else if(name==='reports') renderReports();
   else if(name==='inbox') renderInbox();
   else if(name==='settings') renderSettings();
+
+  // Animate stat numbers after render
+  if(name==='dashboard') {
+    setTimeout(()=>{
+      document.querySelectorAll('.stat-val').forEach(el=>{
+        const n = el.textContent.replace(/\D/g,'');
+        if(n) animateCount(el, el.textContent);
+      });
+    }, 50);
+  }
 }
+
+// ===================== MICRO-INTERACTIONS =====================
+// Ripple on buttons
+document.addEventListener('click', e => {
+  const btn = e.target.closest('.btn');
+  if(!btn) return;
+  const rect = btn.getBoundingClientRect();
+  const r = document.createElement('span');
+  r.className = 'ripple';
+  const size = Math.max(rect.width, rect.height);
+  r.style.cssText = `width:${size}px;height:${size}px;left:${e.clientX-rect.left-size/2}px;top:${e.clientY-rect.top-size/2}px`;
+  btn.appendChild(r);
+  setTimeout(()=>r.remove(), 600);
+});
+
+// Animate counting numbers
+function animateCount(el, targetText) {
+  if(!el) return;
+  const num = parseInt(targetText.replace(/\D/g,''));
+  if(isNaN(num) || num < 2) return;
+  const suffix = targetText.replace(/[\d,]/g,'').trim();
+  let start = null;
+  const duration = 700;
+  const ease = t => 1 - Math.pow(1-t, 3);
+  const step = ts => {
+    if(!start) start = ts;
+    const p = Math.min((ts-start)/duration, 1);
+    el.textContent = Math.floor(ease(p)*num) + (suffix?' '+suffix:'');
+    if(p < 1) requestAnimationFrame(step);
+    else el.textContent = targetText;
+  };
+  requestAnimationFrame(step);
+}
+
+// Skeleton loader helper
+function showSkeleton(containerId, rows=5) {
+  const el = document.getElementById(containerId);
+  if(!el) return;
+  el.innerHTML = Array(rows).fill(0).map((_,i)=>`
+    <div style="display:flex;align-items:center;gap:12px;padding:14px 20px;border-bottom:1px solid var(--border);animation-delay:${i*50}ms">
+      <div class="skeleton" style="width:36px;height:36px;border-radius:8px;flex-shrink:0;"></div>
+      <div style="flex:1;display:flex;flex-direction:column;gap:6px;">
+        <div class="skeleton" style="height:12px;width:${40+Math.random()*30}%;"></div>
+        <div class="skeleton" style="height:10px;width:${20+Math.random()*20}%;"></div>
+      </div>
+      <div class="skeleton" style="width:60px;height:22px;border-radius:5px;"></div>
+    </div>`).join('');
+}
+
 
 // ===================== CANDIDATE FULL PROFILE PAGE =====================
 function openCandProfile(id) {
