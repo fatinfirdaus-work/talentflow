@@ -6987,9 +6987,13 @@ onAuthStateChanged(auth, async (user) => {
     }
 
     // Load data then show app
-    await loadFromFirestore(user.uid);
+    try {
+      await loadFromFirestore(user.uid);
+    } catch(e) {
+      console.error('Firebase load failed, showing app anyway', e);
+    }
 
-    // Hide login, show app
+    // Hide login, show app — always, regardless of load success
     if(loginScreen) loginScreen.classList.add('hidden');
     if(appShell) appShell.classList.add('ready');
     if(mobileNav && window.matchMedia('(max-width:768px)').matches) mobileNav.style.display='flex';
