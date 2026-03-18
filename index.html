@@ -90,31 +90,46 @@
   .search-icon { color: var(--text3); font-size: 13px; flex-shrink: 0; }
 
   /* ── CONTENT ── */
-  .content { flex: 1; overflow-y: auto; padding: 22px; }
+  .content { flex: 1; overflow-y: auto; padding: 22px; min-height: 0; }
 
-  /* ── MISC ── */
+  /* ── PAGES ── */
   .page { display: none; }
   .page.active { display: block; }
-  
 
-  /* Candidates: needs flex for sidebar layout */
-  #page-candidates.active { display: flex; height: 100%; overflow: hidden; }
+  /* Full-height pages (override .content padding via negative margin trick not needed — use fixed height) */
+  #page-pipeline.active,
+  #page-jobs.active,
+  #page-candidates.active,
+  #page-candprofile.active,
+  #page-jobdetail.active,
+  #page-projectdetail.active {
+    /* These pages must escape the .content padding */
+    margin: -22px;
+    height: calc(100vh - 52px);
+    overflow: hidden;
+  }
 
-  /* Pipeline: needs horizontal scroll */
-  #page-pipeline.active { display: flex; flex-direction: column; height: 100%; }
-  
-  #page-pipeline.active .kanban-wrap { padding: 22px; }
+  /* Pipeline: flex column */
+  #page-pipeline.active { display: flex; flex-direction: column; }
+  #page-pipeline.active .filters-bar { flex-shrink: 0; padding: 12px 22px; }
+  #page-pipeline.active .kanban-wrap { flex: 1; overflow: auto; padding: 22px; min-height: 0; }
 
-  /* Jobs: sticky toolbar */
-  #page-jobs.active { display: flex; flex-direction: column; height: 100%; }
-  #page-jobs.active .panel { flex: 1; overflow-y: auto; min-height: 0; }
+  /* Jobs: flex column, scrollable list */
+  #page-jobs.active { display: flex; flex-direction: column; }
+  #page-jobs.active > div:first-child { flex-shrink: 0; }
+  #page-jobs.active .panel { flex: 1; overflow-y: auto; min-height: 0; margin: 0 18px 18px; }
 
-  /* Full-screen pages */
-  #page-candprofile.active { height: 100%; overflow: hidden; }
-  #page-jobdetail.active { height: 100%; overflow: hidden; }
-  #page-projectdetail.active { height: 100%; overflow: hidden; }
+  /* Candidates: flex row sidebar + table */
+  #page-candidates.active { display: flex; flex-direction: row; }
 
-  
+  /* Full-screen detail pages */
+  #page-candprofile.active,
+  #page-jobdetail.active,
+  #page-projectdetail.active { display: block; }
+
+  /* Settings/Projects: no content padding */
+  #page-settings.active,
+  #page-projects.active { margin: -22px; padding: 0; height: auto; overflow: visible; }
 
   /* ── STATS ROW ── */
   .stats-row { display: grid; grid-template-columns: repeat(4,1fr); gap: 14px; margin-bottom: 22px; }
@@ -894,7 +909,7 @@
           </div>
         </div>
       </div>
-    </div>
+    
 
     <!-- JOBS PAGE -->
     <div class="page" id="page-jobs">
@@ -1056,7 +1071,7 @@
     <div class="page" id="page-candprofile">
       <div id="candprofile-content"></div>
     </div>
-    </div>
+    
 
     <!-- PIPELINE PAGE -->
     <div class="page" id="page-pipeline">
@@ -1068,11 +1083,11 @@
       <div class="kanban-wrap">
         <div class="kanban" id="kanban-board"></div>
       </div>
-    </div>
+    
 
     <!-- INTERVIEWS PAGE -->
     <div class="page" id="page-interviews">
-      <div style="display:grid;grid-template-columns:1fr 1fr;gap:20px;">
+      <div style="display:grid;grid-template-columns:1fr 420px;gap:20px;max-width:1300px;margin:0 auto;">
         <div>
           <div class="panel" style="margin-bottom:20px;">
             <div class="panel-header"><span class="panel-title">Upcoming Interviews</span></div>
@@ -1089,15 +1104,16 @@
           </div>
         </div>
       </div>
-    </div>
+    
 
     <!-- OFFERS PAGE -->
     <div class="page" id="page-offers">
-      <div id="offers-grid" style="display:grid;grid-template-columns:1fr 1fr;gap:16px;"></div>
-    </div>
+      <div id="offers-grid" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(340px,1fr));gap:16px;max-width:1100px;"></div>
+    
 
     <!-- ANALYTICS PAGE -->
     <div class="page" id="page-analytics">
+      <div style="max-width:1300px;">
       <div class="stats-row" style="margin-bottom:24px;">
         <div class="stat-card">
           <div class="stat-label">Time to Hire (avg)</div>
@@ -1129,11 +1145,12 @@
           <div class="panel-header"><span class="panel-title">Stage Conversion Rate</span></div>
           <div class="funnel" id="analytics-funnel"></div>
         </div>
-      </div>
+      </div><!-- /max-width -->
     </div>
 
     <!-- REPORTS PAGE -->
     <div class="page" id="page-reports">
+      <div style="max-width:1400px;">
       <!-- Quick export bar -->
       <div style="display:flex;align-items:center;gap:10px;margin-bottom:24px;flex-wrap:wrap;">
         <span style="font-size:13px;color:var(--text3);margin-right:4px;">Quick Export:</span>
@@ -1218,11 +1235,12 @@
             <tbody id="report-tbody"></tbody>
           </table>
         </div>
-      </div>
+      </div><!-- /max-width -->
     </div>
 
     <!-- INBOX PAGE -->
     <div class="page" id="page-inbox">
+      <div style="max-width:800px;">
       <div class="panel">
         <div class="panel-header">
           <span class="panel-title">📬 Inbox</span>
@@ -1237,7 +1255,7 @@
           </div>
         </div>
         <div id="inbox-list"></div>
-      </div>
+      </div><!-- /max-width -->
     </div>
 
     <!-- SETTINGS PAGE -->
