@@ -241,6 +241,7 @@
   .page.active { display: block; }
   /* Pages that need flex layout — ONLY when active */
   #page-candidates.active { display: flex; flex-direction: column; }
+  #page-candidates.active > div { flex: 1; overflow: hidden; }
   #page-candidates.active .panel { overflow: hidden; flex: 1; }
   #page-candidates.active .table-wrap { height: 100%; overflow-y: auto; }
   #page-candprofile.active { display: block; }
@@ -945,66 +946,98 @@
 
     <div class="page" id="page-candidates">
 
-      <div style="display:flex;align-items:center;gap:8px;padding:12px 18px;border-bottom:1px solid var(--border);background:var(--bg2);flex-wrap:nowrap;overflow-x:auto;">
-        <!-- Search with field picker -->
-        <div style="display:flex;align-items:center;background:var(--bg3);border:1px solid var(--border);border-radius:7px;overflow:hidden;min-width:180px;flex:1;max-width:320px;flex-shrink:0;">
-          <select id="cand-search-field" onchange="renderCandidates()"
-            style="background:var(--bg4);border:none;border-right:1px solid var(--border);padding:6px 8px;font-size:11.5px;color:var(--text2);cursor:pointer;outline:none;flex-shrink:0;">
-            <option value="all">All Fields</option>
-            <option value="name">Name</option>
-            <option value="email">Email</option>
-            <option value="phone">Phone</option>
-            <option value="location">Location</option>
-            <option value="skills">Skills</option>
-            <option value="title">Job Title</option>
-            <option value="source">Source</option>
-          </select>
-          <input type="text" id="cand-search" placeholder="Search..." oninput="renderCandidates()"
-            style="flex:1;background:transparent;border:none;outline:none;padding:6px 10px;font-size:12.5px;color:var(--text);font-family:inherit;min-width:60px;">
-          <button onclick="document.getElementById('cand-search').value='';renderCandidates()"
-            style="background:none;border:none;color:var(--text3);cursor:pointer;padding:0 8px;font-size:13px;">✕</button>
-        </div>
-        <select class="filter-select" id="cand-stage-filter" onchange="renderCandidates()" style="flex-shrink:0;">
-          <option value="">All Stages</option>
-        </select>
-        <select class="filter-select" id="cand-job-filter" onchange="renderCandidates()" style="flex-shrink:0;">
-          <option value="">All Jobs</option>
-        </select>
-        <button class="btn btn-primary btn-sm" onclick="openModal('addCandidate')" style="flex-shrink:0;white-space:nowrap;">+ Add Candidate</button>
-        <span style="color:var(--text3);font-size:12px;white-space:nowrap;flex-shrink:0;" id="cand-count"></span>
-      </div>
+      <!-- FEISHU-STYLE LAYOUT: left job sidebar + right candidates panel -->
+      <div style="display:flex;height:100%;overflow:hidden;">
 
-      <!-- PIPELINE FUNNEL -->
-      <div id="cand-pipeline-funnel" style="padding:12px 18px 0;"></div>
-
-      <div class="panel" style="margin:12px 18px 18px;">
-        <div class="table-wrap">
-          <table>
-            <thead>
-              <tr>
-                <th onclick="cycleCandSort('name')" style="cursor:pointer;user-select:none;" title="Sort by name">
-                  CANDIDATE <span id="sort-indicator-name" style="color:var(--accent);font-size:10px;"></span>
-                </th>
-                <th onclick="cycleCandSort('job')" style="cursor:pointer;user-select:none;" title="Sort by job">
-                  APPLIED FOR <span id="sort-indicator-job" style="color:var(--accent);font-size:10px;"></span>
-                </th>
-                <th onclick="cycleCandSort('stage')" style="cursor:pointer;user-select:none;" title="Sort by stage">
-                  STAGE <span id="sort-indicator-stage" style="color:var(--accent);font-size:10px;"></span>
-                </th>
-                <th onclick="cycleCandSort('score')" style="cursor:pointer;user-select:none;" title="Sort by score">
-                  SCORE <span id="sort-indicator-score" style="color:var(--accent);font-size:10px;"></span>
-                </th>
-                <th onclick="cycleCandSort('date')" style="cursor:pointer;user-select:none;" title="Sort by date">
-                  APPLIED <span id="sort-indicator-date" style="color:var(--accent);font-size:10px;">↓</span>
-                </th>
-                <th>ACTIONS</th>
-              </tr>
-            </thead>
-            <tbody id="cand-tbody"></tbody>
-          </table>
+        <!-- LEFT: Job List Sidebar -->
+        <div id="cand-job-sidebar" style="width:220px;flex-shrink:0;border-right:1px solid var(--border);background:var(--bg2);display:flex;flex-direction:column;overflow:hidden;">
+          <div style="padding:12px 14px;border-bottom:1px solid var(--border);">
+            <div style="position:relative;">
+              <span style="position:absolute;left:9px;top:50%;transform:translateY(-50%);color:var(--text3);font-size:12px;">🔍</span>
+              <input type="text" id="cand-job-sidebar-search" placeholder="Job name..." oninput="renderCandJobSidebar()"
+                style="width:100%;background:var(--bg3);border:1px solid var(--border);border-radius:7px;padding:6px 10px 6px 28px;font-size:12px;color:var(--text);outline:none;font-family:inherit;">
+            </div>
+          </div>
+          <div style="flex:1;overflow-y:auto;" id="cand-job-sidebar-list"></div>
         </div>
-      </div>
-    </div>
+
+        <!-- RIGHT: Stage tabs + table -->
+        <div style="flex:1;display:flex;flex-direction:column;overflow:hidden;min-width:0;">
+
+          <!-- Stage tabs (like Feishu top pipeline) -->
+          <div style="border-bottom:1px solid var(--border);background:var(--bg2);flex-shrink:0;overflow-x:auto;">
+            <div id="cand-stage-tabs" style="display:flex;padding:0 18px;min-width:max-content;"></div>
+          </div>
+
+          <!-- Search + filters bar -->
+          <div style="display:flex;align-items:center;gap:8px;padding:10px 18px;border-bottom:1px solid var(--border);background:var(--bg2);flex-shrink:0;flex-wrap:nowrap;overflow-x:auto;">
+            <div style="display:flex;align-items:center;background:var(--bg3);border:1px solid var(--border);border-radius:7px;overflow:hidden;flex:1;max-width:360px;min-width:140px;">
+              <span style="padding:0 8px;color:var(--text3);font-size:12px;flex-shrink:0;">🔍</span>
+              <input type="text" id="cand-search" placeholder="Search by name, phone, email..." oninput="renderCandidates()"
+                style="flex:1;background:transparent;border:none;outline:none;padding:7px 8px;font-size:12.5px;color:var(--text);font-family:inherit;min-width:80px;">
+              <button onclick="document.getElementById('cand-search').value='';renderCandidates()"
+                style="background:none;border:none;color:var(--text3);cursor:pointer;padding:0 8px;font-size:12px;flex-shrink:0;">✕</button>
+            </div>
+            <!-- Hidden field selector (still functional, just minimal) -->
+            <select id="cand-search-field" onchange="renderCandidates()"
+              style="background:var(--bg3);border:1px solid var(--border);border-radius:7px;padding:6px 8px;font-size:11.5px;color:var(--text2);cursor:pointer;outline:none;flex-shrink:0;">
+              <option value="all">All Fields</option>
+              <option value="name">Name</option>
+              <option value="email">Email</option>
+              <option value="phone">Phone</option>
+              <option value="location">Location</option>
+              <option value="skills">Skills</option>
+              <option value="source">Source</option>
+            </select>
+            <select class="filter-select" id="cand-sort" onchange="renderCandidates()" style="flex-shrink:0;">
+              <option value="date">Latest</option>
+              <option value="name">Name A–Z</option>
+              <option value="score">Score ↓</option>
+              <option value="stage">Stage</option>
+            </select>
+            <div style="margin-left:auto;display:flex;align-items:center;gap:8px;flex-shrink:0;">
+              <span style="color:var(--text3);font-size:12px;white-space:nowrap;" id="cand-count"></span>
+              <button class="btn btn-primary btn-sm" onclick="openModal('addCandidate')">+ Add Candidate</button>
+            </div>
+          </div>
+
+          <!-- Pipeline funnel (compact) -->
+          <div id="cand-pipeline-funnel" style="padding:0;flex-shrink:0;"></div>
+
+          <!-- Candidates table -->
+          <div style="flex:1;overflow:auto;">
+            <table style="width:100%;border-collapse:collapse;">
+              <thead style="position:sticky;top:0;z-index:2;">
+                <tr>
+                  <th style="width:28px;padding:9px 8px 9px 16px;"><input type="checkbox" id="cand-select-all" onchange="toggleSelectAllCandidates(this.checked)" style="cursor:pointer;accent-color:var(--accent);"></th>
+                  <th onclick="cycleCandSort('name')" style="text-align:left;padding:9px 12px;font-size:10.5px;font-weight:700;text-transform:uppercase;letter-spacing:0.6px;color:var(--text3);border-bottom:1px solid var(--border);background:var(--bg3);cursor:pointer;white-space:nowrap;">
+                    Candidate <span id="sort-indicator-name" style="color:var(--accent);font-size:10px;"></span>
+                  </th>
+                  <th onclick="cycleCandSort('job')" style="text-align:left;padding:9px 12px;font-size:10.5px;font-weight:700;text-transform:uppercase;letter-spacing:0.6px;color:var(--text3);border-bottom:1px solid var(--border);background:var(--bg3);cursor:pointer;white-space:nowrap;">
+                    Applied For <span id="sort-indicator-job" style="color:var(--accent);font-size:10px;"></span>
+                  </th>
+                  <th onclick="cycleCandSort('stage')" style="text-align:left;padding:9px 12px;font-size:10.5px;font-weight:700;text-transform:uppercase;letter-spacing:0.6px;color:var(--text3);border-bottom:1px solid var(--border);background:var(--bg3);cursor:pointer;white-space:nowrap;">
+                    Stage <span id="sort-indicator-stage" style="color:var(--accent);font-size:10px;"></span>
+                  </th>
+                  <th onclick="cycleCandSort('score')" style="text-align:left;padding:9px 12px;font-size:10.5px;font-weight:700;text-transform:uppercase;letter-spacing:0.6px;color:var(--text3);border-bottom:1px solid var(--border);background:var(--bg3);cursor:pointer;white-space:nowrap;">
+                    Score <span id="sort-indicator-score" style="color:var(--accent);font-size:10px;"></span>
+                  </th>
+                  <th onclick="cycleCandSort('date')" style="text-align:left;padding:9px 12px;font-size:10.5px;font-weight:700;text-transform:uppercase;letter-spacing:0.6px;color:var(--text3);border-bottom:1px solid var(--border);background:var(--bg3);cursor:pointer;white-space:nowrap;">
+                    Applied <span id="sort-indicator-date" style="color:var(--accent);font-size:10px;">↓</span>
+                  </th>
+                  <th style="text-align:left;padding:9px 12px;font-size:10.5px;font-weight:700;text-transform:uppercase;letter-spacing:0.6px;color:var(--text3);border-bottom:1px solid var(--border);background:var(--bg3);">Actions</th>
+                </tr>
+              </thead>
+              <tbody id="cand-tbody"></tbody>
+            </table>
+          </div>
+
+          <!-- Bulk action bar (hidden until selection) -->
+          <div id="cand-bulk-bar" style="display:none;position:sticky;bottom:0;background:var(--bg2);border-top:2px solid var(--accent);padding:10px 18px;align-items:center;gap:10px;flex-shrink:0;"></div>
+
+        </div><!-- end right -->
+      </div><!-- end layout -->
+
 
     <!-- CANDIDATE PROFILE PAGE -->
     <div class="page" id="page-candprofile">
@@ -1637,6 +1670,137 @@ let _candSortField = 'date';
 let _candSortDir   = 'desc'; // 'asc' | 'desc'
 let _dragCandId    = null;
 
+// ===================== CANDIDATES PAGE — FEISHU LAYOUT =====================
+let _candActiveJobId = null;  // currently selected job in sidebar (null = all jobs)
+let _candActiveStage = '';    // currently selected stage tab ('' = all)
+let _candSelectedIds = [];    // multi-select
+
+function renderCandJobSidebar() {
+  const el = document.getElementById('cand-job-sidebar-list');
+  if(!el) return;
+  const q = (document.getElementById('cand-job-sidebar-search')?.value||'').toLowerCase();
+  const filtered = jobs.filter(j => !q || j.title.toLowerCase().includes(q));
+
+  // Count candidates per job
+  let html = '<div onclick="selectCandJob(null)" style="display:flex;align-items:center;gap:8px;padding:9px 14px;cursor:pointer;border-bottom:1px solid var(--border);transition:background 0.1s;' + (!_candActiveJobId?'background:var(--accent-dim);color:var(--accent);font-weight:700;':'color:var(--text2);') + '">' +
+    '<span style="font-size:13px;">👥</span>' +
+    '<span style="font-size:12.5px;">All Jobs</span>' +
+    '<span style="margin-left:auto;font-size:11px;font-weight:700;color:var(--text3);">' + candidates.length + '</span>' +
+    '</div>';
+
+  filtered.forEach(j => {
+    const cnt = candidates.filter(c => getCandJobIds(c).includes(j.id)).length;
+    const isActive = _candActiveJobId === j.id;
+    html += '<div onclick="selectCandJob(' + j.id + ')" style="display:flex;align-items:center;gap:8px;padding:9px 14px;cursor:pointer;border-bottom:1px solid var(--border);transition:background 0.1s;' +
+      (isActive ? 'background:var(--accent-dim);' : '') +
+      '" onmouseover="if(!this.style.background.includes(\'accent\'))this.style.background=\'var(--bg3)\'" onmouseout="if(!this.style.background.includes(\'accent\'))this.style.background=\'\'">' +
+      '<div style="width:22px;height:22px;border-radius:5px;background:' + (j.color||'#4f8ef7') + '22;color:' + (j.color||'#4f8ef7') + ';display:flex;align-items:center;justify-content:center;font-size:11px;flex-shrink:0;">' + (j.icon||'💼') + '</div>' +
+      '<div style="flex:1;min-width:0;">' +
+        '<div style="font-size:12px;font-weight:' + (isActive?'700':'500') + ';color:' + (isActive?'var(--accent)':'var(--text2)') + ';white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">' + j.title + '</div>' +
+        '<div style="font-size:10px;color:var(--text3);">' + j.dept + '</div>' +
+      '</div>' +
+      '<span style="font-size:11px;font-weight:700;color:' + (isActive?'var(--accent)':'var(--text3)') + ';flex-shrink:0;">' + cnt + '</span>' +
+      '</div>';
+  });
+
+  if(!filtered.length) html += '<div style="padding:20px;text-align:center;color:var(--text3);font-size:12px;">No jobs found</div>';
+  el.innerHTML = html;
+}
+
+function selectCandJob(jobId) {
+  _candActiveJobId = jobId;
+  _candActiveStage = '';
+  _candSelectedIds = [];
+  renderCandJobSidebar();
+  renderCandStageTabs();
+  renderCandidates();
+}
+
+function renderCandStageTabs() {
+  const el = document.getElementById('cand-stage-tabs');
+  if(!el) return;
+
+  // Get candidates for active job
+  const base = _candActiveJobId
+    ? candidates.filter(c => getCandJobIds(c).includes(_candActiveJobId))
+    : candidates;
+
+  const totalAll = base.length;
+
+  let html = '<div onclick="selectCandStage(\'\')" style="display:inline-flex;align-items:center;gap:6px;padding:12px 16px 10px;cursor:pointer;border-bottom:2px solid ' + (!_candActiveStage?'var(--accent)':'transparent') + ';white-space:nowrap;transition:all 0.12s;color:' + (!_candActiveStage?'var(--accent)':'var(--text3)') + ';font-size:13px;font-weight:' + (!_candActiveStage?'700':'500') + ';">' +
+    '<span style="font-size:16px;font-weight:800;' + (!_candActiveStage?'color:var(--accent)':'') + '">' + totalAll + '</span>' +
+    '<span>All</span></div>';
+
+  stages.forEach(s => {
+    const n = base.filter(c => (_candActiveJobId ? getCandStageForJob(c,_candActiveJobId) : c.stage) === s).length;
+    const isActive = _candActiveStage === s;
+    const color = stageColors[s]||'var(--text3)';
+    html += '<div onclick="selectCandStage(\'' + s + '\')" style="display:inline-flex;align-items:center;gap:6px;padding:12px 16px 10px;cursor:pointer;border-bottom:2px solid ' + (isActive?color:'transparent') + ';white-space:nowrap;transition:all 0.12s;color:' + (isActive?color:'var(--text3)') + ';font-size:13px;font-weight:' + (isActive?'700':'400') + ';">' +
+      '<span style="font-size:16px;font-weight:800;color:' + (isActive?color:(n>0?'var(--text)':'var(--text3)')) + ';">' + n + '</span>' +
+      '<span>' + s + '</span></div>';
+  });
+
+  el.innerHTML = html;
+}
+
+function selectCandStage(stage) {
+  _candActiveStage = stage;
+  _candSelectedIds = [];
+  renderCandStageTabs();
+  renderCandidates();
+}
+
+function toggleSelectAllCandidates(checked) {
+  const tbody = document.getElementById('cand-tbody');
+  if(!tbody) return;
+  const ids = Array.from(tbody.querySelectorAll('tr[data-cid]')).map(r=>parseInt(r.dataset.cid));
+  _candSelectedIds = checked ? ids : [];
+  renderCandidatesRows();
+  renderCandBulkBar();
+}
+
+function toggleCandRow(candId) {
+  const idx = _candSelectedIds.indexOf(candId);
+  if(idx >= 0) _candSelectedIds.splice(idx,1); else _candSelectedIds.push(candId);
+  const row = document.querySelector('tr[data-cid="'+candId+'"]');
+  if(row) {
+    const cb = row.querySelector('input[type=checkbox]');
+    if(cb) cb.checked = _candSelectedIds.includes(candId);
+    row.style.background = _candSelectedIds.includes(candId) ? 'var(--accent-dim)' : '';
+  }
+  renderCandBulkBar();
+}
+
+function renderCandBulkBar() {
+  const bar = document.getElementById('cand-bulk-bar');
+  if(!bar) return;
+  if(_candSelectedIds.length === 0) { bar.style.display = 'none'; return; }
+  bar.style.display = 'flex';
+  bar.innerHTML =
+    '<span style="font-size:12.5px;font-weight:700;color:var(--accent);">' + _candSelectedIds.length + ' selected</span>' +
+    '<button class="btn btn-ghost btn-sm" onclick="bulkMoveStageFromTable()">↕ Move Stage</button>' +
+    '<button class="btn btn-ghost btn-sm" onclick="bulkAddToJobFromTable()">+ Add to Job</button>' +
+    '<button class="btn btn-ghost btn-sm" style="color:var(--red);" onclick="bulkDeleteFromTable()">🗑 Delete</button>' +
+    '<button class="btn btn-ghost btn-sm" style="margin-left:auto;" onclick="_candSelectedIds=[];renderCandidatesRows();renderCandBulkBar();document.getElementById(\'cand-select-all\').checked=false;">✕ Clear</button>';
+}
+
+function bulkMoveStageFromTable() { bulkMoveStage(_candActiveJobId||0, _candSelectedIds, _candSortField); }
+function bulkAddToJobFromTable()  { bulkAddToJob(_candActiveJobId||0, _candSelectedIds, _candSortField); }
+function bulkDeleteFromTable()    { bulkDelete(_candActiveJobId||0, _candSelectedIds, _candSortField); }
+
+function renderCandidatesRows() {
+  // Just re-render rows without full re-filter (for checkbox updates)
+  renderCandidates();
+}
+
+// Keep cand-job-filter and cand-stage-filter in sync for legacy code
+function syncLegacyFilters() {
+  const jobEl = document.getElementById('cand-job-filter');
+  const stageEl = document.getElementById('cand-stage-filter');
+  if(jobEl) jobEl.value = _candActiveJobId||'';
+  if(stageEl) stageEl.value = _candActiveStage||'';
+}
+
 function cycleCandSort(field) {
   if(_candSortField === field) {
     _candSortDir = _candSortDir === 'asc' ? 'desc' : 'asc';
@@ -1790,92 +1954,98 @@ function confirmDragMove(candId, targetStage) {
 }
 
 function renderCandidates() {
+  const jobId = _candActiveJobId;
+  const stageF = _candActiveStage;
   let list = [...candidates];
-  const stageF   = document.getElementById('cand-stage-filter')?.value || '';
-  const jobF     = document.getElementById('cand-job-filter')?.value   || '';
-  const searchQ  = (document.getElementById('cand-search')?.value     || '').trim().toLowerCase();
+  const searchQ = (document.getElementById('cand-search')?.value||'').trim().toLowerCase();
   const searchField = document.getElementById('cand-search-field')?.value || 'all';
-  const jobId    = jobF ? parseInt(jobF) : null;
+  const sortSel = document.getElementById('cand-sort')?.value;
+  if(sortSel) _candSortField = sortSel;
 
-  // Filters
-  if(stageF) list = list.filter(c => jobId ? getCandStageForJob(c, jobId) === stageF : c.stage === stageF);
-  if(jobId)  list = list.filter(c => getCandJobIds(c).includes(jobId));
+  if(jobId) list = list.filter(c => getCandJobIds(c).includes(jobId));
+  if(stageF) list = list.filter(c => (jobId ? getCandStageForJob(c,jobId) : c.stage) === stageF);
   if(searchQ) {
     list = list.filter(c => {
       const jobTitles = getCandJobs(c).map(a=>getJob(a.jobId)?.title||'').join(' ');
       const fieldMap = {
         name:[c.name], email:[c.email], phone:[c.phone], location:[c.location],
-        skills:[(c.skills||[]).join(' ')], title:[c.currentTitle, jobTitles], source:[c.source],
+        skills:[(c.skills||[]).join(' ')], source:[c.source],
         all:[c.name,c.email,c.phone,c.location,c.currentTitle,c.source,(c.skills||[]).join(' '),jobTitles,c.exp,c.applied,String(c.score)]
       };
       return (fieldMap[searchField]||fieldMap.all).some(f=>f&&f.toLowerCase().includes(searchQ));
     });
   }
 
-  // Sort using _candSortField / _candSortDir
   const dir = _candSortDir === 'asc' ? 1 : -1;
   list.sort((a,b) => {
     switch(_candSortField) {
       case 'name':  return dir * a.name.localeCompare(b.name);
       case 'score': return dir * (a.score - b.score);
-      case 'stage': return dir * (stages.indexOf(a.stage) - stages.indexOf(b.stage));
-      case 'job': {
-        const ja = getJob(a.jobId)?.title||'';
-        const jb = getJob(b.jobId)?.title||'';
-        return dir * ja.localeCompare(jb);
-      }
-      default: return dir * (new Date(a.applied||0) - new Date(b.applied||0));
+      case 'stage': return dir * (stages.indexOf(a.stage)-stages.indexOf(b.stage));
+      case 'job': return dir * ((getJob(a.jobId)?.title||'').localeCompare(getJob(b.jobId)?.title||''));
+      default: return dir * (new Date(a.applied||0)-new Date(b.applied||0));
     }
   });
 
-  // Update sort indicators
   updateSortIndicators();
+  renderCandStageTabs();
+  renderCandJobSidebar();
 
-  // Render pipeline funnel (using full unfiltered list for stage counts, but respecting job filter)
-  const funnelBase = jobId ? candidates.filter(c=>getCandJobIds(c).includes(jobId)) : candidates;
-  renderCandPipelineFunnel(funnelBase, stageF, jobId);
+  // Hide old funnel (replaced by stage tabs)
+  const funnelEl = document.getElementById('cand-pipeline-funnel');
+  if(funnelEl) funnelEl.style.display = 'none';
 
-  // Count
-  const activeFilters = [stageF, jobF, searchQ].filter(Boolean).length;
   const countEl = document.getElementById('cand-count');
-  if(countEl) countEl.textContent = list.length + ' candidate' + (list.length!==1?'s':'') + (activeFilters?' (filtered)':'');
+  if(countEl) countEl.textContent = list.length + ' candidate'+(list.length!==1?'s':'')+(stageF||jobId||searchQ?' (filtered)':'');
 
-  // Render table rows — draggable
-  document.getElementById('cand-tbody').innerHTML = list.length ? list.map(c => {
+  const selectAll = document.getElementById('cand-select-all');
+  if(selectAll) selectAll.checked = list.length > 0 && list.every(c => _candSelectedIds.includes(c.id));
+
+  const tbody = document.getElementById('cand-tbody');
+  if(!tbody) return;
+
+  if(!list.length) {
+    tbody.innerHTML = '<tr><td colspan="7" style="padding:48px;text-align:center;color:var(--text3);">' +
+      '<div style="font-size:32px;margin-bottom:12px;opacity:0.3;">'+(searchQ?'🔍':'👥')+'</div>' +
+      '<div style="font-size:14px;font-weight:700;margin-bottom:8px;">'+(searchQ?'No results for "'+escapeHtml(searchQ)+'"':'No candidates')+'</div>' +
+      (searchQ?'<button class="btn btn-ghost btn-sm" onclick="document.getElementById(\'cand-search\').value=\'\';renderCandidates()">Clear search</button>':
+       '<button class="btn btn-primary btn-sm" onclick="openModal(\'addCandidate\')">+ Add Candidate</button>') +
+      '</td></tr>';
+    renderCandBulkBar(); return;
+  }
+
+  tbody.innerHTML = list.map(c => {
     const displayJobId = jobId || c.jobId;
     const job = getJob(displayJobId);
     const allApps = getCandJobs(c);
-    const displayStage = jobId ? getCandStageForJob(c, jobId) : c.stage;
-    const extraJobs = allApps.length > 1 ? `<span style="font-size:10px;color:var(--accent);font-weight:700;margin-left:4px;">+${allApps.length-1}</span>` : '';
+    const displayStage = jobId ? getCandStageForJob(c,jobId) : c.stage;
+    const stageColor = stageColors[displayStage]||'var(--text3)';
+    const isSelected = _candSelectedIds.includes(c.id);
     const nameDisplay = searchQ ? highlightMatch(c.name, searchQ) : escapeHtml(c.name);
-    return `<tr draggable="true"
-      ondragstart="event.dataTransfer.effectAllowed='move';_dragCandId=${c.id};this.classList.add('drag-source')"
-      ondragend="this.classList.remove('drag-source')"
-      style="transition:opacity 0.15s;">
-      <td><div class="td-name">
-        <div class="cand-avatar" style="background:${c.color}33;color:${c.color}">${c.initials}</div>
-        <div>
-          <div style="font-weight:600;cursor:pointer;color:var(--accent)" onclick="openCandProfile(${c.id})">${nameDisplay}</div>
-          <div style="font-size:11px;color:var(--text3)">${c.email||''}${c.phone?' · '+c.phone:''}</div>
-        </div>
-      </div></td>
-      <td style="color:var(--text2);cursor:pointer" onclick="openJobDetail(${displayJobId})">${job?job.title:'–'}${extraJobs}</td>
-      <td><span class="badge ${stageBadge[displayStage]||'badge-gray'}" style="cursor:pointer;" onclick="clickPipelineStage('${displayStage}')">${displayStage}</span></td>
-      <td><span style="font-family:'JetBrains Mono';font-size:13px;font-weight:600;color:${c.score>=80?'var(--green)':c.score>=60?'var(--amber)':'var(--red)'}">${c.score}</span></td>
-      <td style="color:var(--text3);font-size:12px;font-family:'JetBrains Mono'">${c.applied}</td>
-      <td><div style="display:flex;gap:6px">
-        <button class="btn btn-primary btn-sm" onclick="openCandProfile(${c.id})">View</button>
-        <button class="btn btn-ghost btn-sm" onclick="openMoveStage(${c.id},${displayJobId||'null'})">Move</button>
-        <button class="btn btn-ghost btn-sm" onclick="openCandInNewTab(${c.id})" title="Open in new tab">↗</button>
-      </div></td>
-    </tr>`;
-  }).join('')
-  : `<tr><td colspan="6"><div class="empty-state">
-      <div class="empty-icon">${searchQ?'🔍':'👥'}</div>
-      <div class="empty-title">${searchQ?'No candidates match "'+escapeHtml(searchQ)+'"':'No candidates'}</div>
-      ${searchQ?'<div style="margin-top:8px;"><button class="btn btn-ghost btn-sm" onclick="document.getElementById(\'cand-search\').value=\'\';renderCandidates()">Clear search</button></div>':''}
-    </div></td></tr>`;
+    const extraJobs = allApps.length > 1 ? '<span style="font-size:10px;background:var(--accent-dim);color:var(--accent);border-radius:3px;padding:1px 5px;font-weight:700;margin-left:4px;">+' + (allApps.length-1) + '</span>' : '';
+    return '<tr data-cid="'+c.id+'" draggable="true"' +
+      ' ondragstart="event.dataTransfer.effectAllowed=\'move\';_dragCandId='+c.id+';this.classList.add(\'drag-source\')"' +
+      ' ondragend="this.classList.remove(\'drag-source\')"' +
+      ' style="border-bottom:1px solid var(--border);transition:background 0.1s;'+(isSelected?'background:var(--accent-dim);':'')+'"' +
+      ' onmouseover="if(!this.style.background.includes(\'accent\'))this.style.background=\'var(--bg3)\'"' +
+      ' onmouseout="if(!this.style.background.includes(\'accent\'))this.style.background=\'\'">'+
+      '<td style="padding:10px 8px 10px 16px;width:28px;"><input type="checkbox" '+(isSelected?'checked':'')+' onchange="toggleCandRow('+c.id+')" onclick="event.stopPropagation()" style="cursor:pointer;accent-color:var(--accent);"></td>'+
+      '<td style="padding:10px 12px;"><div style="display:flex;align-items:center;gap:10px;">'+
+        '<div style="width:32px;height:32px;border-radius:50%;background:'+c.color+'33;color:'+c.color+';display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;flex-shrink:0;">'+c.initials+'</div>'+
+        '<div><div style="font-size:13px;font-weight:600;cursor:pointer;color:var(--accent);" onclick="openCandProfile('+c.id+')">'+nameDisplay+'</div>'+
+        '<div style="font-size:11px;color:var(--text3);">'+(c.email||'')+(c.phone?' · '+c.phone:'')+'</div></div></div></td>'+
+      '<td style="padding:10px 12px;font-size:12.5px;cursor:pointer;" onclick="openJobDetail('+displayJobId+')">'+
+        (job?escapeHtml(job.title):'–')+extraJobs+
+        (c.currentTitle?'<div style="font-size:10.5px;color:var(--text3);">'+escapeHtml(c.currentTitle)+'</div>':'')+'</td>'+
+      '<td style="padding:10px 12px;"><span style="display:inline-flex;align-items:center;gap:5px;background:'+stageColor+'18;color:'+stageColor+';border:1px solid '+stageColor+'40;border-radius:20px;padding:3px 10px;font-size:11.5px;font-weight:600;cursor:pointer;" onclick="selectCandStage(\''+displayStage+'\')"><span style="width:6px;height:6px;border-radius:50%;background:'+stageColor+';flex-shrink:0;"></span>'+displayStage+'</span></td>'+
+      '<td style="padding:10px 12px;"><span style="font-family:JetBrains Mono,monospace;font-size:13px;font-weight:700;color:'+(c.score>=80?'var(--green)':c.score>=60?'var(--amber)':'var(--red)')+';">'+c.score+'</span></td>'+
+      '<td style="padding:10px 12px;font-size:11.5px;color:var(--text3);font-family:JetBrains Mono,monospace;">'+(c.applied||'–')+'</td>'+
+      '<td style="padding:10px 12px;"><div style="display:flex;gap:5px;"><button class="btn btn-primary btn-sm" onclick="openCandProfile('+c.id+')">View</button><button class="btn btn-ghost btn-sm" onclick="openMoveStage('+c.id+','+(displayJobId||'null')+')">Move</button></div></td>'+
+      '</tr>';
+  }).join('');
+  renderCandBulkBar();
 }
+
 
 function renderPipeline() {
   const jobF = document.getElementById('pipe-job-filter').value;
@@ -3047,7 +3217,7 @@ function showPage(name, navEl, pushHistory=true) {
   if(name==='dashboard') renderDashboard();
   else if(name==='jobs') renderJobs();
   else if(name==='projects') renderProjects();
-  else if(name==='candidates') renderCandidates();
+  else if(name==='candidates') { renderCandidates(); renderCandJobSidebar(); renderCandStageTabs(); }
   else if(name==='pipeline') renderPipeline();
   else if(name==='interviews') renderInterviews();
   else if(name==='offers') renderOffers();
