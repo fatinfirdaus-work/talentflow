@@ -95,14 +95,9 @@
   .page { display: none; }
   .page.active { display: block; }
 
-  /* Width constraints for wide pages */
-  #page-interviews > div { max-width: 1300px; }
-  #page-offers #offers-grid { max-width: 1000px; }
-  #page-analytics > div { max-width: 1300px; }
-  #page-inbox > div { max-width: 800px; }
-
-  /* Jobs page - scrollable list */
-  #page-jobs .panel { overflow-y: auto; max-height: calc(100vh - 140px); }
+  /* Pages fill full width - inner content constrains itself via inline styles */
+  /* All pages: consistent full width, content scrolls naturally */
+  .page.active { display: block; width: 100%; box-sizing: border-box; }
 
   /* ── STATS ROW ── */
   .stats-row { display: grid; grid-template-columns: repeat(4,1fr); gap: 14px; margin-bottom: 22px; }
@@ -1056,7 +1051,7 @@
 
     <!-- INTERVIEWS PAGE -->
     <div class="page" id="page-interviews">
-      <div style="display:grid;grid-template-columns:1fr 420px;gap:20px;max-width:1300px;margin:0 auto;">
+      <div style="display:grid;grid-template-columns:1fr 420px;gap:20px;">
         <div>
           <div class="panel" style="margin-bottom:20px;">
             <div class="panel-header"><span class="panel-title">Upcoming Interviews</span></div>
@@ -1078,34 +1073,32 @@
 
     <!-- OFFERS PAGE -->
     <div class="page" id="page-offers">
-      <div id="offers-grid" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(340px,1fr));gap:16px;max-width:1100px;"></div>
+      <div id="offers-grid" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(340px,1fr));gap:16px;"></div>
     
     </div>
 
     <!-- ANALYTICS PAGE -->
     <div class="page" id="page-analytics">
-      
-      <div style="max-width:1300px;">
       <div class="stats-row" style="margin-bottom:24px;">
         <div class="stat-card">
           <div class="stat-label">Time to Hire (avg)</div>
-          <div class="stat-val" style="color:var(--accent)">18d</div>
-          <div class="stat-change up">↓ 3d faster</div>
+          <div class="stat-val" style="color:var(--accent)">—</div>
+          <div class="stat-change">No hires yet</div>
         </div>
         <div class="stat-card">
           <div class="stat-label">Offer Accept Rate</div>
-          <div class="stat-val" style="color:var(--green)">87%</div>
-          <div class="stat-change up">↑ 5% vs Q3</div>
+          <div class="stat-val" style="color:var(--green)">—</div>
+          <div class="stat-change">0/0 offers accepted</div>
         </div>
         <div class="stat-card">
-          <div class="stat-label">Cost Per Hire</div>
-          <div class="stat-val" style="color:var(--amber)">$3.2k</div>
-          <div class="stat-change down">↑ $200 vs Q3</div>
+          <div class="stat-label">Avg Match Score</div>
+          <div class="stat-val" style="color:var(--amber)">—</div>
+          <div class="stat-change">0 scored candidates</div>
         </div>
         <div class="stat-card">
-          <div class="stat-label">Source Quality</div>
-          <div class="stat-val" style="color:var(--purple)">71%</div>
-          <div class="stat-change up">↑ 8% referral</div>
+          <div class="stat-label">Top Source</div>
+          <div class="stat-val" style="color:var(--purple)">—</div>
+          <div class="stat-change">No data</div>
         </div>
       </div>
       <div class="two-col">
@@ -1117,13 +1110,11 @@
           <div class="panel-header"><span class="panel-title">Stage Conversion Rate</span></div>
           <div class="funnel" id="analytics-funnel"></div>
         </div>
-      </div><!-- /max-width -->
-    </div>
+      </div>
     </div>
 
     <!-- REPORTS PAGE -->
     <div class="page" id="page-reports">
-      <div style="max-width:1400px;">
       <!-- Quick export bar -->
       <div style="display:flex;align-items:center;gap:10px;margin-bottom:24px;flex-wrap:wrap;">
         <span style="font-size:13px;color:var(--text3);margin-right:4px;">Quick Export:</span>
@@ -1208,13 +1199,11 @@
             <tbody id="report-tbody"></tbody>
           </table>
         </div>
-      </div><!-- /max-width -->
-    </div>
+      </div>
     </div>
 
     <!-- INBOX PAGE -->
     <div class="page" id="page-inbox">
-      <div style="max-width:800px;">
       <div class="panel">
         <div class="panel-header">
           <span class="panel-title">📬 Inbox</span>
@@ -1229,8 +1218,7 @@
           </div>
         </div>
         <div id="inbox-list"></div>
-      </div><!-- /max-width -->
-    </div>
+      </div>
     </div>
 
     <!-- SETTINGS PAGE -->
@@ -1248,6 +1236,7 @@
           <div onclick="switchSettingsTab('s-notifs')" id="stab-s-notifs" class="nav-item"><span class="icon">🔔</span>Notifications</div>
           <div onclick="switchSettingsTab('s-appearance')" id="stab-s-appearance" class="nav-item"><span class="icon">🎨</span>Appearance</div>
           <div onclick="switchSettingsTab('s-danger')" id="stab-s-danger" class="nav-item"><span class="icon">⚠️</span>Danger Zone</div>
+          <div onclick="switchSettingsTab('s-archive')" id="stab-s-archive" class="nav-item"><span class="icon">🗄️</span>Archive</div>
         </div>
         <!-- Settings content -->
         <div style="padding:24px;overflow-y:auto;max-width:680px;" id="settings-content"></div>
@@ -2303,37 +2292,126 @@ function saveEditOffer(idx) {
 }
 
 function renderAnalytics() {
-  const sources = [
-    {name:'LinkedIn', count:112, pct:39, color:'#0077b5'},
-    {name:'Referral', count:74, pct:26, color:'var(--green)'},
-    {name:'Job Boards', count:58, pct:20, color:'var(--accent)'},
-    {name:'Direct', count:28, pct:10, color:'var(--purple)'},
-    {name:'Other', count:12, pct:4, color:'var(--text3)'},
-  ];
-  document.getElementById('source-chart').innerHTML = sources.map(s=>`
-    <div style="margin-bottom:12px">
-      <div style="display:flex;justify-content:space-between;font-size:12.5px;margin-bottom:5px">
-        <span style="color:var(--text2)">${s.name}</span>
-        <span style="font-weight:700;font-family:'JetBrains Mono'">${s.count} <span style="color:var(--text3);font-weight:400">(${s.pct}%)</span></span>
-      </div>
-      <div class="score-bar" style="height:8px">
-        <div class="score-fill" style="width:${s.pct*2.5}%;background:${s.color}"></div>
-      </div>
-    </div>`).join('');
+  // ── LIVE DATA COMPUTATIONS ──
 
-  const funnelData2 = [
-    {stage:'Applied→Screening', rate:'50%', color:'#4f8ef7'},
-    {stage:'Screening→Interview', rate:'43%', color:'#a78bfa'},
-    {stage:'Interview→Offer', rate:'30%', color:'#fbbf24'},
-    {stage:'Offer→Hired', rate:'44%', color:'#34d399'},
+  // Stage counts from real candidates
+  const stageCts = {};
+  stages.forEach(s => stageCts[s] = 0);
+  candidates.forEach(c => { const s = c.stage||'Applied'; if(stageCts[s]!==undefined) stageCts[s]++; });
+
+  const total      = candidates.length;
+  const hired      = stageCts['Hired'] || 0;
+  const offered    = stageCts['Offer'] || 0;
+  const inInterview = stageCts['Interview'] || 0;
+  const inScreening = stageCts['Screening'] || 0;
+  const rejected   = stageCts['Rejected'] || 0;
+
+  // Time to hire: avg days from applied → hired (candidates with stage=Hired)
+  const hiredCands = candidates.filter(c=>c.stage==='Hired'&&c.applied);
+  let avgHireDays = '—';
+  if(hiredCands.length) {
+    const now = new Date();
+    const avg = hiredCands.reduce((sum,c)=>sum + Math.round((now - new Date(c.applied)) / 86400000), 0) / hiredCands.length;
+    avgHireDays = Math.round(avg) + 'd';
+  }
+
+  // Offer accept rate: Hired / (Hired + Rejected offers)
+  const offersTotal = offers.length || 0;
+  const offersAccepted = offers.filter(o=>o.status==='Accepted').length;
+  const offerAcceptRate = offersTotal > 0 ? Math.round(offersAccepted/offersTotal*100) + '%' : (hired > 0 ? '100%' : '—');
+
+  // Avg match score
+  const scoredCands = candidates.filter(c=>c.score>0);
+  const avgScore = scoredCands.length ? Math.round(scoredCands.reduce((s,c)=>s+c.score,0)/scoredCands.length) : 0;
+
+  // Source breakdown from real candidates
+  const sourceCts = {};
+  candidates.forEach(c => {
+    const src = c.source || 'Other';
+    sourceCts[src] = (sourceCts[src]||0) + 1;
+  });
+  const sourceColors = {
+    'LinkedIn':'#0077b5', 'Referral':'var(--green)', 'Job Board':'var(--accent)',
+    'Job Boards':'var(--accent)', 'Direct':'var(--purple)', 'GitHub':'#333',
+    'Portfolio':'var(--amber)', 'Other':'var(--text3)'
+  };
+  const sourceEntries = Object.entries(sourceCts).sort((a,b)=>b[1]-a[1]);
+  const maxSrc = sourceEntries[0]?.[1] || 1;
+
+  // Stage conversion rates (real)
+  const applied    = stageCts['Applied'] || 0;
+  const a2s = inScreening > 0 && (applied+inScreening) > 0 ? Math.round(inScreening/(applied+inScreening+inInterview+offered+hired+rejected)*100) : 0;
+  const s2i = inInterview > 0 && inScreening > 0 ? Math.round(inInterview/(inScreening+inInterview)*100) : (inInterview > 0 ? 100 : 0);
+  const i2o = offered > 0 && inInterview > 0 ? Math.round(offered/(inInterview+offered)*100) : (offered > 0 ? 100 : 0);
+  const o2h = hired > 0 && (offered+hired) > 0 ? Math.round(hired/(offered+hired)*100) : (hired > 0 ? 100 : 0);
+
+  // ── UPDATE STAT CARDS ──
+  const statCards = document.querySelectorAll('#page-analytics .stat-card');
+  if(statCards[0]) {
+    statCards[0].querySelector('.stat-val').textContent = avgHireDays;
+    statCards[0].querySelector('.stat-change').textContent = hired > 0 ? hired + ' hired' : 'No hires yet';
+    statCards[0].querySelector('.stat-change').className = 'stat-change up';
+  }
+  if(statCards[1]) {
+    statCards[1].querySelector('.stat-val').textContent = offerAcceptRate;
+    statCards[1].querySelector('.stat-change').textContent = offersAccepted + '/' + offersTotal + ' offers accepted';
+    statCards[1].querySelector('.stat-change').className = 'stat-change up';
+  }
+  if(statCards[2]) {
+    statCards[2].querySelector('.stat-val').textContent = avgScore > 0 ? avgScore + '/100' : '—';
+    statCards[2].querySelector('.stat-change').textContent = scoredCands.length + ' scored candidates';
+    statCards[2].querySelector('.stat-change').className = 'stat-change';
+  }
+  if(statCards[3]) {
+    const topSrc = sourceEntries[0];
+    statCards[3].querySelector('.stat-val').textContent = topSrc ? Math.round(topSrc[1]/Math.max(total,1)*100) + '%' : '—';
+    statCards[3].querySelector('.stat-change').textContent = topSrc ? 'Top: ' + topSrc[0] : 'No data';
+    statCards[3].querySelector('.stat-change').className = 'stat-change up';
+  }
+
+  // ── SOURCE CHART (real) ──
+  const srcEl = document.getElementById('source-chart');
+  if(srcEl) {
+    if(!sourceEntries.length) {
+      srcEl.innerHTML = '<div style="text-align:center;padding:32px;color:var(--text3);">No candidate data yet</div>';
+    } else {
+      srcEl.innerHTML = sourceEntries.map(([name, count]) => {
+        const pct = total > 0 ? Math.round(count/total*100) : 0;
+        const color = sourceColors[name] || 'var(--text3)';
+        const barW = Math.round(count/maxSrc*100);
+        return `<div style="margin-bottom:14px;">
+          <div style="display:flex;justify-content:space-between;font-size:12.5px;margin-bottom:5px;">
+            <span style="color:var(--text2);font-weight:500;">${escapeHtml(name)}</span>
+            <span style="font-weight:700;font-family:'JetBrains Mono';">${count} <span style="color:var(--text3);font-weight:400;">(${pct}%)</span></span>
+          </div>
+          <div class="score-bar" style="height:8px;">
+            <div class="score-fill" style="width:${barW}%;background:${color};transition:width 0.6s cubic-bezier(0.4,0,0.2,1);"></div>
+          </div>
+        </div>`;
+      }).join('');
+    }
+  }
+
+  // ── STAGE CONVERSION FUNNEL (real) ──
+  const funnelData = [
+    {stage:'Applied → Screening', rate:a2s, from:applied+inScreening+inInterview+offered+hired+rejected, to:inScreening, color:'#4f8ef7'},
+    {stage:'Screening → Interview', rate:s2i, from:inScreening+inInterview, to:inInterview, color:'#a78bfa'},
+    {stage:'Interview → Offer', rate:i2o, from:inInterview+offered, to:offered, color:'#fbbf24'},
+    {stage:'Offer → Hired', rate:o2h, from:offered+hired, to:hired, color:'#34d399'},
   ];
-  document.getElementById('analytics-funnel').innerHTML = funnelData2.map(f=>`
-    <div class="funnel-stage">
-      <div class="funnel-label" style="font-size:11px;width:130px">${f.stage}</div>
-      <div class="funnel-bar-wrap">
-        <div class="funnel-bar" style="width:${parseInt(f.rate)}%;background:${f.color}">${f.rate}</div>
-      </div>
-    </div>`).join('');
+  const funnelEl = document.getElementById('analytics-funnel');
+  if(funnelEl) {
+    funnelEl.innerHTML = funnelData.map(f => `
+      <div class="funnel-stage">
+        <div class="funnel-label" style="font-size:11px;width:140px;text-align:right;color:var(--text3);font-weight:600;">${f.stage.replace(' → ','→')}</div>
+        <div class="funnel-bar-wrap" style="flex:1;height:28px;background:var(--bg3);border-radius:5px;overflow:hidden;">
+          <div class="funnel-bar" style="width:${f.rate}%;background:${f.color};min-width:${f.rate>0?'40px':'0'};transition:width 0.7s cubic-bezier(0.4,0,0.2,1);">
+            ${f.rate > 0 ? f.rate + '%' : ''}
+          </div>
+        </div>
+        <div style="font-size:11px;color:var(--text3);width:60px;text-align:right;font-family:'JetBrains Mono';">${f.to}/${f.from}</div>
+      </div>`).join('');
+  }
 }
 
 function renderInbox() {
@@ -2935,6 +3013,12 @@ function switchSettingsTab(tabId) {
         </div>
       </div>`;
 
+  } else if(tabId==='s-archive') {
+    el.innerHTML = `
+      <div style="font-size:18px;font-weight:800;margin-bottom:6px;">🗄️ Archive</div>
+      <div style="font-size:13px;color:var(--text3);margin-bottom:20px;">Deleted jobs and candidates are kept here. You can restore them at any time.</div>
+      <div id="archive-list"><div style="text-align:center;padding:40px;color:var(--text3);">Loading archive...</div></div>`;
+    loadArchive();
   } else if(tabId==='s-danger') {
     el.innerHTML = `
       <div style="font-size:18px;font-weight:800;margin-bottom:20px;color:var(--red);">⚠️ Danger Zone</div>
@@ -3641,15 +3725,16 @@ function renderCandProfileContent(id) {
   const c = getCand(id);
   if(!c) return;
   const job = getJob(c.jobId);
-  const allInterviews = c.interviews || [];
-  // Sort feedback newest first (issue #3)
+  // Sort feedback newest first
   const allFeedback = (c.feedback || []).slice().sort((a,b)=>new Date(b.createdAt||b.date||0)-new Date(a.createdAt||a.date||0));
+  // Sort interviews newest first
+  const allInterviews = (c.interviews || []).slice().sort((a,b)=>new Date(b.date||0)-new Date(a.date||0));
   const stars = Array(5).fill(0).map((_,i)=>'<span style="color:' + (i<(c.rating||0)?'var(--amber)':'var(--border2)') + ';font-size:15px;cursor:pointer" onclick="rateCand(' + c.id + ',' + (i+1) + ')">' + (i<(c.rating||0)?'★':'☆') + '</span>').join('');
 
   const el = document.getElementById('candprofile-content');
   el.style.cssText = 'height:calc(100vh - 56px);display:flex;flex-direction:column;overflow:hidden;';
 
-  // Prev/Next navigation — get sorted candidate list from current filter
+  // Prev/Next navigation
   const jobId = _candActiveJobId;
   const stageF = _candActiveStage;
   let navList = [...candidates];
@@ -3660,69 +3745,61 @@ function renderCandProfileContent(id) {
   const prevCand = navIdx > 0 ? navList[navIdx-1] : null;
   const nextCand = navIdx < navList.length-1 ? navList[navIdx+1] : null;
 
-  // Build left tab contents using string concat to avoid nested backtick issues
   const resumeTab = buildResumeTabHTML(c);
   const detailsTab = buildDetailsTabHTML(c);
   const historyTab = buildHistoryHTML(c, allInterviews, allFeedback);
 
   el.innerHTML =
-    // TOPBAR
-    '<div style="padding:10px 20px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:8px;background:var(--bg2);flex-shrink:0;flex-wrap:wrap;">' +
+    // ── SLIM TOPBAR ──
+    '<div style="padding:8px 20px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:8px;background:var(--bg2);flex-shrink:0;">' +
     '<span style="cursor:pointer;color:var(--text3);font-size:13px;" onclick="showPage(\'candidates\',null)">← Candidates</span>' +
     '<span style="color:var(--border2)">›</span>' +
     '<span style="font-size:13px;color:var(--accent);cursor:pointer" onclick="showPage(\'jobs\',null);setTimeout(()=>openJobDetail(' + c.jobId + '),100)">' + (job?job.title:'Job') + '</span>' +
     '<span style="color:var(--border2)">›</span>' +
     '<span style="font-size:13px;font-weight:600">' + c.name + '</span>' +
-    // Prev/Next navigation
-    '<div style="display:flex;align-items:center;gap:4px;margin-left:12px;">' +
-    (prevCand ? '<button class="btn btn-ghost btn-sm" onclick="openCandProfile('+prevCand.id+')" title="'+escapeHtml(prevCand.name)+'">‹ Prev</button>' : '<button class="btn btn-ghost btn-sm" disabled style="opacity:0.3;cursor:not-allowed;">‹ Prev</button>') +
-    '<span style="font-size:11px;color:var(--text3);">' + (navIdx+1) + '/' + navList.length + '</span>' +
-    (nextCand ? '<button class="btn btn-ghost btn-sm" onclick="openCandProfile('+nextCand.id+')" title="'+escapeHtml(nextCand.name)+'">Next ›</button>' : '<button class="btn btn-ghost btn-sm" disabled style="opacity:0.3;cursor:not-allowed;">Next ›</button>') +
+    '<div style="display:flex;align-items:center;gap:3px;margin-left:8px;">' +
+    (prevCand ? '<button class="btn btn-ghost btn-sm" onclick="openCandProfile('+prevCand.id+')" title="'+escapeHtml(prevCand.name)+'">‹ Prev</button>' : '<button class="btn btn-ghost btn-sm" disabled style="opacity:0.3;">‹ Prev</button>') +
+    '<span style="font-size:11px;color:var(--text3);padding:0 4px;">' + (navIdx+1) + '/' + navList.length + '</span>' +
+    (nextCand ? '<button class="btn btn-ghost btn-sm" onclick="openCandProfile('+nextCand.id+')" title="'+escapeHtml(nextCand.name)+'">Next ›</button>' : '<button class="btn btn-ghost btn-sm" disabled style="opacity:0.3;">Next ›</button>') +
     '</div>' +
-    '<div style="margin-left:auto;display:flex;gap:6px;flex-wrap:wrap;">' +
+    '<div style="margin-left:auto;display:flex;gap:6px;">' +
     '<button class="btn btn-ghost btn-sm" onclick="openEditCandidate(' + c.id + ')">✏️ Edit</button>' +
-    '<button class="btn btn-ghost btn-sm" onclick="openAddNote(' + c.id + ')">📝 Note</button>' +
-    '<button class="btn btn-ghost btn-sm" onclick="openScheduleInterview(' + c.id + ')">📅 Schedule</button>' +
-    '<button class="btn btn-ghost btn-sm" onclick="openCreateOffer(' + c.id + ')">📄 Offer</button>' +
-    '<button class="btn btn-ghost btn-sm" onclick="openCandInNewTab(' + c.id + ')" title="Open in new tab">↗ New Tab</button>' +
-    '<button class="btn btn-primary btn-sm" onclick="openMoveStage(' + c.id + ')">Move Stage ↕</button>' +
-    '<button class="btn btn-ghost btn-sm" style="color:var(--red);border-color:var(--red-dim)" onclick="rejectCandidate(' + c.id + ')">✕ Reject</button>' +
-    '<button class="btn btn-ghost btn-sm" style="color:var(--red);border-color:var(--red-dim)" onclick="deleteCandidate(' + c.id + ')">🗑 Delete</button>' +
+    '<button class="btn btn-ghost btn-sm" onclick="openCandInNewTab(' + c.id + ')">↗ New Tab</button>' +
+    '<button class="btn btn-ghost btn-sm" style="color:var(--red);" onclick="deleteCandidate(' + c.id + ')">🗑</button>' +
     '</div></div>' +
 
-    // MAIN LAYOUT
+    // ── MAIN LAYOUT: left 55% | right 45% ──
     '<div style="display:grid;grid-template-columns:1fr 420px;flex:1;overflow:hidden;min-height:0;">' +
 
-    // LEFT PANEL
-    '<div id="cp-left-panel" style="overflow-y:auto;border-right:1px solid var(--border);display:flex;flex-direction:column;">' +
+    // ── LEFT: candidate info + resume tabs ──
+    '<div style="overflow-y:auto;border-right:1px solid var(--border);display:flex;flex-direction:column;">' +
 
-    // Candidate header
+    // Candidate header card
     '<div style="padding:20px 24px;border-bottom:1px solid var(--border);">' +
-    '<div style="display:flex;align-items:flex-start;gap:16px;margin-bottom:14px;">' +
-    '<div style="width:68px;height:68px;border-radius:50%;background:' + c.color + '33;color:' + c.color + ';display:flex;align-items:center;justify-content:center;font-size:24px;font-weight:800;flex-shrink:0;">' + c.initials + '</div>' +
+    '<div style="display:flex;align-items:flex-start;gap:16px;margin-bottom:16px;">' +
+    '<div style="width:72px;height:72px;border-radius:50%;background:' + c.color + '33;color:' + c.color + ';display:flex;align-items:center;justify-content:center;font-size:26px;font-weight:800;flex-shrink:0;">' + c.initials + '</div>' +
     '<div style="flex:1;">' +
-    '<div style="font-size:18px;font-weight:800;margin-bottom:4px;">' + c.name + '<span style="font-size:13px;font-weight:400;color:var(--text3);margin-left:8px;">' + stars + '</span></div>' +
-    '<div style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:8px;">' +
-    (c.source?'<span class="badge badge-amber" style="font-size:11px">' + c.source + '</span>':'') +
+    '<div style="font-size:20px;font-weight:800;letter-spacing:-0.3px;margin-bottom:4px;">' + escapeHtml(c.name) + ' <span style="font-size:14px;font-weight:400;">' + stars + '</span></div>' +
+    '<div style="display:flex;flex-wrap:wrap;gap:5px;margin-bottom:10px;">' +
+    (c.source?'<span class="badge badge-amber">' + escapeHtml(c.source) + '</span>':'') +
     '<span class="badge ' + (stageBadge[c.stage]||'badge-gray') + '">' + c.stage + '</span>' +
     (c.hasResume?'<span class="badge badge-gray">📄 Resume</span>':'') +
     '</div>' +
-    '<div style="display:flex;flex-wrap:wrap;gap:16px;font-size:12px;color:var(--text3);">' +
-    (c.exp?'<span>💼 ' + c.exp + '</span>':'') +
-    (c.location?'<span>📍 ' + c.location + '</span>':'') +
+    '<div style="display:flex;flex-wrap:wrap;gap:14px;font-size:12px;color:var(--text3);">' +
+    (c.phone?'<a href="tel:' + c.phone + '" style="color:var(--accent);">📞 ' + escapeHtml(c.phone) + '</a>':'') +
+    (c.email?'<a href="mailto:' + c.email + '" style="color:var(--accent);">✉️ ' + escapeHtml(c.email) + '</a>':'') +
+    (c.currentTitle?'<span>🏢 ' + escapeHtml(c.currentTitle) + '</span>':'') +
+    (c.exp?'<span>💼 ' + escapeHtml(c.exp) + '</span>':'') +
+    (c.location?'<span>📍 ' + escapeHtml(c.location) + '</span>':'') +
     (c.applied?'<span>📅 Applied ' + c.applied + '</span>':'') +
     '</div></div></div>' +
-    '<div style="display:flex;flex-wrap:wrap;gap:16px;font-size:12px;padding:10px 0;border-top:1px solid var(--border);">' +
-    (c.phone?'<a href="tel:' + c.phone + '" style="color:var(--accent);">📞 ' + c.phone + '</a>':'') +
-    (c.email?'<a href="mailto:' + c.email + '" style="color:var(--accent);">✉️ ' + c.email + '</a>':'') +
-    (c.currentTitle?'<span style="color:var(--text2);">🏢 ' + c.currentTitle + '</span>':'') +
-    '</div>' +
-    '<div style="display:flex;gap:6px;margin-top:12px;flex-wrap:wrap;">' +
-    '<button class="btn btn-ghost btn-sm" style="color:var(--red);border-color:var(--red-dim)" onclick="rejectCandidate(' + c.id + ')">Reject</button>' +
+    // Action buttons — one clean row
+    '<div style="display:flex;gap:6px;flex-wrap:wrap;">' +
+    '<button class="btn btn-ghost btn-sm" style="color:var(--red);border-color:var(--red-dim);" onclick="rejectCandidate(' + c.id + ')">✕ Reject</button>' +
     '<button class="btn btn-ghost btn-sm" onclick="shareCandidate(' + c.id + ')">Share</button>' +
-    '<button class="btn btn-ghost btn-sm" onclick="openScheduleInterview(' + c.id + ')">Schedule Interview</button>' +
-    '<button class="btn btn-primary btn-sm" onclick="openMoveStage(' + c.id + ')">Move Stage</button>' +
-    (c.stage!=='Offer'&&c.stage!=='Hired'?'<button class="btn btn-ghost btn-sm" onclick="openCreateOffer(' + c.id + ')">Create Offer</button>':'') +
+    '<button class="btn btn-ghost btn-sm" onclick="openScheduleInterview(' + c.id + ')">📅 Schedule Interview</button>' +
+    '<button class="btn btn-primary btn-sm" onclick="openMoveStage(' + c.id + ')">Move Stage ↕</button>' +
+    (c.stage!=='Offer'&&c.stage!=='Hired'?'<button class="btn btn-ghost btn-sm" onclick="openCreateOffer(' + c.id + ')">📄 Create Offer</button>':'') +
     '</div></div>' +
 
     // Left tabs
@@ -3732,63 +3809,42 @@ function renderCandProfileContent(id) {
     '<div class="cp-tab" onclick="switchLeftTab(this,\'lt-extra\')">Additional Info</div>' +
     '<div class="cp-tab" onclick="switchLeftTab(this,\'lt-history\')">Action History</div>' +
     '</div>' +
-
-    // Resume tab
     '<div id="lt-resume" class="cp-tab-content active" style="flex-direction:column;overflow:hidden;">' + resumeTab + '</div>' +
-
-    // Details tab
     '<div id="lt-details" class="cp-tab-content" style="padding:20px 24px;">' + detailsTab + '</div>' +
-
-    // Additional info tab
     '<div id="lt-extra" class="cp-tab-content" style="padding:20px 24px;">' +
-    '<div style="text-align:center;padding:32px 0;color:var(--text3);">' +
-    '<div style="font-size:32px;margin-bottom:10px;">📋</div>' +
-    'Cover letters, portfolio links, and custom fields can be added when editing the candidate.' +
-    '<div style="margin-top:16px;"><button class="btn btn-primary btn-sm" onclick="openEditCandidate(' + c.id + ')">Edit Candidate</button></div>' +
-    '</div></div>' +
-
-    // History tab
+    '<div style="text-align:center;padding:32px 0;color:var(--text3);"><div style="font-size:32px;margin-bottom:10px;">📋</div>Cover letters, portfolio links, and custom fields can be added when editing the candidate.<div style="margin-top:16px;"><button class="btn btn-primary btn-sm" onclick="openEditCandidate(' + c.id + ')">Edit Candidate</button></div></div></div>' +
     '<div id="lt-history" class="cp-tab-content" style="padding:0;">' + historyTab + '</div>' +
-
     '</div>' + // end left panel
 
-    // RIGHT PANEL
-    '<div id="cp-right-panel" style="overflow-y:auto;background:var(--bg2);display:flex;flex-direction:column;">' +
+    // ── RIGHT: job application + interviews + notes ──
+    '<div style="overflow-y:auto;background:var(--bg3);display:flex;flex-direction:column;gap:0;">' +
 
-    // All job applications section
+    // Job application section
+    '<div style="background:var(--bg2);">' +
     '<div id="cp-job-applications">' + buildJobApplicationsHTML(c) + '</div>' +
-
-    // Similar candidates
-    '<div style="padding:12px 16px;border-bottom:1px solid var(--border);">' +
-    '<div style="display:flex;align-items:center;justify-content:space-between;cursor:pointer;" onclick="this.nextElementSibling.style.display=this.nextElementSibling.style.display===\'none\'?\'block\':\'none\'">' +
-    '<div style="font-size:12px;font-weight:600;color:var(--text2);">👥 Similar candidates (' + candidates.filter(x=>x.id!==c.id&&getCandJobIds(x).some(jid=>getCandJobIds(c).includes(jid))).length + ')</div>' +
-    '<span style="color:var(--text3);">▾</span></div>' +
-    '<div style="display:none;margin-top:10px;">' +
-    (candidates.filter(x=>x.id!==c.id&&getCandJobIds(x).some(jid=>getCandJobIds(c).includes(jid))).slice(0,4).map(x=>'<div style="display:flex;align-items:center;gap:8px;padding:6px 0;cursor:pointer;border-bottom:1px solid var(--border);" onclick="openCandProfile(' + x.id + ')"><div style="width:26px;height:26px;border-radius:50%;background:' + x.color + '33;color:' + x.color + ';display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:700;flex-shrink:0;">' + x.initials + '</div><div style="flex:1;font-size:12px;font-weight:600;">' + x.name + '</div><span class="badge ' + (stageBadge[x.stage]||'badge-gray') + '" style="font-size:10px">' + x.stage + '</span></div>').join('') || '<div style="color:var(--text3);font-size:12px;">None</div>') +
-    '</div></div>' +
-
-    // Interviews (feedback per interview round)
-    '<div id="cp-interviews-section">' + buildInterviewsHTML(c, allInterviews, allFeedback) + '</div>' +
-
-    // TEAM NOTES — separate from interview feedback, visible to everyone
-    '<div id="cp-team-notes-section" style="border-top:2px solid var(--border);">' +
-    '<div style="padding:14px 16px;display:flex;align-items:center;justify-content:space-between;">' +
-    '<div>' +
-    '<div style="font-size:13px;font-weight:700;">📌 Team Notes</div>' +
-    '<div style="font-size:11px;color:var(--text3);margin-top:2px;">Visible to everyone · Not tied to an interview round</div>' +
     '</div>' +
+
+    // Interviews section — sorted newest first
+    '<div style="background:var(--bg2);margin-top:8px;">' +
+    '<div id="cp-interviews-section">' + buildInterviewsHTML(c, allInterviews, allFeedback) + '</div>' +
+    '</div>' +
+
+    // Team Notes
+    '<div style="background:var(--bg2);margin-top:8px;" id="cp-team-notes-section">' +
+    '<div style="padding:14px 16px;display:flex;align-items:center;justify-content:space-between;border-bottom:1px solid var(--border);">' +
+    '<div><div style="font-size:13px;font-weight:700;">📌 Team Notes</div>' +
+    '<div style="font-size:11px;color:var(--text3);margin-top:2px;">Visible to everyone · Not tied to an interview round</div></div>' +
     '<button class="btn btn-primary btn-sm" onclick="openAddNote(' + c.id + ')">+ Add Note</button>' +
     '</div>' +
-    '<div style="padding:0 16px 16px;" id="team-notes-list-' + c.id + '">' + renderTeamNotesList(c) + '</div>' +
+    '<div style="padding:12px 16px;" id="team-notes-list-' + c.id + '">' + renderTeamNotesList(c) + '</div>' +
     '</div>' +
 
     // Offers
-    buildOffersHTML(c) +
+    '<div style="background:var(--bg2);margin-top:8px;">' + buildOffersHTML(c) + '</div>' +
 
     '</div>' + // end right panel
     '</div>'; // end main layout
 
-  // Load PDF after DOM is ready
   if(c.hasResume) {
     requestAnimationFrame(()=>{ setTimeout(()=>loadInlinePdf(id), 100); });
   }
@@ -4931,18 +4987,18 @@ function confirmBulkAddToJob(sourceJobId, candIds, sortBy) {
 }
 
 function bulkDelete(jobId, candIds, sortBy) {
-  if(!confirm('Delete ' + candIds.length + ' candidates? This cannot be undone.')) return;
+  if(!confirm('Archive ' + candIds.length + ' candidates? They will be moved to your archive.')) return;
   candIds.forEach(id=>{
+    const c = getCand(id); if(!c) return;
+    _archiveToFirestore('candidates', String(c.id), {...c, _archivedAt: Date.now(), _archivedType: 'candidate'});
     try { localStorage.removeItem('tf_resume_'+id); } catch(e){}
-    const c = getCand(id);
-    if(c) { const j=getJob(c.jobId); if(j&&j.applicants>0) j.applicants--; }
+    const j=getJob(c.jobId); if(j&&j.applicants>0) j.applicants--;
   });
   candidates = candidates.filter(c=>!candIds.includes(c.id));
   save();
-  _jobDetailState[jobId] = { selectedIds:[] };
-  renderJobDetailPanel(jobId, sortBy, []);
-  renderJobs();
-  showToast('Deleted ' + candIds.length + ' candidates');
+  _candSelectedIds = [];
+  renderCandidates(); renderCandJobSidebar(); renderCandStageTabs();
+  showToast('Archived ' + candIds.length + ' candidates');
 }
 
 function toggleJobStatus(id, newStatus) {
@@ -5446,35 +5502,109 @@ function deleteJob(id) {
   const j = getJob(id); if(!j) return;
   const candCount = candidates.filter(c=>getCandJobIds(c).includes(id)).length;
   const msg = candCount>0
-    ? 'Delete "' + j.title + '"? This job has ' + candCount + ' candidate(s). They will become unlinked. This cannot be undone.'
-    : 'Delete "' + j.title + '"? This cannot be undone.';
+    ? 'Archive "' + j.title + '"? This job has ' + candCount + ' candidate(s). They will become unlinked. The job will be moved to your archive.'
+    : 'Archive "' + j.title + '"? It will be moved to your archive and removed from active jobs.';
   if(!confirm(msg)) return;
+  window._archiveToFirestore('jobs', String(j.id), {...j, _archivedAt: Date.now()});
   jobs = jobs.filter(x=>x.id!==id);
   save(); closeDetail(); renderJobs(); populateJobFilters();
   showPage('jobs', null);
-  showToast('Job deleted');
+  showToast('Job archived 🗄️');
 }
 
 function deleteCandidate(id) {
   const c = getCand(id); if(!c) return;
-  if(!confirm('Delete ' + c.name + '? All their data including feedback and notes will be permanently removed. This cannot be undone.')) return;
-  // Remove resume from storage
+  if(!confirm('Archive ' + c.name + '? Their data will be moved to your archive and removed from active candidates.')) return;
+  window._archiveToFirestore('candidates', String(c.id), {...c, _archivedAt: Date.now()});
   try { localStorage.removeItem('tf_resume_'+id); } catch(e){}
   candidates = candidates.filter(x=>x.id!==id);
-  // Update job applicant count
   const j = getJob(c.jobId);
   if(j&&j.applicants>0) j.applicants--;
   save();
-  // Navigate away if on their profile
   if(document.getElementById('page-candprofile').classList.contains('active')) {
     showPage('candidates', null);
   } else {
     closeDetail(); renderCandidates();
   }
-  showToast(c.name + ' deleted');
+  showToast(c.name + ' archived 🗄️');
 }
 
-function closeModal() { document.getElementById('modal-overlay').classList.remove('open'); }
+async function loadArchive() {
+  const el = document.getElementById('archive-list');
+  if(!el || !currentUser) return;
+  try {
+    const snap = await getDocs(collection(db, `users/${currentUser.uid}/archive`));
+    if(snap.empty) {
+      el.innerHTML = '<div style="text-align:center;padding:40px;color:var(--text3);font-size:13px;">No archived items yet. Deleted jobs and candidates will appear here.</div>';
+      return;
+    }
+    const items = snap.docs.map(d=>({...d.data(), _docId: d.id})).sort((a,b)=>b._archivedAt-a._archivedAt);
+    el.innerHTML = items.map(item => {
+      const isJob = item._archivedType === 'jobs';
+      const name = item.title || item.name || 'Unknown';
+      const sub = isJob ? (item.dept||'') + ' · ' + (item.location||'') : (item.email||'');
+      const date = item._archivedAt ? new Date(item._archivedAt).toLocaleDateString() : '';
+      const icon = isJob ? (item.icon||'💼') : (item.initials||'?');
+      const color = item.color || (isJob ? '#4f8ef7' : '#a78bfa');
+      return `<div class="panel" style="margin-bottom:10px;">
+        <div style="padding:14px 18px;display:flex;align-items:center;gap:12px;">
+          <div style="width:36px;height:36px;border-radius:8px;background:${color}22;display:flex;align-items:center;justify-content:center;font-size:15px;flex-shrink:0;">${icon}</div>
+          <div style="flex:1;min-width:0;">
+            <div style="font-size:13.5px;font-weight:700;">${escapeHtml(name)}</div>
+            <div style="font-size:11.5px;color:var(--text3);">${isJob?'Job':'Candidate'} · ${escapeHtml(sub)} · Archived ${date}</div>
+          </div>
+          <div style="display:flex;gap:8px;flex-shrink:0;">
+            <button class="btn btn-ghost btn-sm" onclick="restoreFromArchive('${item._docId}','${item._archivedType}')">↩ Restore</button>
+            <button class="btn btn-ghost btn-sm" style="color:var(--red);" onclick="permanentlyDelete('${item._docId}')">🗑 Delete Forever</button>
+          </div>
+        </div>
+      </div>`;
+    }).join('');
+  } catch(e) {
+    console.error('Archive load error:', e);
+    el.innerHTML = '<div style="padding:20px;color:var(--text3);">Could not load archive. Please try again.</div>';
+  }
+}
+
+async function restoreFromArchive(docId, type) {
+  if(!currentUser) return;
+  try {
+    const snap = await getDocs(collection(db, `users/${currentUser.uid}/archive`));
+    const docData = snap.docs.find(d=>d.id===docId)?.data();
+    if(!docData) { showToast('Item not found'); return; }
+    // Remove archive metadata
+    const {_archivedAt, _archivedType, _originalId, _docId, ...cleanData} = docData;
+    if(type === 'jobs') {
+      // Restore job
+      jobs.push(cleanData);
+      if(_firestoreJobIds) _firestoreJobIds.add(String(cleanData.id));
+    } else {
+      // Restore candidate
+      candidates.push(cleanData);
+      if(_firestoreCandIds) _firestoreCandIds.add(String(cleanData.id));
+    }
+    // Delete from archive
+    await deleteDoc(doc(db, `users/${currentUser.uid}/archive`, docId));
+    await save();
+    showToast('Restored successfully ✓');
+    loadArchive();
+  } catch(e) {
+    console.error('Restore error:', e);
+    showToast('Restore failed — check console');
+  }
+}
+
+async function permanentlyDelete(docId) {
+  if(!confirm('Permanently delete this item? This cannot be undone.')) return;
+  if(!currentUser) return;
+  try {
+    await deleteDoc(doc(db, `users/${currentUser.uid}/archive`, docId));
+    showToast('Permanently deleted');
+    loadArchive();
+  } catch(e) {
+    showToast('Delete failed');
+  }
+}
 function closeModalOuter(e) { if(e.target===document.getElementById('modal-overlay')) closeModal(); }
 
 // ===================== SEARCH =====================
@@ -6936,6 +7066,21 @@ const googleProvider = new GoogleAuthProvider();
 let currentUser = null;
 let unsubscribeFns = [];
 
+// Expose to global scope so non-module functions can use them
+window.currentUser = null;
+window._db = db;
+
+// Archive a document to users/{uid}/archive collection instead of deleting
+window._archiveToFirestore = async (type, id, data) => {
+  if(!currentUser) return;
+  try {
+    const archiveId = type + '_' + id + '_' + Date.now();
+    await setDoc(doc(db, `users/${currentUser.uid}/archive`, archiveId), {
+      ...data, _archivedAt: Date.now(), _archivedType: type, _originalId: id
+    });
+  } catch(e) { console.warn('Archive failed:', e); }
+};
+
 // Expose auth functions to global scope
 window.signInGoogle = async () => {
   try {
@@ -6988,6 +7133,7 @@ onAuthStateChanged(auth, async (user) => {
 
   if(user) {
     currentUser = user;
+    window.currentUser = user;
 
     // Update sidebar user info
     const name = user.displayName || user.email?.split('@')[0] || 'User';
