@@ -531,7 +531,12 @@
   body.theme-light .cand-card { box-shadow:0 1px 3px rgba(0,0,0,0.08); }
   body.theme-light table thead th { background:var(--bg3); }
 
-  .login-screen { position:fixed;inset:0;background:var(--bg);z-index:9999;display:flex;align-items:center;justify-content:center;flex-direction:column; }
+/* Login screen — starts visible, hidden after auth */
+.login-screen { position:fixed;inset:0;background:var(--bg);z-index:9999;display:flex;align-items:center;justify-content:center;flex-direction:column; }
+.login-screen.hidden { display:none !important; }
+/* App shell hidden until auth resolves */
+.app-shell { opacity:0; transition:opacity 0.3s; pointer-events:none; }
+.app-shell.ready { opacity:1; pointer-events:all; }
   .login-card { background:var(--bg2);border:1px solid var(--border2);border-radius:18px;padding:48px 40px;text-align:center;width:100%;max-width:380px;box-shadow:0 24px 80px rgba(0,0,0,0.6); }
   .login-logo { width:52px;height:52px;background:linear-gradient(135deg,#4f8ef7,#a78bfa);border-radius:14px;display:flex;align-items:center;justify-content:center;font-size:24px;margin:0 auto 16px; }
   .login-title { font-size:22px;font-weight:800;letter-spacing:-0.5px;margin-bottom:4px; }
@@ -707,7 +712,9 @@
   </div>
 </div>
 
-<!-- SIDEBAR -->
+<!-- APP SHELL — hidden until auth resolves -->
+<div class="app-shell" id="app-shell">
+
 <!-- SIDEBAR TOGGLE -->
 <button class="sidebar-toggle" onclick="toggleSidebar()" id="sidebar-toggle" title="Toggle sidebar">‹</button>
 
@@ -907,6 +914,11 @@
       <div class="panel" style="overflow:hidden;">
         <div id="jobs-list"></div>
       </div>
+    </div>
+
+    <!-- JOB DETAIL PAGE -->
+    <div class="page" id="page-jobdetail">
+      <div id="jobdetail-content" style="height:calc(100vh - 52px);overflow-y:auto;display:flex;flex-direction:column;"></div>
     </div>
 
     <!-- CANDIDATES PAGE -->
@@ -2958,7 +2970,7 @@ function showPage(name, navEl, pushHistory=true) {
   if(titleEl) {
     titleEl.style.opacity = '0';
     const titles = {dashboard:'Dashboard',jobs:'Jobs',projects:'Projects',candidates:'Candidates',pipeline:'Pipeline',
-      interviews:'Interviews',offers:'Offers',analytics:'Analytics',reports:'Reports',inbox:'Inbox',settings:'Settings'};
+      interviews:'Interviews',offers:'Offers',analytics:'Analytics',reports:'Reports',inbox:'Inbox',settings:'Settings',jobdetail:'Job Detail'};
     setTimeout(()=>{ titleEl.textContent = titles[name]||name; titleEl.style.opacity='1'; }, 100);
   }
 
@@ -3611,6 +3623,12 @@ function navigateToHash(hash) {
       const tryOpen = () => { const c = getCand(id); if(c) openCandProfile(id,false); else showPage('candidates',null,false); };
       if(candidates.length > 0) tryOpen(); else setTimeout(tryOpen, 1500);
     }
+  } else if(path.startsWith('job/')) {
+    const id = parseInt(path.split('/')[1]);
+    if(!isNaN(id)) {
+      const tryOpen = () => { const j = getJob(id); if(j) openJobDetail(id,false); else showPage('jobs',null,false); };
+      if(jobs.length > 0) tryOpen(); else setTimeout(tryOpen, 1500);
+    }
   } else if(path.startsWith('project/')) {
     const id = parseInt(path.split('/')[1]);
     if(!isNaN(id)) {
@@ -3625,6 +3643,7 @@ function navigateToHash(hash) {
 
 window.addEventListener('popstate', e => {
   if(e.state?.page==='candidate') openCandProfile(e.state.id, false);
+  else if(e.state?.page==='jobdetail') openJobDetail(e.state.id, false);
   else if(e.state?.page==='projectdetail') openProjectDetail(e.state.id);
   else if(e.state?.page) showPage(e.state.page, null, false);
   else navigateToHash(location.hash);
@@ -4255,14 +4274,226 @@ function saveOffer(id) {
   showToast('Offer created!');
 }
 
-function openJobDetail(id) {
-  const j = getJob(id);
-  if(!j) return;
-  document.getElementById('dp-name').textContent = j.title;
-  document.getElementById('dp-role').textContent = j.dept + ' · ' + j.type;
-  renderJobDetailPanel(id);
-  document.getElementById('dp-move-btn').style.display='none';
-  document.getElementById('detail-panel').classList.add('open');
+function openJobDetail(id, pushHistory=true) {
+  const j = getJob(id); if(!j) return;
+  if(pushHistory) history.pushState({page:'jobdetail', id}, '', '#job/'+id);
+  document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
+  document.getElementById('page-jobdetail').classList.add('active');
+  document.querySelectorAll('.nav-item').forEach(n=>{
+    n.classList.remove('active');
+    if(n.textContent.trim().startsWith('Jobs')) n.classList.add('active');
+  });
+  const titleEl = document.getElementById('topbar-title');
+  if(titleEl) titleEl.textContent = j.title;
+  closeDetail();
+  renderJobDetailPage(id);
+}
+
+function renderJobDetailPage(id, sortBy='date', selectedIds=[]) {
+  const j = getJob(id); if(!j) return;
+  const jobCands = candidates.filter(c => getCandJobIds(c).includes(id));
+
+  let sortedCands = [...jobCands];
+  if(sortBy==='name')   sortedCands.sort((a,b)=>a.name.localeCompare(b.name));
+  else if(sortBy==='score')  sortedCands.sort((a,b)=>b.score-a.score);
+  else if(sortBy==='stage')  sortedCands.sort((a,b)=>stages.indexOf(getCandStageForJob(a,id))-stages.indexOf(getCandStageForJob(b,id)));
+  else if(sortBy==='title')  sortedCands.sort((a,b)=>(a.currentTitle||'').localeCompare(b.currentTitle||''));
+  else sortedCands.sort((a,b)=>new Date(b.applied||0)-new Date(a.applied||0));
+
+  const stageCounts = stages.map(s=>({ s, n: jobCands.filter(c=>getCandStageForJob(c,id)===s).length, color:stageColors[s]||'var(--text3)' }));
+  const total = jobCands.length;
+  const hired = stageCounts.find(x=>x.s==='Hired')?.n||0;
+  const intvw = stageCounts.find(x=>x.s==='Interview')?.n||0;
+  const prioClass = j.priority==='High'?'badge-red':j.priority==='Medium'?'badge-amber':'badge-gray';
+  const statusClass = j.status==='Active'?'badge-green':j.status==='Paused'?'badge-amber':'badge-gray';
+  const allSelected = selectedIds.length===sortedCands.length&&sortedCands.length>0;
+  const projLinks = projects.filter(p=>(p.jobIds||[]).includes(j.id));
+
+  const el = document.getElementById('jobdetail-content');
+
+  // Build funnel — single compact line
+  const funnelHTML = '<div style="display:flex;align-items:center;gap:0;overflow-x:auto;padding:0;">' +
+    stageCounts.map(({ s, n, color }, i, arr) => {
+      const isFirst=i===0, isLast=i===arr.length-1;
+      const clip = isLast
+        ? 'polygon(10px 0%,100% 0%,100% 100%,10px 100%,0% 50%)'
+        : isFirst
+        ? 'polygon(0% 0%,calc(100% - 10px) 0%,100% 50%,calc(100% - 10px) 100%,0% 100%)'
+        : 'polygon(10px 0%,calc(100% - 10px) 0%,100% 50%,calc(100% - 10px) 100%,10px 100%,0% 50%)';
+      const isActive = false;
+      return '<div style="flex:' + Math.max(3,10-i) + ';height:44px;min-width:70px;' +
+        'clip-path:' + clip + ';' +
+        'background:' + color + '25;' +
+        'border:1px solid ' + color + '60;' +
+        'display:flex;align-items:center;justify-content:center;gap:6px;' +
+        'cursor:pointer;transition:background 0.15s;margin-left:' + (i>0?'-1px':'0') + ';"' +
+        ' onclick="filterCandsByJob(' + id + ',\'' + s + '\')"' +
+        ' title="' + s + ': ' + n + ' candidates"' +
+        ' onmouseover="this.style.background=\'' + color + '45\'"' +
+        ' onmouseout="this.style.background=\'' + color + '25\'">' +
+        '<span style="font-size:15px;font-weight:800;color:' + color + ';">' + n + '</span>' +
+        '<span style="font-size:10px;font-weight:700;color:' + color + ';white-space:nowrap;">' + s + '</span>' +
+        '</div>';
+    }).join('') + '</div>';
+
+  el.innerHTML =
+    // ── TOP BAR ──
+    '<div style="padding:12px 22px;border-bottom:1px solid var(--border);background:var(--bg2);display:flex;align-items:center;gap:10px;flex-wrap:wrap;flex-shrink:0;">' +
+    '<button class="btn btn-ghost btn-sm" onclick="showPage(\'jobs\',null)">← Jobs</button>' +
+    '<span style="color:var(--border2)">›</span>' +
+    '<span style="font-size:14px;font-weight:700;">' + escapeHtml(j.title) + '</span>' +
+    '<span class="badge ' + statusClass + '">' + j.status + '</span>' +
+    '<span class="badge ' + prioClass + '">' + j.priority + '</span>' +
+    '<div style="margin-left:auto;display:flex;gap:6px;flex-wrap:wrap;">' +
+    '<button class="btn btn-ghost btn-sm" onclick="openEditJob(' + id + ')">✏️ Edit</button>' +
+    '<button class="btn btn-primary btn-sm" onclick="openModal(\'addCandidate\')">+ Add Candidate</button>' +
+    '<button class="btn btn-ghost btn-sm" style="color:var(--red);" onclick="deleteJob(' + id + ')">🗑</button>' +
+    '</div></div>' +
+
+    // ── MAIN CONTENT ──
+    '<div style="flex:1;overflow-y:auto;padding:22px;display:grid;grid-template-columns:1fr 300px;gap:20px;align-items:start;">' +
+
+    // ── LEFT: Funnel + Candidates ──
+    '<div>' +
+
+    // Funnel header
+    '<div class="panel" style="margin-bottom:18px;">' +
+    '<div class="panel-header">' +
+    '<span class="panel-title">Pipeline Funnel</span>' +
+    '<span style="font-size:12px;color:var(--text3);">' + total + ' total · click stage to view</span>' +
+    '</div>' +
+    '<div style="padding:14px 16px;">' + funnelHTML + '</div>' +
+    // Stage count row
+    '<div style="display:grid;grid-template-columns:repeat(4,1fr);border-top:1px solid var(--border);">' +
+    [['💼','Total',total,'var(--accent)'],['📅','Interview',intvw,'var(--amber)'],['📄','Offer',stageCounts.find(x=>x.s==='Offer')?.n||0,'var(--purple)'],['✅','Hired',hired,'var(--green)']].map(([ic,label,val,col],i)=>
+      '<div style="padding:12px;text-align:center' + (i<3?';border-right:1px solid var(--border)':'') + '">' +
+      '<div style="font-size:20px;font-weight:800;color:' + col + '">' + val + '</div>' +
+      '<div style="font-size:10px;color:var(--text3);">' + ic + ' ' + label + '</div></div>'
+    ).join('') + '</div></div>' +
+
+    // Candidates table
+    '<div class="panel">' +
+    '<div style="padding:12px 16px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:10px;flex-wrap:wrap;">' +
+    '<span class="panel-title">Candidates (' + jobCands.length + ')</span>' +
+    '<select onchange="renderJobDetailPage(' + id + ',this.value,[])" style="font-size:11px;padding:4px 8px;background:var(--bg3);border:1px solid var(--border);border-radius:6px;color:var(--text2);">' +
+    ['date','name','score','stage','title'].map(v=>'<option value="'+v+'"'+(v===sortBy?' selected':'')+'>'+{date:'Latest',name:'Name A–Z',score:'Score ↓',stage:'Stage',title:'Job Title'}[v]+'</option>').join('') +
+    '</select>' +
+    (selectedIds.length>0?
+      '<div style="margin-left:auto;display:flex;gap:6px;">' +
+      '<span style="font-size:12px;font-weight:700;color:var(--accent);">' + selectedIds.length + ' selected</span>' +
+      '<button class="btn btn-ghost btn-sm" onclick="bulkMoveStage(' + id + ',[' + selectedIds + '],\'' + sortBy + '\')">↕ Stage</button>' +
+      '<button class="btn btn-ghost btn-sm" onclick="bulkAddToJob(' + id + ',[' + selectedIds + '],\'' + sortBy + '\')">+ Job</button>' +
+      '<button class="btn btn-ghost btn-sm" style="color:var(--red);" onclick="bulkDelete(' + id + ',[' + selectedIds + '],\'' + sortBy + '\')">🗑</button>' +
+      '<button class="btn btn-ghost btn-sm" onclick="renderJobDetailPage(' + id + ',\'' + sortBy + '\',[])">✕</button>' +
+      '</div>' :
+      '<button class="btn btn-ghost btn-sm" style="margin-left:auto;" onclick="openModal(\'addCandidate\')">+ Add</button>'
+    ) +
+    '</div>' +
+    // Select all
+    (sortedCands.length > 0 ?
+      '<div style="display:flex;align-items:center;gap:8px;padding:8px 16px;background:var(--bg3);border-bottom:1px solid var(--border);font-size:12px;color:var(--text3);">' +
+      '<input type="checkbox" ' + (allSelected?'checked':'') + ' onchange="toggleSelectAllJobCands(' + id + ',this.checked,\'' + sortBy + '\')" style="cursor:pointer;">' +
+      '<span>' + (allSelected?'Deselect all':'Select all ' + sortedCands.length) + '</span></div>' : '') +
+    // Candidate rows
+    sortedCands.map(c => {
+      const stage = getCandStageForJob(c, id);
+      const isSelected = selectedIds.includes(c.id);
+      return '<div style="display:flex;align-items:center;gap:10px;padding:10px 16px;border-bottom:1px solid var(--border);cursor:pointer;transition:background 0.1s;' + (isSelected?'background:var(--accent-dim);':'') + '"' +
+        ' onmouseover="if(!this.style.background.includes(\'accent\'))this.style.background=\'var(--bg3)\'"' +
+        ' onmouseout="if(!this.style.background.includes(\'accent\'))this.style.background=\'\'">' +
+        '<input type="checkbox" ' + (isSelected?'checked':'') + ' onclick="event.stopPropagation();toggleCandSelectPage(' + id + ',' + c.id + ',\'' + sortBy + '\')" style="cursor:pointer;flex-shrink:0;">' +
+        '<div style="width:30px;height:30px;border-radius:50%;background:' + c.color + '33;color:' + c.color + ';display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;flex-shrink:0;cursor:pointer;" onclick="openCandProfile(' + c.id + ')">' + c.initials + '</div>' +
+        '<div style="flex:1;min-width:0;cursor:pointer;" onclick="openCandProfile(' + c.id + ')">' +
+        '<div style="font-size:13px;font-weight:600;">' + escapeHtml(c.name) + '</div>' +
+        '<div style="font-size:11px;color:var(--text3);">' + (c.currentTitle||c.email||'') + '</div></div>' +
+        '<div style="display:flex;flex-direction:column;align-items:flex-end;gap:3px;flex-shrink:0;">' +
+        '<span class="badge ' + (stageBadge[stage]||'badge-gray') + '">' + stage + '</span>' +
+        '<span style="font-size:10px;color:var(--text3);font-family:JetBrains Mono,monospace;">' + c.score + '</span></div>' +
+        '<button class="btn btn-ghost btn-sm" style="flex-shrink:0;padding:4px 8px;" onclick="openCandProfile(' + c.id + ')">→</button>' +
+        '</div>';
+    }).join('') +
+    (sortedCands.length===0?'<div style="text-align:center;padding:32px;color:var(--text3);font-size:13px;">No candidates yet — <button class="btn btn-primary btn-sm" onclick="openModal(\'addCandidate\')">Add one</button></div>':'') +
+    '</div></div>' + // end candidates panel + left col
+
+    // ── RIGHT: Job Info ──
+    '<div style="display:flex;flex-direction:column;gap:16px;">' +
+
+    // Job details card
+    '<div class="panel">' +
+    '<div class="panel-header"><span class="panel-title">Job Details</span></div>' +
+    '<div style="padding:14px 16px;display:flex;flex-direction:column;gap:10px;">' +
+    [
+      ['Department', j.dept],
+      ['Location', j.location],
+      ['Type', j.type],
+      ['Salary', j.salary],
+      ['Posted', j.posted],
+      ['Headcount', j.headcount||1],
+      j.hiringManager ? ['Hiring Manager', j.hiringManager] : null,
+      j.recruiter ? ['Recruiter', j.recruiter] : null,
+      j.requisitionDate ? ['Req. Date', j.requisitionDate] : null,
+      j.targetStartDate ? ['Start Date', j.targetStartDate] : null,
+      j.costCentre ? ['Cost Centre', j.costCentre] : null,
+      j.reasonForHire ? ['Reason', j.reasonForHire] : null,
+    ].filter(Boolean).map(([label,val])=>
+      '<div style="display:flex;justify-content:space-between;align-items:center;font-size:12.5px;padding:4px 0;border-bottom:1px solid var(--border);">' +
+      '<span style="color:var(--text3);">' + label + '</span>' +
+      '<span style="font-weight:600;text-align:right;max-width:180px;">' + val + '</span></div>'
+    ).join('') +
+    (projLinks.length?'<div style="padding-top:6px;"><div style="font-size:10px;font-weight:700;text-transform:uppercase;color:var(--text3);margin-bottom:6px;">Projects</div>' +
+    projLinks.map(p=>'<span onclick="openProjectDetail('+p.id+')" style="background:'+p.color+'22;color:'+p.color+';border-radius:4px;padding:2px 7px;font-size:11px;font-weight:600;cursor:pointer;margin-right:4px;">' + (p.icon||'📁') + ' ' + p.name + '</span>').join('') + '</div>':'') +
+    '</div></div>' +
+
+    // Skills card
+    (j.skills?.length?
+      '<div class="panel"><div class="panel-header"><span class="panel-title">Required Skills</span></div>' +
+      '<div style="padding:12px 16px;"><div class="skill-tags">' + (j.skills||[]).map(s=>'<span class="skill-tag">'+s+'</span>').join('') + '</div></div></div>' : '') +
+
+    // Assessments
+    (j.assessments?.length?
+      '<div class="panel"><div class="panel-header"><span class="panel-title">Assessments</span></div>' +
+      '<div style="padding:12px 16px;display:flex;flex-direction:column;gap:6px;">' +
+      j.assessments.map(a=>'<div style="font-size:12.5px;display:flex;align-items:center;gap:6px;"><span style="color:var(--green);">✓</span>' + a + '</div>').join('') +
+      '</div></div>' : '') +
+
+    // Description
+    (j.description?
+      '<div class="panel"><div class="panel-header"><span class="panel-title">Description</span></div>' +
+      '<div style="padding:12px 16px;font-size:12.5px;color:var(--text2);line-height:1.7;white-space:pre-wrap;">' + escapeHtml(j.description) + '</div></div>' : '') +
+
+    // Internal notes
+    (j.internalNotes?
+      '<div class="panel" style="border-color:var(--amber-dim);"><div class="panel-header"><span class="panel-title">🔒 Internal Notes</span></div>' +
+      '<div style="padding:12px 16px;font-size:12.5px;color:var(--amber);line-height:1.7;">' + escapeHtml(j.internalNotes) + '</div></div>' : '') +
+
+    // Actions
+    '<div style="display:flex;flex-direction:column;gap:8px;">' +
+    '<button class="btn btn-primary" style="width:100%;" onclick="openEditJob(' + id + ')">✏️ Edit Job</button>' +
+    '<button class="btn btn-ghost" style="width:100%;color:var(--amber);" onclick="toggleJobStatus(' + id + ',\'' + (j.status==='Active'?'Paused':'Active') + '\')">' + (j.status==='Active'?'⏸ Pause Job':'▶ Activate Job') + '</button>' +
+    '<button class="btn btn-ghost" style="width:100%;color:var(--red);" onclick="deleteJob(' + id + ')">🗑 Delete Job</button>' +
+    '</div>' +
+
+    '</div>' + // end right col
+    '</div>'; // end main content grid
+}
+
+// Select/deselect on the job detail page
+function toggleCandSelectPage(jobId, candId, sortBy) {
+  const state = _jobDetailState[jobId] || { selectedIds:[] };
+  const idx = state.selectedIds.indexOf(candId);
+  if(idx>=0) state.selectedIds.splice(idx,1); else state.selectedIds.push(candId);
+  _jobDetailState[jobId] = state;
+  renderJobDetailPage(jobId, sortBy, state.selectedIds);
+}
+function toggleSelectAllJobCands(jobId, checked, sortBy) {
+  const jobCands = candidates.filter(c=>getCandJobIds(c).includes(jobId));
+  _jobDetailState[jobId] = { selectedIds: checked ? jobCands.map(c=>c.id) : [] };
+  renderJobDetailPage(jobId, sortBy, _jobDetailState[jobId].selectedIds);
+}
+
+// Legacy renderJobDetailPanel — now delegates to full page
+function renderJobDetailPanel(id, sortBy='date', selectedIds=[]) {
+  renderJobDetailPage(id, sortBy, selectedIds);
 }
 
 function renderJobDetailPanel(id, sortBy='date', selectedIds=[]) {
@@ -4493,6 +4724,9 @@ function toggleJobStatus(id, newStatus) {
   if(newStatus==='Closed' && !confirm(`Close "${j.title}"? This will mark it as closed.`)) return;
   j.status = newStatus;
   save(); closeDetail(); renderJobs();
+  // If on job detail page, refresh it
+  if(document.getElementById('page-jobdetail').classList.contains('active')) renderJobDetailPage(id);
+  else showPage('jobs', null);
   showToast(`Job ${newStatus.toLowerCase()}!`);
 }
 
@@ -4503,10 +4737,12 @@ function copyJobLink(id) {
 }
 
 function filterCandsByJob(jobId, stage) {
-  showPage('candidates', document.querySelector('.nav-item:nth-child(4)'));
+  showPage('candidates', null);
   setTimeout(()=>{
-    document.getElementById('cand-job-filter').value = jobId;
-    document.getElementById('cand-stage-filter').value = stage;
+    const jobEl = document.getElementById('cand-job-filter');
+    const stageEl = document.getElementById('cand-stage-filter');
+    if(jobEl) jobEl.value = jobId;
+    if(stageEl) stageEl.value = stage||'';
     renderCandidates();
   }, 100);
 }
@@ -4883,13 +5119,14 @@ function confirmMoveStage(id) {
 
 function deleteJob(id) {
   const j = getJob(id); if(!j) return;
-  const candCount = candidates.filter(c=>c.jobId===id).length;
+  const candCount = candidates.filter(c=>getCandJobIds(c).includes(id)).length;
   const msg = candCount>0
     ? 'Delete "' + j.title + '"? This job has ' + candCount + ' candidate(s). They will become unlinked. This cannot be undone.'
     : 'Delete "' + j.title + '"? This cannot be undone.';
   if(!confirm(msg)) return;
   jobs = jobs.filter(x=>x.id!==id);
   save(); closeDetail(); renderJobs(); populateJobFilters();
+  showPage('jobs', null);
   showToast('Job deleted');
 }
 
@@ -6289,6 +6526,9 @@ document.addEventListener('click', e => {
 });
 </script>
 
+<!-- /APP SHELL -->
+</div>
+
 <!-- MOBILE BOTTOM NAV (hidden on desktop, shown on mobile via CSS) -->
 <nav class="mobile-nav" id="mobile-nav" style="display:none;">
   <button class="mobile-nav-item active" id="mn-dashboard" onclick="mobileNav('dashboard',this)">
@@ -6399,7 +6639,10 @@ window.confirmSignOut = async () => {
   if(confirm('Sign out of TalentFlow?')) {
     unsubscribeFns.forEach(fn=>fn());
     await signOut(auth);
-    document.getElementById('login-screen').style.display='flex';
+    const loginScreen = document.getElementById('login-screen');
+    const appShell = document.getElementById('app-shell');
+    if(loginScreen) { loginScreen.classList.remove('hidden'); loginScreen.style.display='flex'; }
+    if(appShell) appShell.classList.remove('ready');
   }
 };
 
@@ -6410,23 +6653,40 @@ function showLoginError(msg) {
 
 // ===================== AUTH STATE =====================
 onAuthStateChanged(auth, async (user) => {
+  const loginScreen = document.getElementById('login-screen');
+  const appShell = document.getElementById('app-shell');
+  const mobileNav = document.getElementById('mobile-nav');
+
   if(user) {
     currentUser = user;
-    document.getElementById('login-screen').style.display='none';
 
-    // Update sidebar
+    // Update sidebar user info
     const name = user.displayName || user.email?.split('@')[0] || 'User';
-    document.getElementById('sidebar-name').textContent = name;
-    document.getElementById('sidebar-avatar').textContent = name[0].toUpperCase();
-    if(user.photoURL) {
-      document.getElementById('sidebar-avatar').innerHTML = `<img src="${user.photoURL}" style="width:100%;height:100%;border-radius:50%;object-fit:cover">`;
+    const sn = document.getElementById('sidebar-name');
+    const sa = document.getElementById('sidebar-avatar');
+    if(sn) sn.textContent = name;
+    if(sa) {
+      if(user.photoURL) {
+        sa.innerHTML = `<img src="${user.photoURL}" style="width:100%;height:100%;border-radius:50%;object-fit:cover">`;
+      } else {
+        sa.textContent = name[0].toUpperCase();
+      }
     }
 
-    // Load data from Firestore
+    // Load data then show app
     await loadFromFirestore(user.uid);
+
+    // Hide login, show app
+    if(loginScreen) loginScreen.classList.add('hidden');
+    if(appShell) appShell.classList.add('ready');
+    if(mobileNav && window.matchMedia('(max-width:768px)').matches) mobileNav.style.display='flex';
+
   } else {
     currentUser = null;
-    document.getElementById('login-screen').style.display='flex';
+    // Show login, hide app
+    if(loginScreen) { loginScreen.classList.remove('hidden'); loginScreen.style.display='flex'; }
+    if(appShell) appShell.classList.remove('ready');
+    if(mobileNav) mobileNav.style.display='none';
   }
 });
 
