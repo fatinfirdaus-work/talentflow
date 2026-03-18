@@ -326,7 +326,40 @@
   .offer-field-label { font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; color: var(--text3); margin-bottom: 4px; }
   .offer-field-val { font-size: 14px; font-weight: 700; font-family: 'JetBrains Mono'; }
 
-  /* LOGIN SCREEN */
+  /* CANDIDATE PROFILE PAGE */
+  .cp-layout { display:grid;grid-template-columns:340px 1fr;gap:0;height:100%;min-height:calc(100vh - 56px); }
+  .cp-left { border-right:1px solid var(--border);overflow-y:auto;padding:24px 20px;display:flex;flex-direction:column;gap:16px; }
+  .cp-right { overflow-y:auto;display:flex;flex-direction:column; }
+  .cp-avatar { width:80px;height:80px;border-radius:50%;object-fit:cover;flex-shrink:0; }
+  .cp-avatar-initials { width:80px;height:80px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:28px;font-weight:800;flex-shrink:0; }
+  .cp-name { font-size:20px;font-weight:800;letter-spacing:-0.3px;margin-bottom:4px; }
+  .cp-meta { font-size:12px;color:var(--text3);margin-bottom:8px; }
+  .cp-actions { display:flex;gap:6px;flex-wrap:wrap;margin-bottom:4px; }
+  .cp-tabs { display:flex;border-bottom:1px solid var(--border);background:var(--bg2);flex-shrink:0; }
+  .cp-tab { padding:12px 20px;font-size:13px;font-weight:600;color:var(--text3);cursor:pointer;border-bottom:2px solid transparent;transition:all 0.15s;white-space:nowrap; }
+  .cp-tab.active { color:var(--accent);border-bottom-color:var(--accent); }
+  .cp-tab:hover { color:var(--text); }
+  .cp-tab-content { display:none;flex:1;overflow-y:auto; }
+  .cp-tab-content.active { display:block; }
+  .cp-section { padding:20px 24px;border-bottom:1px solid var(--border); }
+  .cp-section-title { font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.5px;color:var(--text3);margin-bottom:12px; }
+  .cp-field-row { display:flex;gap:16px;flex-wrap:wrap;margin-bottom:8px; }
+  .cp-field { flex:1;min-width:140px; }
+  .cp-field-label { font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:0.5px;color:var(--text3);margin-bottom:3px; }
+  .cp-field-val { font-size:13px;font-weight:500; }
+  .iv-card { background:var(--bg3);border:1px solid var(--border);border-radius:10px;margin:0 24px 12px;overflow:hidden; }
+  .iv-card-header { padding:14px 16px;display:flex;align-items:center;justify-content:space-between;cursor:pointer; }
+  .iv-card-header:hover { background:var(--bg4); }
+  .iv-card-body { padding:0 16px 14px;display:none; }
+  .iv-card-body.open { display:block; }
+  .resume-viewer { width:100%;height:600px;border:none;border-radius:8px;background:var(--bg3); }
+  .back-btn { display:inline-flex;align-items:center;gap:6px;color:var(--text3);font-size:13px;cursor:pointer;padding:6px 0;margin-bottom:16px; }
+  .back-btn:hover { color:var(--text); }
+  .cp-info-row { display:flex;align-items:center;gap:8px;font-size:13px;color:var(--text2);padding:5px 0; }
+  .cp-info-row .icon { font-size:15px;width:20px;text-align:center;flex-shrink:0; }
+  .history-item { display:flex;gap:12px;padding:14px 24px;border-bottom:1px solid var(--border); }
+  .history-dot { width:28px;height:28px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:12px;flex-shrink:0;margin-top:1px; }
+
   .login-screen { position:fixed;inset:0;background:var(--bg);z-index:9999;display:flex;align-items:center;justify-content:center;flex-direction:column; }
   .login-card { background:var(--bg2);border:1px solid var(--border2);border-radius:18px;padding:48px 40px;text-align:center;width:100%;max-width:380px;box-shadow:0 24px 80px rgba(0,0,0,0.6); }
   .login-logo { width:52px;height:52px;background:linear-gradient(135deg,#4f8ef7,#a78bfa);border-radius:14px;display:flex;align-items:center;justify-content:center;font-size:24px;margin:0 auto 16px; }
@@ -598,6 +631,11 @@
           </table>
         </div>
       </div>
+    </div>
+
+    <!-- CANDIDATE PROFILE PAGE -->
+    <div class="page" id="page-candprofile">
+      <div id="candprofile-content"></div>
     </div>
 
     <!-- PIPELINE PAGE -->
@@ -1015,18 +1053,18 @@ function renderCandidates() {
   document.getElementById('cand-count').textContent = list.length + ' candidates';
   document.getElementById('cand-tbody').innerHTML = list.length ? list.map(c=>{
     const job = getJob(c.jobId);
-    return `<tr onclick="openCandidateDetail(${c.id})">
+    return `<tr>
       <td><div class="td-name">
         <div class="cand-avatar" style="background:${c.color}33;color:${c.color}">${c.initials}</div>
-        <div><div style="font-weight:600">${c.name}</div><div style="font-size:11px;color:var(--text3)">${c.email}</div></div>
+        <div><div style="font-weight:600;cursor:pointer;color:var(--accent)" onclick="openCandProfile(${c.id})">${c.name}</div><div style="font-size:11px;color:var(--text3)">${c.email||''}</div></div>
       </div></td>
-      <td style="color:var(--text2)">${job?job.title:'–'}</td>
+      <td style="color:var(--text2);cursor:pointer" onclick="openJobDetail(${c.jobId})">${job?job.title:'–'}</td>
       <td><span class="badge ${stageBadge[c.stage]}">${c.stage}</span></td>
       <td><span style="font-family:'JetBrains Mono';font-size:13px;font-weight:600;color:${c.score>=80?'var(--green)':c.score>=60?'var(--amber)':'var(--red)'}">${c.score}</span></td>
       <td style="color:var(--text3);font-size:12px;font-family:'JetBrains Mono'">${c.applied}</td>
       <td><div style="display:flex;gap:6px">
-        <button class="btn btn-ghost btn-sm" onclick="event.stopPropagation();openMoveStage(${c.id})">Move</button>
-        <button class="btn btn-ghost btn-sm" onclick="event.stopPropagation();openCandidateDetail(${c.id})">View</button>
+        <button class="btn btn-primary btn-sm" onclick="openCandProfile(${c.id})">View</button>
+        <button class="btn btn-ghost btn-sm" onclick="openMoveStage(${c.id})">Move</button>
       </div></td>
     </tr>`;}).join('')
     : `<tr><td colspan="6"><div class="empty-state"><div class="empty-icon">👥</div><div class="empty-title">No candidates</div></div></td></tr>`;
@@ -1046,7 +1084,7 @@ function renderPipeline() {
       <div class="kanban-cards">
         ${cards.length ? cards.map(c=>{
           const job = getJob(c.jobId);
-          return `<div class="cand-card" onclick="openCandidateDetail(${c.id})">
+          return `<div class="cand-card" onclick="openCandProfile(${c.id})">
             <div class="cand-name">${c.name}</div>
             <div class="cand-role">${job?job.title:'–'}</div>
             <div class="score-bar"><div class="score-fill" style="width:${c.score}%;background:${c.score>=80?'var(--green)':c.score>=60?'var(--amber)':'var(--red)'}"></div></div>
@@ -1064,7 +1102,7 @@ function renderInterviews() {
   document.getElementById('interview-list').innerHTML = interviews.map(iv=>{
     const c = getCand(iv.candidateId);
     const job = c ? getJob(c.jobId) : null;
-    return `<div class="activity-item" style="cursor:pointer" onclick="openCandidateDetail(${iv.candidateId})">
+    return `<div class="activity-item" style="cursor:pointer" onclick="openCandProfile(${iv.candidateId})">
       <div class="cand-avatar" style="background:${c?c.color:'#888'}33;color:${c?c.color:'#888'};width:34px;height:34px;border-radius:8px;font-size:12px">${c?c.initials:'?'}</div>
       <div style="flex:1">
         <div style="font-weight:600;font-size:13px">${c?c.name:'Unknown'}</div>
@@ -1092,28 +1130,81 @@ function renderInterviews() {
 }
 
 function renderOffers() {
-  document.getElementById('offers-grid').innerHTML = offers.map(o=>{
+  const grid = document.getElementById('offers-grid');
+  if(!grid) return;
+  grid.innerHTML = offers.length ? offers.map((o,oi)=>{
     const c = getCand(o.candidateId);
     const job = c ? getJob(c.jobId) : null;
     return `<div class="offer-card">
       <div style="display:flex;align-items:center;gap:12px;margin-bottom:14px">
         <div class="cand-avatar" style="background:${c?c.color:'#888'}33;color:${c?c.color:'#888'};width:40px;height:40px;border-radius:10px;font-size:14px">${c?c.initials:'?'}</div>
-        <div>
-          <div class="offer-title">${c?c.name:'Unknown'}</div>
+        <div style="flex:1">
+          <div class="offer-title" style="cursor:pointer" onclick="openCandProfile(${o.candidateId})">${c?c.name:'Unknown'}</div>
           <div class="offer-sub">${job?job.title:'–'}</div>
         </div>
-        <span class="badge ${o.status==='Accepted'?'badge-green':o.status==='Rejected'?'badge-red':'badge-amber'}" style="margin-left:auto">${o.status}</span>
+        <span class="badge ${o.status==='Accepted'?'badge-green':o.status==='Rejected'?'badge-red':'badge-amber'}">${o.status}</span>
       </div>
       <div class="offer-grid">
-        <div class="offer-field"><div class="offer-field-label">Base Salary</div><div class="offer-field-val">${o.salary}</div></div>
-        <div class="offer-field"><div class="offer-field-label">Equity</div><div class="offer-field-val">${o.equity}</div></div>
-        <div class="offer-field"><div class="offer-field-label">Signing Bonus</div><div class="offer-field-val">${o.bonus}</div></div>
-        <div class="offer-field"><div class="offer-field-label">Start Date</div><div class="offer-field-val">${o.startDate}</div></div>
+        <div class="offer-field"><div class="offer-field-label">Base Salary</div><div class="offer-field-val" style="font-size:13px">${o.salary||'–'}</div></div>
+        <div class="offer-field"><div class="offer-field-label">Equity / Benefits</div><div class="offer-field-val" style="font-size:13px">${o.equity||'–'}</div></div>
+        <div class="offer-field"><div class="offer-field-label">Signing Bonus</div><div class="offer-field-val" style="font-size:13px">${o.bonus||'–'}</div></div>
+        <div class="offer-field"><div class="offer-field-label">Start Date</div><div class="offer-field-val" style="font-size:13px">${o.startDate||'–'}</div></div>
       </div>
-      <div style="display:flex;gap:8px;margin-top:12px">
-        ${o.status==='Pending'?`<button class="btn btn-primary btn-sm">Send Reminder</button><button class="btn btn-ghost btn-sm">Edit Offer</button>`:'<button class="btn btn-ghost btn-sm">View Details</button>'}
+      ${o.expiryDate?`<div style="font-size:11px;color:var(--text3);margin-top:8px">⏰ Expires: ${o.expiryDate}</div>`:''}
+      ${o.notes?`<div style="font-size:12px;color:var(--text2);margin-top:8px;background:var(--bg3);border-radius:6px;padding:8px">${o.notes}</div>`:''}
+      <div style="display:flex;gap:8px;margin-top:12px;flex-wrap:wrap">
+        ${o.status==='Pending'?`
+          <button class="btn btn-primary btn-sm" onclick="updateOfferStatus(${oi},'Accepted')">✓ Mark Accepted</button>
+          <button class="btn btn-ghost btn-sm" style="color:var(--red)" onclick="updateOfferStatus(${oi},'Rejected')">✕ Mark Rejected</button>
+          <button class="btn btn-ghost btn-sm" onclick="openEditOfferModal(${oi})">✏️ Edit</button>`
+        :`<button class="btn btn-ghost btn-sm" onclick="openCandProfile(${o.candidateId})">View Candidate</button>`}
       </div>
-    </div>`;}).join('');
+    </div>`;}).join('')
+  : `<div class="empty-state" style="grid-column:span 2"><div class="empty-icon">📄</div><div class="empty-title">No offers yet</div><div class="empty-desc">Create an offer from a candidate's profile</div></div>`;
+}
+
+function updateOfferStatus(idx, status) {
+  offers[idx].status = status;
+  const c = getCand(offers[idx].candidateId);
+  if(c && status==='Accepted') {
+    c.stage = 'Hired';
+    addToTimeline(c, 'Offer Accepted 🎉', 'var(--green)');
+    activities.unshift({ text:`<strong>${c.name}</strong> accepted the offer! 🎉`, time:'Just now', color:'var(--green)', ts:Date.now() });
+  }
+  save(); renderOffers();
+  showToast(`Offer marked as ${status}!`);
+}
+
+function openEditOfferModal(idx) {
+  const o = offers[idx];
+  const c = getCand(o.candidateId);
+  document.getElementById('modal-title').textContent = 'Edit Offer — ' + (c?c.name:'Candidate');
+  document.getElementById('modal-body').innerHTML = `
+    <div class="form-row">
+      <div class="form-group"><label>Base Salary</label><input type="text" id="eo-salary" value="${o.salary||''}"></div>
+      <div class="form-group"><label>Signing Bonus</label><input type="text" id="eo-bonus" value="${o.bonus||''}"></div>
+    </div>
+    <div class="form-row">
+      <div class="form-group"><label>Equity / Benefits</label><input type="text" id="eo-equity" value="${o.equity||''}"></div>
+      <div class="form-group"><label>Start Date</label><input type="date" id="eo-start" value="${o.startDate||''}"></div>
+    </div>
+    <div class="form-group"><label>Expiry Date</label><input type="date" id="eo-expiry" value="${o.expiryDate||''}"></div>
+    <div class="form-group"><label>Notes</label><textarea id="eo-notes">${o.notes||''}</textarea></div>`;
+  document.getElementById('modal-footer').innerHTML = `
+    <button class="btn btn-ghost" onclick="closeModal()">Cancel</button>
+    <button class="btn btn-primary" onclick="saveEditOffer(${idx})">Save</button>`;
+  document.getElementById('modal-overlay').classList.add('open');
+}
+
+function saveEditOffer(idx) {
+  offers[idx].salary = document.getElementById('eo-salary').value;
+  offers[idx].bonus = document.getElementById('eo-bonus').value;
+  offers[idx].equity = document.getElementById('eo-equity').value;
+  offers[idx].startDate = document.getElementById('eo-start').value;
+  offers[idx].expiryDate = document.getElementById('eo-expiry').value;
+  offers[idx].notes = document.getElementById('eo-notes').value;
+  save(); closeModal(); renderOffers();
+  showToast('Offer updated!');
 }
 
 function renderAnalytics() {
@@ -1229,94 +1320,607 @@ function showPage(name, navEl) {
   else if(name==='settings') renderSettings();
 }
 
-// ===================== DETAIL PANEL =====================
-function openCandidateDetail(id) {
+// ===================== CANDIDATE FULL PROFILE PAGE =====================
+function openCandProfile(id) {
   const c = getCand(id);
-  const job = c ? getJob(c.jobId) : null;
   if(!c) return;
-  document.getElementById('dp-name').textContent = c.name;
-  document.getElementById('dp-role').textContent = job?job.title:'–';
+  const job = getJob(c.jobId);
+  document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
+  document.getElementById('page-candprofile').classList.add('active');
+  document.querySelectorAll('.nav-item').forEach(n=>n.classList.remove('active'));
+  document.getElementById('topbar-title').textContent = c.name;
+  closeDetail();
+  renderCandProfileContent(id);
+}
 
-  const stars = Array(5).fill(0).map((_,i)=>`<span class="star ${i<c.rating?'filled':'empty'}">${i<c.rating?'★':'☆'}</span>`).join('');
 
-  document.getElementById('dp-body').innerHTML = `
-    <div class="detail-section">
-      <div style="display:flex;align-items:center;gap:12px">
-        <div class="cand-avatar" style="width:52px;height:52px;border-radius:12px;font-size:18px;background:${c.color}33;color:${c.color}">${c.initials}</div>
-        <div>
+function renderCandProfileContent(id) {
+  const c = getCand(id);
+  if(!c) return;
+  const job = getJob(c.jobId);
+  const candInterviews = c.interviews || [];
+  const candFeedback = c.feedback || [];
+  const stars = Array(5).fill(0).map((_,i)=>`<span style="color:${i<(c.rating||0)?'var(--amber)':'var(--border2)'};font-size:16px;cursor:pointer" onclick="rateCand(${c.id},${i+1});renderCandProfileContent(${c.id})">${i<(c.rating||0)?'★':'☆'}</span>`).join('');
+
+  const el = document.getElementById('candprofile-content');
+  el.innerHTML = `
+  <div style="padding:16px 24px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:12px;background:var(--bg2)">
+    <span class="back-btn" onclick="history.back();showPage('candidates',null)">← Back</span>
+    <span style="color:var(--text3);font-size:13px">/</span>
+    <span style="font-size:13px;color:var(--text3);cursor:pointer" onclick="showPage('jobs',null)">Jobs</span>
+    <span style="color:var(--text3);font-size:13px">/</span>
+    <span style="font-size:13px;color:var(--accent);cursor:pointer" onclick="openJobDetail(${c.jobId})">${job?job.title:'Unknown Job'}</span>
+    <span style="color:var(--text3);font-size:13px">/</span>
+    <span style="font-size:13px;font-weight:600">${c.name}</span>
+    <div style="margin-left:auto;display:flex;gap:8px">
+      <button class="btn btn-ghost btn-sm" onclick="openMoveStage(${c.id})">↕ Move Stage</button>
+      <button class="btn btn-ghost btn-sm" onclick="openScheduleInterview(${c.id});document.getElementById('modal-overlay').classList.add('open')">📅 Schedule</button>
+      <button class="btn btn-ghost btn-sm" onclick="openAddFeedback(${c.id})">📝 Feedback</button>
+      <button class="btn btn-ghost btn-sm" onclick="openCreateOffer(${c.id})">📄 Offer</button>
+      <button class="btn btn-ghost btn-sm" style="color:var(--red)" onclick="rejectCandidate(${c.id})">✕ Reject</button>
+    </div>
+  </div>
+
+  <div class="cp-layout">
+    <!-- LEFT SIDEBAR -->
+    <div class="cp-left">
+      <!-- Avatar + Name -->
+      <div style="display:flex;flex-direction:column;align-items:center;text-align:center;padding:8px 0">
+        <div class="cp-avatar-initials" style="background:${c.color}33;color:${c.color};margin-bottom:12px">${c.initials}</div>
+        <div class="cp-name">${c.name}</div>
+        <div class="cp-meta">${c.currentTitle||''}${c.currentTitle&&c.location?' · ':''} ${c.location||''}</div>
+        <div style="margin:6px 0">${stars}</div>
+        <div style="margin-top:8px;display:flex;gap:6px;flex-wrap:wrap;justify-content:center">
           <span class="badge ${stageBadge[c.stage]}">${c.stage}</span>
-          <div style="margin-top:6px;display:flex;gap:4px">${stars}</div>
+          ${c.source?`<span class="badge badge-gray">${c.source}</span>`:''}
+          ${c.hasResume?`<span class="badge badge-gray">📄 Resume</span>`:''}
         </div>
       </div>
-    </div>
-    <div class="detail-section">
-      <div class="detail-section-title">Contact</div>
-      <div class="detail-row"><span class="detail-row-label">Email</span><span class="detail-row-val">${c.email||'–'}</span></div>
-      ${c.phone?`<div class="detail-row"><span class="detail-row-label">Phone</span><span class="detail-row-val">${c.phone}</span></div>`:''}
-      <div class="detail-row"><span class="detail-row-label">Location</span><span class="detail-row-val">${c.location}</span></div>
-      <div class="detail-row"><span class="detail-row-label">Experience</span><span class="detail-row-val">${c.exp}</span></div>
-      ${c.currentTitle?`<div class="detail-row"><span class="detail-row-label">Title</span><span class="detail-row-val">${c.currentTitle}</span></div>`:''}
-      <div class="detail-row"><span class="detail-row-label">Source</span><span class="detail-row-val">${c.source}</span></div>
-      <div class="detail-row"><span class="detail-row-label">Applied</span><span class="detail-row-val" style="font-family:'JetBrains Mono';font-size:12px">${c.applied}</span></div>
-    </div>
-    ${c.hasResume ? `<div class="detail-section">
-      <div class="detail-section-title">Resume</div>
-      <div style="display:flex;align-items:center;gap:10px;background:var(--bg3);border:1px solid var(--border);border-radius:8px;padding:10px 14px">
-        <span style="font-size:20px">📄</span>
-        <div style="flex:1;min-width:0">
-          <div style="font-size:13px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${c.resumeFilename||'Resume'}</div>
-          <div style="font-size:11px;color:var(--text3)">Uploaded resume</div>
-        </div>
-        <button class="btn btn-ghost btn-sm" onclick="viewResume(${c.id})">View</button>
-        <button class="btn btn-ghost btn-sm" onclick="downloadResume(${c.id})">↓</button>
+
+      <!-- Contact Info -->
+      <div style="background:var(--bg3);border-radius:10px;padding:14px 16px;display:flex;flex-direction:column;gap:6px">
+        ${c.email?`<div class="cp-info-row"><span class="icon">✉️</span><a href="mailto:${c.email}" style="color:var(--accent)">${c.email}</a></div>`:''}
+        ${c.phone?`<div class="cp-info-row"><span class="icon">📞</span><a href="tel:${c.phone}" style="color:var(--accent)">${c.phone}</a></div>`:''}
+        ${c.location?`<div class="cp-info-row"><span class="icon">📍</span>${c.location}</div>`:''}
+        ${c.exp?`<div class="cp-info-row"><span class="icon">💼</span>${c.exp} experience</div>`:''}
+        ${c.applied?`<div class="cp-info-row"><span class="icon">📅</span>Applied ${c.applied}</div>`:''}
       </div>
-    </div>` : ''}
-    <div class="detail-section">
-      <div class="detail-section-title">AI Match Score</div>
-      <div style="display:flex;align-items:center;gap:12px">
-        <div style="font-size:36px;font-weight:800;font-family:'JetBrains Mono';color:${c.score>=80?'var(--green)':c.score>=60?'var(--amber)':'var(--red)'}">${c.score}</div>
-        <div style="flex:1">
-          <div class="score-bar" style="height:8px"><div class="score-fill" style="width:${c.score}%;background:${c.score>=80?'var(--green)':c.score>=60?'var(--amber)':'var(--red)'}"></div></div>
-          <div style="font-size:11px;color:var(--text3);margin-top:4px">${c.score>=80?'Strong match':c.score>=60?'Moderate match':'Weak match'}</div>
+
+      <!-- Applied For -->
+      <div style="background:var(--bg3);border-radius:10px;padding:14px 16px">
+        <div class="cp-section-title" style="margin-bottom:8px">Applied For</div>
+        <div style="font-size:13px;font-weight:600;cursor:pointer;color:var(--accent)" onclick="showPage('jobs',null);setTimeout(()=>openJobDetail(${c.jobId}),100)">${job?job.title:'Unknown'}</div>
+        <div style="font-size:12px;color:var(--text3);margin-top:2px">${job?job.dept:''} · ${job?job.type:''}</div>
+        <div style="margin-top:10px">
+          <div class="cp-section-title" style="margin-bottom:4px">Job Pipeline Stage</div>
+          <select style="width:100%;background:var(--bg4);border:1px solid var(--border2);border-radius:6px;padding:6px 10px;color:var(--text);font-family:inherit;font-size:13px" onchange="quickMoveStage(${c.id},this.value)">
+            ${stages.map(s=>`<option value="${s}" ${c.stage===s?'selected':''}>${s}</option>`).join('')}
+          </select>
         </div>
       </div>
-    </div>
-    <div class="detail-section">
-      <div class="detail-section-title">Skills</div>
-      <div class="skill-tags">${c.skills.map(s=>`<span class="skill-tag">${s}</span>`).join('')}</div>
-    </div>
-    <div class="detail-section">
-      <div class="detail-section-title">Timeline</div>
-      <div style="display:flex;flex-direction:column;gap:0">
-        <div class="timeline-item">
-          <div class="timeline-line"><div class="timeline-dot"></div><div class="timeline-vert"></div></div>
-          <div class="timeline-content"><div class="timeline-title">Applied</div><div class="timeline-sub">${c.applied}</div></div>
+
+      <!-- Match Score -->
+      <div style="background:var(--bg3);border-radius:10px;padding:14px 16px">
+        <div class="cp-section-title" style="margin-bottom:8px">AI Match Score</div>
+        <div style="display:flex;align-items:center;gap:12px">
+          <div style="font-size:32px;font-weight:800;font-family:'JetBrains Mono';color:${c.score>=80?'var(--green)':c.score>=60?'var(--amber)':'var(--red)'}">${c.score}</div>
+          <div style="flex:1">
+            <div class="score-bar" style="height:8px"><div class="score-fill" style="width:${c.score}%;background:${c.score>=80?'var(--green)':c.score>=60?'var(--amber)':'var(--red)'}"></div></div>
+            <div style="font-size:11px;color:var(--text3);margin-top:4px">${c.score>=80?'Strong match':c.score>=60?'Moderate match':'Weak match'}</div>
+          </div>
         </div>
-        ${c.stage!=='Applied'?`<div class="timeline-item">
-          <div class="timeline-line"><div class="timeline-dot" style="background:var(--accent)"></div><div class="timeline-vert"></div></div>
-          <div class="timeline-content"><div class="timeline-title">Moved to ${c.stage}</div><div class="timeline-sub">Auto-tracked</div></div>
-        </div>`:''}
-        ${c.stage==='Hired'?`<div class="timeline-item">
-          <div class="timeline-line"><div class="timeline-dot" style="background:var(--green)"></div></div>
-          <div class="timeline-content"><div class="timeline-title">Hired 🎉</div><div class="timeline-sub">Onboarding started</div></div>
-        </div>`:''}
+      </div>
+
+      <!-- Skills -->
+      <div style="background:var(--bg3);border-radius:10px;padding:14px 16px">
+        <div class="cp-section-title" style="margin-bottom:8px">Skills</div>
+        <div class="skill-tags">${(c.skills||[]).map(s=>`<span class="skill-tag">${s}</span>`).join('')||'<span style="color:var(--text3);font-size:12px">None listed</span>'}</div>
+      </div>
+
+      <!-- Similar Candidates -->
+      <div style="background:var(--bg3);border-radius:10px;padding:14px 16px">
+        <div class="cp-section-title" style="margin-bottom:8px">Similar Candidates</div>
+        ${candidates.filter(x=>x.id!==c.id&&x.jobId===c.jobId).slice(0,3).map(x=>`
+          <div style="display:flex;align-items:center;gap:10px;padding:6px 0;cursor:pointer;border-bottom:1px solid var(--border)" onclick="openCandProfile(${x.id})">
+            <div style="width:28px;height:28px;border-radius:50%;background:${x.color}33;color:${x.color};display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:700">${x.initials}</div>
+            <div style="flex:1"><div style="font-size:12px;font-weight:600">${x.name}</div></div>
+            <span class="badge ${stageBadge[x.stage]}" style="font-size:10px">${x.stage}</span>
+          </div>`).join('')||'<div style="color:var(--text3);font-size:12px">No similar candidates</div>'}
       </div>
     </div>
-    ${c.notes?`<div class="detail-section">
-      <div class="detail-section-title">Notes</div>
-      <div class="note-box">${c.notes}</div>
-    </div>`:''}
-    <div class="detail-section">
-      <div class="detail-section-title">Actions</div>
-      <div style="display:flex;gap:8px;flex-wrap:wrap">
-        <button class="btn btn-primary btn-sm" onclick="openMoveStage(${c.id})">Move Stage</button>
-        <button class="btn btn-ghost btn-sm">Send Email</button>
-        <button class="btn btn-ghost btn-sm">Schedule Interview</button>
-        ${c.stage!=='Offer'&&c.stage!=='Hired'?`<button class="btn btn-ghost btn-sm">Create Offer</button>`:''}
+
+    <!-- RIGHT PANEL -->
+    <div class="cp-right">
+      <!-- Stage action bar (like Lark) -->
+      <div style="background:var(--bg2);border-bottom:1px solid var(--border);padding:12px 24px;display:flex;align-items:center;gap:8px;flex-wrap:wrap">
+        <span style="font-size:12px;color:var(--text3)">Stage:</span>
+        ${stages.filter(s=>s!=='Rejected').map(s=>`
+          <div style="display:flex;align-items:center;gap:4px">
+            <div style="width:8px;height:8px;border-radius:50%;background:${c.stage===s?stageColors[s]:'var(--border2)'}"></div>
+            <span style="font-size:12px;font-weight:${c.stage===s?'700':'400'};color:${c.stage===s?stageColors[s]:'var(--text3)'};cursor:pointer" onclick="quickMoveStage(${c.id},'${s}')">${s}</span>
+            ${s!=='Hired'?'<span style="color:var(--border2);font-size:10px">›</span>':''}
+          </div>`).join('')}
+      </div>
+
+      <!-- Tabs -->
+      <div class="cp-tabs">
+        <div class="cp-tab active" onclick="switchCpTab(this,'cp-resume')">Resume ${c.hasResume?'(1)':'Files'}</div>
+        <div class="cp-tab" onclick="switchCpTab(this,'cp-details')">Details</div>
+        <div class="cp-tab" onclick="switchCpTab(this,'cp-interviews')">Interviews (${candInterviews.length})</div>
+        <div class="cp-tab" onclick="switchCpTab(this,'cp-feedback')">Feedback (${candFeedback.length})</div>
+        <div class="cp-tab" onclick="switchCpTab(this,'cp-offers')">Offers</div>
+        <div class="cp-tab" onclick="switchCpTab(this,'cp-history')">Action History</div>
+      </div>
+
+      <!-- TAB: RESUME -->
+      <div class="cp-tab-content active" id="cp-resume">
+        ${c.hasResume ? `
+          <div style="padding:16px 24px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:10px">
+            <span style="font-size:18px">📄</span>
+            <span style="font-size:13px;font-weight:600">${c.resumeFilename||'Resume'}</span>
+            <div style="margin-left:auto;display:flex;gap:8px">
+              <button class="btn btn-ghost btn-sm" onclick="viewResume(${c.id})">🔍 View</button>
+              <button class="btn btn-ghost btn-sm" onclick="downloadResume(${c.id})">⬇ Download</button>
+            </div>
+          </div>
+          <div style="padding:24px;text-align:center;color:var(--text3)">
+            <div style="font-size:40px;margin-bottom:12px">📄</div>
+            <div style="font-size:14px;font-weight:600;margin-bottom:8px">${c.resumeFilename||'Resume'}</div>
+            <button class="btn btn-primary" onclick="viewResume(${c.id})">Open Resume in New Tab</button>
+          </div>`
+        : `<div style="padding:40px 24px;text-align:center">
+            <div style="font-size:40px;margin-bottom:12px">📂</div>
+            <div style="font-size:14px;font-weight:600;margin-bottom:8px">No resume uploaded</div>
+            <div style="font-size:13px;color:var(--text3);margin-bottom:16px">Add a resume by editing this candidate</div>
+            <button class="btn btn-primary" onclick="openEditCandidate(${c.id})">Upload Resume</button>
+          </div>`}
+      </div>
+
+      <!-- TAB: DETAILS -->
+      <div class="cp-tab-content" id="cp-details">
+        <div class="cp-section">
+          <div class="cp-section-title">Basic Information</div>
+          <div class="cp-field-row">
+            <div class="cp-field"><div class="cp-field-label">Full Name</div><div class="cp-field-val">${c.name}</div></div>
+            <div class="cp-field"><div class="cp-field-label">Email</div><div class="cp-field-val"><a href="mailto:${c.email}" style="color:var(--accent)">${c.email||'–'}</a></div></div>
+          </div>
+          <div class="cp-field-row">
+            <div class="cp-field"><div class="cp-field-label">Phone</div><div class="cp-field-val">${c.phone||'–'}</div></div>
+            <div class="cp-field"><div class="cp-field-label">Location</div><div class="cp-field-val">${c.location||'–'}</div></div>
+          </div>
+          <div class="cp-field-row">
+            <div class="cp-field"><div class="cp-field-label">Experience</div><div class="cp-field-val">${c.exp||'–'}</div></div>
+            <div class="cp-field"><div class="cp-field-label">Current Title</div><div class="cp-field-val">${c.currentTitle||'–'}</div></div>
+          </div>
+          <div class="cp-field-row">
+            <div class="cp-field"><div class="cp-field-label">Source</div><div class="cp-field-val">${c.source||'–'}</div></div>
+            <div class="cp-field"><div class="cp-field-label">Applied Date</div><div class="cp-field-val">${c.applied||'–'}</div></div>
+          </div>
+          <div style="margin-top:12px"><button class="btn btn-ghost btn-sm" onclick="openEditCandidate(${c.id})">✏️ Edit Details</button></div>
+        </div>
+        <div class="cp-section">
+          <div class="cp-section-title">Skills</div>
+          <div class="skill-tags">${(c.skills||[]).map(s=>`<span class="skill-tag">${s}</span>`).join('')||'–'}</div>
+        </div>
+        <div class="cp-section">
+          <div class="cp-section-title">Notes</div>
+          ${c.notes?`<div class="note-box" style="white-space:pre-wrap">${c.notes}</div>`:'<div style="color:var(--text3);font-size:13px">No notes yet</div>'}
+          <div style="margin-top:10px"><button class="btn btn-ghost btn-sm" onclick="openEditNotes(${c.id})">✏️ Edit Notes</button></div>
+        </div>
+      </div>
+
+      <!-- TAB: INTERVIEWS -->
+      <div class="cp-tab-content" id="cp-interviews">
+        <div style="padding:16px 24px;border-bottom:1px solid var(--border);display:flex;justify-content:flex-end">
+          <button class="btn btn-primary btn-sm" onclick="openScheduleInterview(${c.id})">+ Schedule Interview</button>
+        </div>
+        ${candInterviews.length ? candInterviews.map((iv,i)=>`
+          <div class="iv-card">
+            <div class="iv-card-header" onclick="this.nextElementSibling.classList.toggle('open')">
+              <div>
+                <div style="font-size:13px;font-weight:700">${iv.round} <span style="color:var(--text3);font-weight:400">· ${iv.type}</span></div>
+                <div style="font-size:12px;color:var(--text3);margin-top:3px">📅 ${iv.date} · ${iv.time} · ${iv.duration||'1 hour'} · 👤 ${iv.interviewer}</div>
+                ${iv.location?`<div style="font-size:12px;color:var(--text3)">📍 ${iv.location}</div>`:''}
+              </div>
+              <div style="display:flex;align-items:center;gap:8px">
+                <span class="badge ${iv.status==='Completed'?'badge-green':iv.status==='Cancelled'?'badge-red':'badge-blue'}">${iv.status||'Scheduled'}</span>
+                <span style="color:var(--text3)">▾</span>
+              </div>
+            </div>
+            <div class="iv-card-body">
+              ${iv.notes?`<div style="font-size:13px;color:var(--text2);margin-bottom:10px;padding:10px;background:var(--bg4);border-radius:6px">${iv.notes}</div>`:''}
+              <div style="display:flex;gap:6px">
+                ${iv.status!=='Completed'?`<button class="btn btn-primary btn-sm" onclick="markInterviewDone(${c.id},${i});renderCandProfileContent(${c.id})">✓ Mark Done</button>`:''}
+                ${iv.status!=='Cancelled'?`<button class="btn btn-ghost btn-sm" style="color:var(--red)" onclick="cancelInterview(${c.id},${i});renderCandProfileContent(${c.id})">✕ Cancel</button>`:''}
+                <button class="btn btn-ghost btn-sm" onclick="openAddFeedback(${c.id})">📝 Add Feedback</button>
+              </div>
+            </div>
+          </div>`).join('')
+        : `<div style="padding:40px 24px;text-align:center;color:var(--text3)"><div style="font-size:36px;margin-bottom:12px">📅</div><div>No interviews scheduled yet</div></div>`}
+      </div>
+
+      <!-- TAB: FEEDBACK -->
+      <div class="cp-tab-content" id="cp-feedback">
+        <div style="padding:16px 24px;border-bottom:1px solid var(--border);display:flex;justify-content:flex-end">
+          <button class="btn btn-primary btn-sm" onclick="openAddFeedback(${c.id})">+ Add Feedback</button>
+        </div>
+        ${candFeedback.length ? candFeedback.map((fb,i)=>`
+          <div style="padding:20px 24px;border-bottom:1px solid var(--border)">
+            <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px">
+              <div>
+                <span style="font-size:14px;font-weight:700">${fb.interviewer}</span>
+                <span style="font-size:12px;color:var(--text3);margin-left:8px">${fb.round} · ${fb.date}</span>
+              </div>
+              <div style="display:flex;align-items:center;gap:8px">
+                <div style="display:flex;gap:2px">${Array(5).fill(0).map((_,i)=>`<span style="color:${i<fb.rating?'var(--amber)':'var(--border2)'};font-size:14px">${i<fb.rating?'★':'☆'}</span>`).join('')}</div>
+                <span class="badge ${fb.recommendation==='Strong Yes'?'badge-green':fb.recommendation==='Yes'?'badge-blue':fb.recommendation==='No'||fb.recommendation==='Strong No'?'badge-red':'badge-amber'}">${fb.recommendation||'–'}</span>
+              </div>
+            </div>
+            ${fb.notes?`<div style="font-size:13px;color:var(--text2);line-height:1.6;margin-bottom:10px">${fb.notes}</div>`:''}
+            ${fb.strengths||fb.concerns?`
+              <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:10px">
+                ${fb.strengths?`<div style="background:var(--green-dim);border-radius:8px;padding:10px 12px">
+                  <div style="font-size:10px;font-weight:700;text-transform:uppercase;color:var(--green);margin-bottom:5px">Strengths</div>
+                  <div style="font-size:12px;color:var(--text2);line-height:1.5">${fb.strengths}</div>
+                </div>`:''}
+                ${fb.concerns?`<div style="background:var(--red-dim);border-radius:8px;padding:10px 12px">
+                  <div style="font-size:10px;font-weight:700;text-transform:uppercase;color:var(--red);margin-bottom:5px">Concerns</div>
+                  <div style="font-size:12px;color:var(--text2);line-height:1.5">${fb.concerns}</div>
+                </div>`:''}
+              </div>`:''}
+            ${fb.skillRatings?`
+              <div style="margin-top:12px;display:flex;flex-wrap:wrap;gap:6px">
+                ${Object.entries(fb.skillRatings).map(([skill,rating])=>`
+                  <div style="background:var(--bg4);border-radius:6px;padding:5px 10px;display:flex;align-items:center;gap:6px">
+                    <span style="font-size:11px;color:var(--text3)">${skill}</span>
+                    <span style="font-size:11px;font-weight:700;color:${rating>=4?'var(--green)':rating>=3?'var(--amber)':'var(--red)'}">${rating}/5</span>
+                  </div>`).join('')}
+              </div>`:''}
+          </div>`).join('')
+        : `<div style="padding:40px 24px;text-align:center;color:var(--text3)"><div style="font-size:36px;margin-bottom:12px">📝</div><div>No feedback submitted yet</div></div>`}
+      </div>
+
+      <!-- TAB: OFFERS -->
+      <div class="cp-tab-content" id="cp-offers">
+        <div style="padding:16px 24px;border-bottom:1px solid var(--border);display:flex;justify-content:flex-end">
+          <button class="btn btn-primary btn-sm" onclick="openCreateOffer(${c.id})">+ Create Offer</button>
+        </div>
+        ${offers.filter(o=>o.candidateId===c.id).length ? offers.filter(o=>o.candidateId===c.id).map((o,oi)=>`
+          <div style="padding:20px 24px;border-bottom:1px solid var(--border)">
+            <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px">
+              <div style="font-size:14px;font-weight:700">Offer — ${o.salary}</div>
+              <span class="badge ${o.status==='Accepted'?'badge-green':o.status==='Rejected'?'badge-red':'badge-amber'}">${o.status}</span>
+            </div>
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:12px">
+              <div class="offer-field"><div class="offer-field-label">Start Date</div><div class="offer-field-val" style="font-size:13px">${o.startDate||'–'}</div></div>
+              <div class="offer-field"><div class="offer-field-label">Signing Bonus</div><div class="offer-field-val" style="font-size:13px">${o.bonus||'–'}</div></div>
+              <div class="offer-field"><div class="offer-field-label">Equity / Benefits</div><div class="offer-field-val" style="font-size:13px">${o.equity||'–'}</div></div>
+              <div class="offer-field"><div class="offer-field-label">Expiry</div><div class="offer-field-val" style="font-size:13px">${o.expiryDate||'–'}</div></div>
+            </div>
+            ${o.status==='Pending'?`<div style="display:flex;gap:8px">
+              <button class="btn btn-primary btn-sm" onclick="updateOfferStatusProfile(${c.id},'Accepted')">✓ Mark Accepted</button>
+              <button class="btn btn-ghost btn-sm" style="color:var(--red)" onclick="updateOfferStatusProfile(${c.id},'Rejected')">✕ Rejected</button>
+            </div>`:''}
+          </div>`).join('')
+        : `<div style="padding:40px 24px;text-align:center;color:var(--text3)"><div style="font-size:36px;margin-bottom:12px">📄</div><div>No offers yet</div></div>`}
+      </div>
+
+      <!-- TAB: ACTION HISTORY -->
+      <div class="cp-tab-content" id="cp-history">
+        <div class="history-item">
+          <div class="history-dot" style="background:var(--accent-dim);color:var(--accent)">📥</div>
+          <div><div style="font-size:13px;font-weight:600">Application received</div><div style="font-size:12px;color:var(--text3);font-family:'JetBrains Mono'">${c.applied}</div></div>
+        </div>
+        ${(c.timeline||[]).map(t=>`
+          <div class="history-item">
+            <div class="history-dot" style="background:${t.color}22;color:${t.color}">●</div>
+            <div><div style="font-size:13px;font-weight:600">${t.title}</div><div style="font-size:12px;color:var(--text3);font-family:'JetBrains Mono'">${t.date}</div></div>
+          </div>`).join('')}
+        ${candInterviews.map(iv=>`
+          <div class="history-item">
+            <div class="history-dot" style="background:var(--accent-dim);color:var(--accent)">📅</div>
+            <div><div style="font-size:13px;font-weight:600">${iv.round} scheduled with ${iv.interviewer}</div><div style="font-size:12px;color:var(--text3);font-family:'JetBrains Mono'">${iv.date} · ${iv.status}</div></div>
+          </div>`).join('')}
+        ${candFeedback.map(fb=>`
+          <div class="history-item">
+            <div class="history-dot" style="background:var(--purple-dim);color:var(--purple)">📝</div>
+            <div><div style="font-size:13px;font-weight:600">Feedback by ${fb.interviewer} — ${fb.recommendation}</div><div style="font-size:12px;color:var(--text3);font-family:'JetBrains Mono'">${fb.date}</div></div>
+          </div>`).join('')}
+      </div>
+    </div>
+  </div>`;
+}
+
+function switchCpTab(el, tabId) {
+  el.closest('.cp-right').querySelectorAll('.cp-tab').forEach(t=>t.classList.remove('active'));
+  el.classList.add('active');
+  el.closest('.cp-right').querySelectorAll('.cp-tab-content').forEach(t=>t.classList.remove('active'));
+  document.getElementById(tabId).classList.add('active');
+}
+
+function quickMoveStage(id, stage) {
+  const c = getCand(id); if(!c) return;
+  c.stage = stage;
+  addToTimeline(c, `Moved to ${stage}`, stageColors[stage]||'var(--accent)');
+  activities.unshift({ text:`<strong>${c.name}</strong> moved to <strong>${stage}</strong>`, time:'Just now', color:stageColors[stage], ts:Date.now() });
+  save();
+  renderCandProfileContent(id);
+  showToast(`Moved to ${stage}!`);
+}
+
+function updateOfferStatusProfile(candId, status) {
+  const idx = offers.findIndex(o=>o.candidateId===candId);
+  if(idx>=0) updateOfferStatus(idx, status);
+  renderCandProfileContent(candId);
+}
+
+function rateCand(id, rating) {
+  const c = getCand(id); if(!c) return;
+  c.rating = rating; save();
+  openCandProfile(id);
+}
+
+function rejectCandidate(id) {
+  const c = getCand(id); if(!c) return;
+  if(!confirm(`Reject ${c.name}?`)) return;
+  c.stage = 'Rejected';
+  addToTimeline(c, 'Rejected', 'var(--red)');
+  save(); closeDetail(); renderCandidates(); renderPipeline();
+  showToast(c.name + ' marked as rejected');
+}
+
+function markInterviewDone(candId, ivIdx) {
+  const c = getCand(candId); if(!c) return;
+  c.interviews[ivIdx].status = 'Completed';
+  save(); openCandProfile(candId);
+  showToast('Interview marked as completed!');
+}
+
+function cancelInterview(candId, ivIdx) {
+  const c = getCand(candId); if(!c) return;
+  if(!confirm('Cancel this interview?')) return;
+  c.interviews[ivIdx].status = 'Cancelled';
+  save(); openCandProfile(candId);
+  showToast('Interview cancelled');
+}
+
+function addToTimeline(c, title, color) {
+  if(!c.timeline) c.timeline = [];
+  c.timeline.push({ title, date: new Date().toISOString().split('T')[0], color });
+}
+
+function openScheduleInterview(id) {
+  const c = getCand(id); if(!c) return;
+  const overlay = document.getElementById('modal-overlay');
+  const body = document.getElementById('modal-body');
+  const footer = document.getElementById('modal-footer');
+  document.getElementById('modal-title').textContent = '📅 Schedule Interview — ' + c.name;
+  body.innerHTML = `
+    <div class="form-row">
+      <div class="form-group"><label>Interview Round</label>
+        <select id="iv-round"><option>Screening Call</option><option>Round 1</option><option>Round 2</option><option>Technical</option><option>Culture Fit</option><option>Final Round</option><option>HR Interview</option></select>
+      </div>
+      <div class="form-group"><label>Interview Type</label>
+        <select id="iv-type"><option>Video Call</option><option>Phone Call</option><option>In Person</option><option>Technical Test</option><option>Portfolio Review</option><option>Panel Interview</option></select>
+      </div>
+    </div>
+    <div class="form-row">
+      <div class="form-group"><label>Date</label><input type="date" id="iv-date" value="${new Date().toISOString().split('T')[0]}"></div>
+      <div class="form-group"><label>Time</label><input type="time" id="iv-time" value="10:00"></div>
+    </div>
+    <div class="form-row">
+      <div class="form-group"><label>Duration</label>
+        <select id="iv-duration"><option>30 minutes</option><option>45 minutes</option><option>1 hour</option><option>1.5 hours</option><option>2 hours</option></select>
+      </div>
+      <div class="form-group"><label>Interviewer Name</label><input type="text" id="iv-interviewer" placeholder="e.g. Sarah K."></div>
+    </div>
+    <div class="form-group"><label>Location / Meeting Link</label><input type="text" id="iv-location" placeholder="e.g. Google Meet link or Office Room 3"></div>
+    <div class="form-group"><label>Notes for Interviewer</label><textarea id="iv-notes" placeholder="What to focus on, candidate background..."></textarea></div>`;
+  footer.innerHTML = `<button class="btn btn-ghost" onclick="closeModal()">Cancel</button>
+    <button class="btn btn-primary" onclick="saveInterview(${id})">Schedule Interview</button>`;
+  overlay.classList.add('open');
+}
+
+function saveInterview(id) {
+  const c = getCand(id); if(!c) return;
+  const date = document.getElementById('iv-date').value;
+  const time = document.getElementById('iv-time').value;
+  const round = document.getElementById('iv-round').value;
+  const type = document.getElementById('iv-type').value;
+  const duration = document.getElementById('iv-duration').value;
+  const interviewer = document.getElementById('iv-interviewer').value || 'TBD';
+  const location = document.getElementById('iv-location').value;
+  const notes = document.getElementById('iv-notes').value;
+  if(!date) { showToast('Please select a date'); return; }
+  if(!c.interviews) c.interviews = [];
+  c.interviews.push({ round, type, date, time, duration, interviewer, location, notes, status:'Scheduled' });
+  addToTimeline(c, `${round} scheduled`, 'var(--accent)');
+  activities.unshift({ text:`<strong>${round}</strong> scheduled for <strong>${c.name}</strong> on ${date}`, time:'Just now', color:'var(--accent)', ts:Date.now() });
+  save(); closeModal(); openCandProfile(id);
+  showToast('Interview scheduled!');
+}
+
+function openAddFeedback(id) {
+  const c = getCand(id); if(!c) return;
+  const overlay = document.getElementById('modal-overlay');
+  const body = document.getElementById('modal-body');
+  const footer = document.getElementById('modal-footer');
+  document.getElementById('modal-title').textContent = '📝 Interview Feedback — ' + c.name;
+  body.innerHTML = `
+    <div class="form-row">
+      <div class="form-group"><label>Interviewer Name</label><input type="text" id="fb-interviewer" placeholder="Your name"></div>
+      <div class="form-group"><label>Interview Round</label>
+        <select id="fb-round"><option>Screening Call</option><option>Round 1</option><option>Round 2</option><option>Technical</option><option>Culture Fit</option><option>Final Round</option></select>
+      </div>
+    </div>
+    <div class="form-row">
+      <div class="form-group"><label>Date</label><input type="date" id="fb-date" value="${new Date().toISOString().split('T')[0]}"></div>
+      <div class="form-group"><label>Overall Rating</label>
+        <select id="fb-rating"><option value="5">⭐⭐⭐⭐⭐ Exceptional</option><option value="4">⭐⭐⭐⭐ Good</option><option value="3">⭐⭐⭐ Average</option><option value="2">⭐⭐ Below Average</option><option value="1">⭐ Poor</option></select>
+      </div>
+    </div>
+    <div class="form-group"><label>Recommendation</label>
+      <select id="fb-rec"><option>Strong Yes</option><option>Yes</option><option>Maybe</option><option>No</option><option>Strong No</option></select>
+    </div>
+    <div class="form-group"><label>Overall Feedback</label><textarea id="fb-notes" placeholder="General impression, how the interview went..." style="min-height:80px"></textarea></div>
+    <div class="form-row">
+      <div class="form-group"><label>Strengths</label><textarea id="fb-strengths" placeholder="What stood out positively..." style="min-height:60px"></textarea></div>
+      <div class="form-group"><label>Concerns / Areas to Improve</label><textarea id="fb-concerns" placeholder="Any red flags or weaknesses..." style="min-height:60px"></textarea></div>
+    </div>
+    <div style="background:var(--bg3);border-radius:8px;padding:12px;margin-top:4px">
+      <div style="font-size:12px;font-weight:700;color:var(--text2);margin-bottom:10px;text-transform:uppercase;letter-spacing:0.5px">Skill Ratings</div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
+        ${['Technical Skills','Communication','Problem Solving','Culture Fit','Leadership'].map(skill=>`
+          <div>
+            <div style="font-size:11px;color:var(--text3);margin-bottom:4px">${skill}</div>
+            <select class="skill-rating-select" data-skill="${skill}" style="width:100%;background:var(--bg4);border:1px solid var(--border2);border-radius:6px;padding:5px 8px;color:var(--text);font-family:inherit;font-size:12px">
+              <option value="5">Excellent</option><option value="4">Good</option><option value="3" selected>Average</option><option value="2">Below Avg</option><option value="1">Poor</option>
+            </select>
+          </div>`).join('')}
       </div>
     </div>`;
+  footer.innerHTML = `<button class="btn btn-ghost" onclick="closeModal()">Cancel</button>
+    <button class="btn btn-primary" onclick="saveFeedback(${id})">Submit Feedback</button>`;
+  overlay.classList.add('open');
+}
 
-  document.getElementById('detail-panel').classList.add('open');
+function saveFeedback(id) {
+  const c = getCand(id); if(!c) return;
+  const interviewer = document.getElementById('fb-interviewer').value || 'Anonymous';
+  const round = document.getElementById('fb-round').value;
+  const date = document.getElementById('fb-date').value;
+  const rating = parseInt(document.getElementById('fb-rating').value);
+  const recommendation = document.getElementById('fb-rec').value;
+  const notes = document.getElementById('fb-notes').value;
+  const strengths = document.getElementById('fb-strengths').value;
+  const concerns = document.getElementById('fb-concerns').value;
+  const skillRatings = {};
+  document.querySelectorAll('.skill-rating-select').forEach(el=>{ skillRatings[el.dataset.skill]=parseInt(el.value); });
+  if(!c.feedback) c.feedback = [];
+  c.feedback.push({ interviewer, round, date, rating, recommendation, notes, strengths, concerns, skillRatings });
+  addToTimeline(c, `Feedback submitted by ${interviewer}`, 'var(--purple)');
+  activities.unshift({ text:`<strong>${interviewer}</strong> submitted feedback for <strong>${c.name}</strong> — ${recommendation}`, time:'Just now', color:'var(--purple)', ts:Date.now() });
+  save(); closeModal(); openCandProfile(id);
+  showToast('Feedback saved!');
+}
+
+function openEditNotes(id) {
+  const c = getCand(id); if(!c) return;
+  const overlay = document.getElementById('modal-overlay');
+  document.getElementById('modal-title').textContent = 'Edit Notes — ' + c.name;
+  document.getElementById('modal-body').innerHTML = `
+    <div class="form-group"><label>Notes</label>
+      <textarea id="edit-notes" style="min-height:160px" placeholder="Add any notes about this candidate...">${c.notes||''}</textarea>
+    </div>`;
+  document.getElementById('modal-footer').innerHTML = `
+    <button class="btn btn-ghost" onclick="closeModal()">Cancel</button>
+    <button class="btn btn-primary" onclick="saveNotes(${id})">Save Notes</button>`;
+  overlay.classList.add('open');
+}
+
+function saveNotes(id) {
+  const c = getCand(id); if(!c) return;
+  c.notes = document.getElementById('edit-notes').value;
+  save(); closeModal(); openCandProfile(id);
+  showToast('Notes saved!');
+}
+
+function openEditCandidate(id) {
+  const c = getCand(id); if(!c) return;
+  const overlay = document.getElementById('modal-overlay');
+  document.getElementById('modal-title').textContent = 'Edit Candidate — ' + c.name;
+  document.getElementById('modal-body').innerHTML = `
+    <div class="form-row">
+      <div class="form-group"><label>Full Name</label><input type="text" id="ec-name" value="${c.name}"></div>
+      <div class="form-group"><label>Email</label><input type="email" id="ec-email" value="${c.email||''}"></div>
+    </div>
+    <div class="form-row">
+      <div class="form-group"><label>Phone</label><input type="text" id="ec-phone" value="${c.phone||''}"></div>
+      <div class="form-group"><label>Location</label><input type="text" id="ec-location" value="${c.location||''}"></div>
+    </div>
+    <div class="form-row">
+      <div class="form-group"><label>Experience</label><input type="text" id="ec-exp" value="${c.exp||''}"></div>
+      <div class="form-group"><label>Current Title</label><input type="text" id="ec-title" value="${c.currentTitle||''}"></div>
+    </div>
+    <div class="form-row">
+      <div class="form-group"><label>Source</label>
+        <select id="ec-source"><option ${c.source==='LinkedIn'?'selected':''}>LinkedIn</option><option ${c.source==='Referral'?'selected':''}>Referral</option><option ${c.source==='Job Board'?'selected':''}>Job Board</option><option ${c.source==='Direct'?'selected':''}>Direct</option><option ${c.source==='Resume Upload'?'selected':''}>Resume Upload</option><option ${c.source==='GitHub'?'selected':''}>GitHub</option><option ${c.source==='Other'?'selected':''}>Other</option></select>
+      </div>
+      <div class="form-group"><label>Match Score (0–100)</label><input type="number" id="ec-score" value="${c.score||70}" min="0" max="100"></div>
+    </div>
+    <div class="form-group"><label>Applied For</label>
+      <select id="ec-job">${jobs.map(j=>`<option value="${j.id}" ${c.jobId===j.id?'selected':''}>${j.title}</option>`).join('')}</select>
+    </div>
+    <div class="form-group"><label>Skills (comma separated)</label><input type="text" id="ec-skills" value="${(c.skills||[]).join(', ')}"></div>`;
+  document.getElementById('modal-footer').innerHTML = `
+    <button class="btn btn-ghost" onclick="closeModal()">Cancel</button>
+    <button class="btn btn-primary" onclick="saveEditCandidate(${id})">Save Changes</button>`;
+  overlay.classList.add('open');
+}
+
+function saveEditCandidate(id) {
+  const c = getCand(id); if(!c) return;
+  c.name = document.getElementById('ec-name').value.trim() || c.name;
+  c.email = document.getElementById('ec-email').value.trim();
+  c.phone = document.getElementById('ec-phone').value.trim();
+  c.location = document.getElementById('ec-location').value.trim();
+  c.exp = document.getElementById('ec-exp').value.trim();
+  c.currentTitle = document.getElementById('ec-title').value.trim();
+  c.source = document.getElementById('ec-source').value;
+  c.score = Math.min(100,Math.max(0,parseInt(document.getElementById('ec-score').value)||70));
+  c.jobId = parseInt(document.getElementById('ec-job').value);
+  const skillsRaw = document.getElementById('ec-skills').value;
+  c.skills = skillsRaw ? skillsRaw.split(',').map(s=>s.trim()).filter(Boolean) : [];
+  c.initials = c.name.split(' ').map(w=>w[0]).join('').slice(0,2).toUpperCase();
+  save(); closeModal(); openCandProfile(id);
+  showToast('Candidate updated!');
+}
+
+function openCreateOffer(id) {
+  const c = getCand(id); if(!c) return;
+  const overlay = document.getElementById('modal-overlay');
+  document.getElementById('modal-title').textContent = '📄 Create Offer — ' + c.name;
+  document.getElementById('modal-body').innerHTML = `
+    <div class="form-row">
+      <div class="form-group"><label>Base Salary</label><input type="text" id="of-salary" placeholder="e.g. RM 8,000/month"></div>
+      <div class="form-group"><label>Employment Type</label>
+        <select id="of-type"><option>Full-time</option><option>Part-time</option><option>Contract</option></select>
+      </div>
+    </div>
+    <div class="form-row">
+      <div class="form-group"><label>Signing Bonus</label><input type="text" id="of-bonus" placeholder="e.g. RM 5,000"></div>
+      <div class="form-group"><label>Equity / Benefits</label><input type="text" id="of-equity" placeholder="e.g. 0.5% or Medical + EPF"></div>
+    </div>
+    <div class="form-row">
+      <div class="form-group"><label>Start Date</label><input type="date" id="of-start"></div>
+      <div class="form-group"><label>Offer Expiry Date</label><input type="date" id="of-expiry"></div>
+    </div>
+    <div class="form-group"><label>Additional Notes</label><textarea id="of-notes" placeholder="Any special conditions, probation period..."></textarea></div>`;
+  document.getElementById('modal-footer').innerHTML = `
+    <button class="btn btn-ghost" onclick="closeModal()">Cancel</button>
+    <button class="btn btn-primary" onclick="saveOffer(${id})">Create & Send Offer</button>`;
+  overlay.classList.add('open');
+}
+
+function saveOffer(id) {
+  const c = getCand(id); if(!c) return;
+  const salary = document.getElementById('of-salary').value;
+  if(!salary) { showToast('Please enter salary'); return; }
+  const offer = {
+    candidateId: id,
+    salary, bonus: document.getElementById('of-bonus').value,
+    equity: document.getElementById('of-equity').value,
+    startDate: document.getElementById('of-start').value,
+    expiryDate: document.getElementById('of-expiry').value,
+    notes: document.getElementById('of-notes').value,
+    status: 'Pending', sentDate: new Date().toISOString().split('T')[0]
+  };
+  offers.push(offer);
+  c.stage = 'Offer';
+  addToTimeline(c, 'Offer created', 'var(--purple)');
+  activities.unshift({ text:`Offer created for <strong>${c.name}</strong> at ${salary}`, time:'Just now', color:'var(--purple)', ts:Date.now() });
+  save(); closeModal(); openCandProfile(id);
+  showToast('Offer created!');
 }
 
 function openJobDetail(id) {
@@ -1330,7 +1934,15 @@ function openJobDetail(id) {
       <div style="display:flex;gap:8px;flex-wrap:wrap">
         <span class="badge ${j.status==='Active'?'badge-green':j.status==='Paused'?'badge-amber':'badge-gray'}">${j.status}</span>
         <span class="badge badge-gray">${j.type}</span>
-        <span class="badge badge-gray">${j.priority} Priority</span>
+        <span class="badge ${j.priority==='High'?'badge-red':j.priority==='Medium'?'badge-amber':'badge-gray'}">${j.priority} Priority</span>
+      </div>
+    </div>
+    <div class="detail-section">
+      <div style="display:flex;gap:6px;flex-wrap:wrap">
+        <button class="btn btn-primary btn-sm" onclick="openEditJob(${j.id})">✏️ Edit Job</button>
+        <button class="btn btn-ghost btn-sm" onclick="copyJobLink(${j.id})">🔗 Copy Link</button>
+        <button class="btn btn-ghost btn-sm" style="color:var(--amber)" onclick="toggleJobStatus(${j.id},'${j.status==='Active'?'Paused':'Active'}')">${j.status==='Active'?'⏸ Pause':'▶ Activate'}</button>
+        <button class="btn btn-ghost btn-sm" style="color:var(--red)" onclick="toggleJobStatus(${j.id},'Closed')">✕ Close</button>
       </div>
     </div>
     <div class="detail-section">
@@ -1343,24 +1955,102 @@ function openJobDetail(id) {
     </div>
     <div class="detail-section">
       <div class="detail-section-title">Required Skills</div>
-      <div class="skill-tags">${j.skills.map(s=>`<span class="skill-tag">${s}</span>`).join('')}</div>
+      <div class="skill-tags">${(j.skills||[]).map(s=>`<span class="skill-tag">${s}</span>`).join('')||'<span style="color:var(--text3);font-size:12px">None listed</span>'}</div>
     </div>
+    ${j.description?`<div class="detail-section"><div class="detail-section-title">Description</div><div class="note-box" style="white-space:pre-wrap">${j.description}</div></div>`:''}
     <div class="detail-section">
       <div class="detail-section-title">Pipeline (${jobCands.length} candidates)</div>
       ${stages.map(s=>{
         const cnt = jobCands.filter(c=>c.stage===s).length;
-        return `<div class="detail-row"><span class="detail-row-label" style="color:${stageColors[s]}">${s}</span><span class="detail-row-val">${cnt}</span></div>`;}).join('')}
+        return `<div class="detail-row" style="cursor:pointer" onclick="filterCandsByJob(${j.id},'${s}')">
+          <span class="detail-row-label" style="color:${stageColors[s]}">${s}</span>
+          <span class="detail-row-val">${cnt}</span>
+        </div>`;}).join('')}
     </div>
     <div class="detail-section">
-      <div class="detail-section-title">Actions</div>
-      <div style="display:flex;gap:8px;flex-wrap:wrap">
-        <button class="btn btn-primary btn-sm">Edit Job</button>
-        <button class="btn btn-ghost btn-sm">Share Link</button>
-        <button class="btn btn-ghost btn-sm" style="color:var(--amber)">Pause</button>
-        <button class="btn btn-ghost btn-sm" style="color:var(--red)">Close Job</button>
-      </div>
+      <div class="detail-section-title">Recent Candidates</div>
+      ${jobCands.slice(0,4).map(c=>`
+        <div style="display:flex;align-items:center;gap:10px;padding:8px 0;border-bottom:1px solid var(--border);cursor:pointer" onclick="openCandProfile(${c.id})">
+          <div class="cand-avatar" style="width:28px;height:28px;font-size:11px;background:${c.color}33;color:${c.color}">${c.initials}</div>
+          <div style="flex:1"><div style="font-size:12px;font-weight:600">${c.name}</div></div>
+          <span class="badge ${stageBadge[c.stage]}" style="font-size:10px">${c.stage}</span>
+        </div>`).join('')||'<div style="color:var(--text3);font-size:12px">No candidates yet</div>'}
     </div>`;
+  document.getElementById('dp-move-btn').style.display='none';
   document.getElementById('detail-panel').classList.add('open');
+}
+
+function toggleJobStatus(id, newStatus) {
+  const j = getJob(id); if(!j) return;
+  if(newStatus==='Closed' && !confirm(`Close "${j.title}"? This will mark it as closed.`)) return;
+  j.status = newStatus;
+  save(); closeDetail(); renderJobs();
+  showToast(`Job ${newStatus.toLowerCase()}!`);
+}
+
+function copyJobLink(id) {
+  const j = getJob(id); if(!j) return;
+  const text = `${j.title} — ${j.dept} — ${j.location} — ${j.salary}`;
+  navigator.clipboard.writeText(text).then(()=>showToast('Job details copied!')).catch(()=>showToast('Could not copy'));
+}
+
+function filterCandsByJob(jobId, stage) {
+  showPage('candidates', document.querySelector('.nav-item:nth-child(4)'));
+  setTimeout(()=>{
+    document.getElementById('cand-job-filter').value = jobId;
+    document.getElementById('cand-stage-filter').value = stage;
+    renderCandidates();
+  }, 100);
+}
+
+function openEditJob(id) {
+  const j = getJob(id); if(!j) return;
+  const overlay = document.getElementById('modal-overlay');
+  document.getElementById('modal-title').textContent = 'Edit Job — ' + j.title;
+  document.getElementById('modal-body').innerHTML = `
+    <div class="form-row">
+      <div class="form-group"><label>Job Title</label><input type="text" id="ej-title" value="${j.title}"></div>
+      <div class="form-group"><label>Department</label>
+        <select id="ej-dept"><option ${j.dept==='Engineering'?'selected':''}>Engineering</option><option ${j.dept==='Design'?'selected':''}>Design</option><option ${j.dept==='Product'?'selected':''}>Product</option><option ${j.dept==='Marketing'?'selected':''}>Marketing</option><option ${j.dept==='Sales'?'selected':''}>Sales</option><option ${j.dept==='Operations'?'selected':''}>Operations</option></select>
+      </div>
+    </div>
+    <div class="form-row">
+      <div class="form-group"><label>Type</label>
+        <select id="ej-type"><option ${j.type==='Full-time'?'selected':''}>Full-time</option><option ${j.type==='Part-time'?'selected':''}>Part-time</option><option ${j.type==='Contract'?'selected':''}>Contract</option><option ${j.type==='Internship'?'selected':''}>Internship</option></select>
+      </div>
+      <div class="form-group"><label>Location</label><input type="text" id="ej-location" value="${j.location}"></div>
+    </div>
+    <div class="form-row">
+      <div class="form-group"><label>Salary</label><input type="text" id="ej-salary" value="${j.salary}"></div>
+      <div class="form-group"><label>Priority</label>
+        <select id="ej-priority"><option ${j.priority==='High'?'selected':''}>High</option><option ${j.priority==='Medium'?'selected':''}>Medium</option><option ${j.priority==='Low'?'selected':''}>Low</option></select>
+      </div>
+    </div>
+    <div class="form-group"><label>Status</label>
+      <select id="ej-status"><option ${j.status==='Active'?'selected':''}>Active</option><option ${j.status==='Paused'?'selected':''}>Paused</option><option ${j.status==='Closed'?'selected':''}>Closed</option></select>
+    </div>
+    <div class="form-group"><label>Required Skills (comma separated)</label><input type="text" id="ej-skills" value="${(j.skills||[]).join(', ')}"></div>
+    <div class="form-group"><label>Job Description</label><textarea id="ej-desc" style="min-height:100px">${j.description||''}</textarea></div>`;
+  document.getElementById('modal-footer').innerHTML = `
+    <button class="btn btn-ghost" onclick="closeModal()">Cancel</button>
+    <button class="btn btn-primary" onclick="saveEditJob(${id})">Save Changes</button>`;
+  overlay.classList.add('open');
+}
+
+function saveEditJob(id) {
+  const j = getJob(id); if(!j) return;
+  j.title = document.getElementById('ej-title').value.trim() || j.title;
+  j.dept = document.getElementById('ej-dept').value;
+  j.type = document.getElementById('ej-type').value;
+  j.location = document.getElementById('ej-location').value.trim();
+  j.salary = document.getElementById('ej-salary').value.trim();
+  j.priority = document.getElementById('ej-priority').value;
+  j.status = document.getElementById('ej-status').value;
+  j.description = document.getElementById('ej-desc').value;
+  const skillsRaw = document.getElementById('ej-skills').value;
+  j.skills = skillsRaw ? skillsRaw.split(',').map(s=>s.trim()).filter(Boolean) : [];
+  save(); closeModal(); renderJobs(); openJobDetail(id);
+  showToast('Job updated!');
 }
 
 function closeDetail() { document.getElementById('detail-panel').classList.remove('open'); }
@@ -1534,7 +2224,7 @@ function confirmMoveStage(id) {
   renderCandidates();
   renderPipeline();
   showToast('Candidate moved and saved!');
-  if(document.getElementById('detail-panel').classList.contains('open')) openCandidateDetail(id);
+  if(document.getElementById('detail-panel').classList.contains('open')) openCandProfile(id);
 }
 
 function closeModal() { document.getElementById('modal-overlay').classList.remove('open'); }
@@ -1851,7 +2541,7 @@ function renderReports() {
   // --- FULL TABLE ---
   document.getElementById('report-tbody').innerHTML = filtered.length ? filtered.map((c,i)=>{
     const job = getJob(c.jobId);
-    return `<tr onclick="openCandidateDetail(${c.id})">
+    return `<tr onclick="openCandProfile(${c.id})">
       <td style="color:var(--text3);font-family:'JetBrains Mono';font-size:11px">${i+1}</td>
       <td><div class="td-name">
         <div class="cand-avatar" style="background:${c.color}33;color:${c.color};width:26px;height:26px;font-size:10px">${c.initials}</div>
