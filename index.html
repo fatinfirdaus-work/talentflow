@@ -169,7 +169,7 @@
   /* ── MODAL ── */
   .modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.65); backdrop-filter: blur(6px); z-index: 999; display: flex; align-items: center; justify-content: center; padding: 20px; opacity: 0; pointer-events: none; transition: opacity 0.18s; }
   .modal-overlay.open { opacity: 1; pointer-events: all; }
-  .modal { background: var(--bg2); border: 1px solid var(--border2); border-radius: 14px; width: 100%; max-width: 560px; max-height: 88vh; overflow-y: auto; transform: scale(0.96); transition: transform 0.2s cubic-bezier(0.34,1.56,0.64,1); box-shadow: var(--shadow-lg); }
+  .modal { background: var(--bg2); border: 1px solid var(--border2); border-radius: 14px; width: 100%; max-width: var(--modal-w, 560px); max-height: 88vh; overflow-y: auto; transform: scale(0.96); transition: transform 0.2s cubic-bezier(0.34,1.56,0.64,1); box-shadow: var(--shadow-lg); }
   .modal-overlay.open .modal { transform: scale(1); }
   .modal-header { display: flex; align-items: center; justify-content: space-between; padding: 18px 22px; border-bottom: 1px solid var(--border); position: sticky; top: 0; background: var(--bg2); z-index: 2; }
   .modal-title { font-size: 15px; font-weight: 700; }
@@ -4804,8 +4804,9 @@ function filterCandsByJob(jobId, stage) {
 
 function openEditJob(id) {
   const j = getJob(id); if(!j) return;
-  document.getElementById('modal-title').textContent = 'Edit Job — ' + j.title;
+  document.getElementById('modal-title').textContent = 'Edit Job';
   document.getElementById('modal-body').innerHTML = buildJobFormHTML(j);
+  document.getElementById('modal-overlay').style.setProperty('--modal-w','640px');
   document.getElementById('modal-footer').innerHTML =
     '<button class="btn btn-ghost" onclick="closeModal()">Cancel</button>' +
     '<button class="btn btn-primary" onclick="saveEditJob(' + id + ')">Save Changes</button>';
@@ -4813,94 +4814,190 @@ function openEditJob(id) {
 }
 
 function buildJobFormHTML(j) {
-  // j can be null for new job, or an existing job object for edit
   const isEdit = !!j;
   const v = (field, fallback='') => isEdit ? (j[field]||fallback) : fallback;
   const sel = (field, val) => isEdit && j[field]===val ? 'selected' : '';
   const customStages = getCustomStages().filter(s=>s.enabled);
 
-  return `
-    <div style="display:flex;flex-direction:column;gap:0;">
-      <!-- SECTION: Basic Info -->
-      <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.5px;color:var(--text3);padding:12px 0 6px;">📋 Basic Info</div>
-      <div class="form-row">
-        <div class="form-group"><label>Job Title *</label><input type="text" id="jf-title" value="${v('title')}" placeholder="e.g. Senior Frontend Engineer"></div>
-        <div class="form-group"><label>Department</label><select id="jf-dept">${getDeptOptions(v('dept'))}</select></div>
+  // Tab system for the form
+  const tabStyle = `
+    <style>
+      .jf-tabs { display:flex; border-bottom:1px solid var(--border); margin:-20px -22px 20px; padding:0 22px; gap:0; }
+      .jf-tab { padding:11px 16px; font-size:12.5px; font-weight:600; color:var(--text3); cursor:pointer;
+        border-bottom:2px solid transparent; transition:all 0.12s; white-space:nowrap; }
+      .jf-tab:hover { color:var(--text); }
+      .jf-tab.active { color:var(--accent); border-bottom-color:var(--accent); }
+      .jf-pane { display:none; flex-direction:column; gap:14px; }
+      .jf-pane.active { display:flex; }
+      .jf-field { display:flex; flex-direction:column; gap:5px; }
+      .jf-field label { font-size:11px; font-weight:600; color:var(--text3); letter-spacing:0.3px; }
+      .jf-row { display:grid; grid-template-columns:1fr 1fr; gap:12px; }
+      .jf-section-label { font-size:11px; font-weight:700; color:var(--text3); text-transform:uppercase;
+        letter-spacing:0.6px; padding-bottom:8px; border-bottom:1px solid var(--border); margin-bottom:2px; }
+      .jf-chip-wrap { display:flex; flex-wrap:wrap; gap:6px; }
+      .jf-chip { display:flex; align-items:center; gap:6px; padding:5px 11px; border-radius:20px;
+        border:1.5px solid var(--border); cursor:pointer; transition:all 0.12s; user-select:none; }
+      .jf-chip:hover { border-color:var(--border2); }
+      .jf-chip input { display:none; }
+      .jf-chip.checked { border-color:var(--accent); background:var(--accent-dim); }
+      .jf-chip span { font-size:12px; font-weight:600; color:var(--text2); }
+      .jf-chip.checked span { color:var(--accent); }
+    </style>`;
+
+  return tabStyle + `
+  <div>
+    <div class="jf-tabs">
+      <div class="jf-tab active" onclick="jfTab(this,'jf-pane-basic')">Role</div>
+      <div class="jf-tab" onclick="jfTab(this,'jf-pane-req')">Requisition</div>
+      <div class="jf-tab" onclick="jfTab(this,'jf-pane-detail')">Details</div>
+      <div class="jf-tab" onclick="jfTab(this,'jf-pane-pipeline')">Pipeline</div>
+    </div>
+
+    <!-- TAB 1: ROLE -->
+    <div class="jf-pane active" id="jf-pane-basic">
+      <div class="jf-row">
+        <div class="jf-field" style="grid-column:1/-1;">
+          <label>Job Title *</label>
+          <input type="text" id="jf-title" value="${v('title')}" placeholder="e.g. Senior Frontend Engineer" style="font-size:14px;font-weight:600;">
+        </div>
       </div>
-      <div class="form-row">
-        <div class="form-group"><label>Employment Type</label>
+      <div class="jf-row">
+        <div class="jf-field">
+          <label>Department</label>
+          <select id="jf-dept">${getDeptOptions(v('dept'))}</select>
+        </div>
+        <div class="jf-field">
+          <label>Employment Type</label>
           <select id="jf-type">
             ${['Full-time','Part-time','Contract','Internship','Freelance'].map(t=>`<option ${sel('type',t)||(!isEdit&&t==='Full-time'?'selected':'')}>${t}</option>`).join('')}
           </select>
         </div>
-        <div class="form-group"><label>Location</label><input type="text" id="jf-location" value="${v('location')}" placeholder="e.g. Kuala Lumpur / Remote"></div>
       </div>
-      <div class="form-row">
-        <div class="form-group"><label>Salary Min (MYR)</label><input type="number" id="jf-salmin" value="${v('salMin')}" placeholder="e.g. 6000"></div>
-        <div class="form-group"><label>Salary Max (MYR)</label><input type="number" id="jf-salmax" value="${v('salMax')}" placeholder="e.g. 10000"></div>
+      <div class="jf-field">
+        <label>Location</label>
+        <input type="text" id="jf-location" value="${v('location')}" placeholder="e.g. Kuala Lumpur · Remote · Hybrid">
       </div>
-
-      <!-- SECTION: Requisition Details -->
-      <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.5px;color:var(--text3);padding:12px 0 6px;border-top:1px solid var(--border);margin-top:8px;">📝 Requisition Details</div>
-      <div class="form-row">
-        <div class="form-group"><label>Hiring Manager / Requester</label><input type="text" id="jf-hiringmanager" value="${v('hiringManager')}" placeholder="e.g. Ahmad Razif"></div>
-        <div class="form-group"><label>Recruiter Assigned</label><input type="text" id="jf-recruiter" value="${v('recruiter')}" placeholder="e.g. Fatin Firdaus"></div>
+      <div class="jf-row">
+        <div class="jf-field">
+          <label>Salary Min (RM)</label>
+          <input type="number" id="jf-salmin" value="${v('salMin')}" placeholder="6,000">
+        </div>
+        <div class="jf-field">
+          <label>Salary Max (RM)</label>
+          <input type="number" id="jf-salmax" value="${v('salMax')}" placeholder="12,000">
+        </div>
       </div>
-      <div class="form-row">
-        <div class="form-group"><label>Requisition Date</label><input type="date" id="jf-reqdate" value="${v('requisitionDate', new Date().toISOString().split('T')[0])}"></div>
-        <div class="form-group"><label>Target Start Date</label><input type="date" id="jf-startdate" value="${v('targetStartDate')}"></div>
-      </div>
-      <div class="form-row">
-        <div class="form-group"><label>Headcount / Openings</label><input type="number" id="jf-headcount" value="${v('headcount',1)}" min="1" placeholder="1"></div>
-        <div class="form-group"><label>Priority</label>
+      <div class="jf-row">
+        <div class="jf-field">
+          <label>Priority</label>
           <select id="jf-priority">
             ${['High','Medium','Low'].map(p=>`<option ${sel('priority',p)||(!isEdit&&p==='Medium'?'selected':'')}>${p}</option>`).join('')}
           </select>
         </div>
-      </div>
-      <div class="form-row">
-        <div class="form-group"><label>Cost Centre / Budget Code</label><input type="text" id="jf-costcentre" value="${v('costCentre')}" placeholder="e.g. CC-TECH-001"></div>
-        <div class="form-group"><label>Status</label>
+        <div class="jf-field">
+          <label>Status</label>
           <select id="jf-status">
             ${['Active','Paused','Closed'].map(s=>`<option ${sel('status',s)||(!isEdit&&s==='Active'?'selected':'')}>${s}</option>`).join('')}
           </select>
         </div>
       </div>
-      <div class="form-group"><label>Reason for Hire</label>
+    </div>
+
+    <!-- TAB 2: REQUISITION -->
+    <div class="jf-pane" id="jf-pane-req">
+      <div class="jf-row">
+        <div class="jf-field">
+          <label>Hiring Manager / Requester</label>
+          <input type="text" id="jf-hiringmanager" value="${v('hiringManager')}" placeholder="e.g. Ahmad Razif">
+        </div>
+        <div class="jf-field">
+          <label>Recruiter Assigned</label>
+          <input type="text" id="jf-recruiter" value="${v('recruiter')}" placeholder="e.g. Fatin Firdaus">
+        </div>
+      </div>
+      <div class="jf-row">
+        <div class="jf-field">
+          <label>Requisition Date</label>
+          <input type="date" id="jf-reqdate" value="${v('requisitionDate', new Date().toISOString().split('T')[0])}">
+        </div>
+        <div class="jf-field">
+          <label>Target Start Date</label>
+          <input type="date" id="jf-startdate" value="${v('targetStartDate')}">
+        </div>
+      </div>
+      <div class="jf-row">
+        <div class="jf-field">
+          <label>Headcount / Openings</label>
+          <input type="number" id="jf-headcount" value="${v('headcount',1)}" min="1" placeholder="1">
+        </div>
+        <div class="jf-field">
+          <label>Cost Centre / Budget Code</label>
+          <input type="text" id="jf-costcentre" value="${v('costCentre')}" placeholder="e.g. CC-TECH-001">
+        </div>
+      </div>
+      <div class="jf-field">
+        <label>Reason for Hire</label>
         <select id="jf-reasonforhire">
           ${['New Headcount','Backfill','Replacement','Expansion','Temporary Coverage'].map(r=>`<option ${sel('reasonForHire',r)}>${r}</option>`).join('')}
         </select>
       </div>
-
-      <!-- SECTION: Job Details -->
-      <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.5px;color:var(--text3);padding:12px 0 6px;border-top:1px solid var(--border);margin-top:8px;">📄 Job Details</div>
-      <div class="form-group"><label>Job Description</label><textarea id="jf-desc" style="min-height:100px" placeholder="Responsibilities, requirements, what success looks like...">${v('description')}</textarea></div>
-      <div class="form-group"><label>Required Skills (comma separated)</label><input type="text" id="jf-skills" value="${v('skills',(j?.skills||[]).join(', '))}" placeholder="e.g. React, Node.js, TypeScript"></div>
-      <div class="form-group"><label>Internal Notes (not shown to candidates)</label><textarea id="jf-internalnotes" style="min-height:60px" placeholder="Any internal context, budget limits, preferences...">${v('internalNotes')}</textarea></div>
-
-      <!-- SECTION: Pipeline & Assessments -->
-      <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.5px;color:var(--text3);padding:12px 0 6px;border-top:1px solid var(--border);margin-top:8px;">🔀 Pipeline Stages</div>
-      <div style="display:flex;flex-wrap:wrap;gap:8px;" id="jf-stages">
-        ${customStages.map(s=>{
-          const checked = isEdit ? (j.jobStages?.includes(s.name) ?? true) : true;
-          const locked = ['Applied','Hired','Rejected'].includes(s.name);
-          return `<label style="display:flex;align-items:center;gap:6px;background:var(--bg3);border:1px solid var(--border);border-radius:6px;padding:5px 10px;cursor:pointer;">
-            <input type="checkbox" name="jf-stage" value="${s.name}" ${checked?'checked':''} ${locked?'disabled checked':''} style="accent-color:${s.color}">
-            <span style="font-size:12px;font-weight:600;color:${s.color}">${s.name}</span>
-          </label>`;
-        }).join('')}
+      <div class="jf-field">
+        <label>Internal Notes <span style="font-weight:400;text-transform:none;letter-spacing:0;">(not visible to candidates)</span></label>
+        <textarea id="jf-internalnotes" style="min-height:80px;" placeholder="Budget constraints, preferences, context...">${v('internalNotes')}</textarea>
       </div>
-      <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.5px;color:var(--text3);padding:12px 0 6px;margin-top:4px;">✅ Assessments</div>
-      <div style="display:flex;flex-wrap:wrap;gap:8px;">
-        ${['Technical Test','Take-home Assignment','Portfolio Review','Personality Assessment','Background Check','Reference Check'].map(a=>{
-          const checked = isEdit && (j.assessments||[]).includes(a);
-          return `<label style="display:flex;align-items:center;gap:6px;background:var(--bg3);border:1px solid var(--border);border-radius:6px;padding:5px 10px;cursor:pointer;">
-            <input type="checkbox" name="jf-assessment" value="${a}" ${checked?'checked':''}>
-            <span style="font-size:12px;color:var(--text2)">${a}</span>
-          </label>`;
-        }).join('')}
+    </div>
+
+    <!-- TAB 3: DETAILS -->
+    <div class="jf-pane" id="jf-pane-detail">
+      <div class="jf-field">
+        <label>Job Description</label>
+        <textarea id="jf-desc" style="min-height:160px;line-height:1.7;" placeholder="Describe the role — responsibilities, requirements, what success looks like...">${v('description')}</textarea>
       </div>
-    </div>`;
+      <div class="jf-field">
+        <label>Required Skills <span style="font-weight:400;text-transform:none;">(comma separated)</span></label>
+        <input type="text" id="jf-skills" value="${v('skills',(j?.skills||[]).join(', '))}" placeholder="e.g. React, Node.js, TypeScript, SQL">
+      </div>
+    </div>
+
+    <!-- TAB 4: PIPELINE -->
+    <div class="jf-pane" id="jf-pane-pipeline">
+      <div>
+        <div class="jf-section-label">Pipeline Stages</div>
+        <div style="font-size:12px;color:var(--text3);margin-bottom:12px;">Choose which stages apply to this role.</div>
+        <div class="jf-chip-wrap" id="jf-stages">
+          ${customStages.map(s=>{
+            const checked = isEdit ? (j.jobStages?.length ? j.jobStages.includes(s.name) : true) : true;
+            const locked = ['Applied','Hired','Rejected'].includes(s.name);
+            return `<label class="jf-chip ${checked?'checked':''}" style="${checked?'border-color:'+s.color+';background:'+s.color+'18;':''}">
+              <input type="checkbox" name="jf-stage" value="${s.name}" ${checked?'checked':''} ${locked?'disabled':''} onchange="this.closest('.jf-chip').classList.toggle('checked',this.checked);this.closest('.jf-chip').style.borderColor=this.checked?'${s.color}':'';this.closest('.jf-chip').style.background=this.checked?'${s.color}18':'';">
+              <span style="color:${checked?s.color:'var(--text2)'};">${s.name}</span>
+            </label>`;
+          }).join('')}
+        </div>
+      </div>
+      <div>
+        <div class="jf-section-label">Assessments</div>
+        <div style="font-size:12px;color:var(--text3);margin-bottom:12px;">Select any assessments required for this role.</div>
+        <div class="jf-chip-wrap">
+          ${['Technical Test','Take-home Assignment','Portfolio Review','Personality Assessment','Background Check','Reference Check'].map(a=>{
+            const checked = isEdit && (j.assessments||[]).includes(a);
+            return `<label class="jf-chip ${checked?'checked':''}">
+              <input type="checkbox" name="jf-assessment" value="${a}" ${checked?'checked':''} onchange="this.closest('.jf-chip').classList.toggle('checked',this.checked);">
+              <span>${a}</span>
+            </label>`;
+          }).join('')}
+        </div>
+      </div>
+    </div>
+  </div>`;
+}
+
+function jfTab(el, paneId) {
+  el.closest('.modal-body').querySelectorAll('.jf-tab').forEach(t=>t.classList.remove('active'));
+  el.classList.add('active');
+  el.closest('.modal-body').querySelectorAll('.jf-pane').forEach(p=>p.classList.remove('active'));
+  const pane = el.closest('.modal-body').querySelector('#'+paneId);
+  if(pane) pane.classList.add('active');
 }
 
 function saveEditJob(id) {
@@ -4946,9 +5043,11 @@ function openModal(type, data={}) {
   const footer = document.getElementById('modal-footer');
   const title = document.getElementById('modal-title');
 
+  overlay.style.setProperty('--modal-w', '560px'); // reset default
   if(type==='add') {
     title.textContent = 'Post New Job';
     body.innerHTML = buildJobFormHTML(null);
+    overlay.style.setProperty('--modal-w','640px');
     footer.innerHTML = '<button class="btn btn-ghost" onclick="closeModal()">Cancel</button><button class="btn btn-primary" onclick="saveJob()">Post Job</button>';
   } else if(type==='addCandidate') {
     title.textContent = 'Add Candidate';
