@@ -37,7 +37,7 @@
     --shadow-lg: 0 8px 40px rgba(0,0,0,0.5);
   }
   *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-  body { font-family: 'Sora', sans-serif; background: var(--bg); color: var(--text); min-height: 100vh; display: flex; font-size: 13.5px; overflow: hidden; }
+  body { font-family: 'Sora', sans-serif; background: var(--bg); color: var(--text); height: 100vh; display: flex; font-size: 13.5px; overflow: hidden; margin: 0; }
 
   /* ── SIDEBAR ── */
   .sidebar {
@@ -66,7 +66,7 @@
   .user-role { font-size: 10.5px; color: var(--text3); }
 
   /* ── MAIN ── */
-  .main { margin-left: var(--sidebar-w); flex: 1; display: flex; flex-direction: column; height: 100vh; min-height: 0; overflow: hidden; }
+  .main { margin-left: var(--sidebar-w); flex: 1; display: flex; flex-direction: column; min-height: 0; }
 
   /* ── TOPBAR ── */
   .topbar { background: var(--bg2); border-bottom: 1px solid var(--border); padding: 0 22px; height: 52px; display: flex; align-items: center; gap: 14px; flex-shrink: 0; }
@@ -90,7 +90,7 @@
   .search-icon { color: var(--text3); font-size: 13px; flex-shrink: 0; }
 
   /* ── CONTENT ── */
-  .content { flex: 1; overflow-y: auto; }
+  .content { flex: 1; overflow-y: auto; min-height: 0; height: 0; }
 
   .page { display: none; }
   .page.active { display: block; padding: 22px; }
@@ -1093,6 +1093,7 @@
 
     <!-- ANALYTICS PAGE -->
     <div class="page" id="page-analytics">
+      <div style="background:red;color:white;padding:20px;font-size:20px;font-weight:bold;">🔴 ANALYTICS LOADED - CSS WORKS</div>
       <div style="max-width:1300px;">
       <div class="stats-row" style="margin-bottom:24px;">
         <div class="stat-card">
