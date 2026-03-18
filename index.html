@@ -1228,6 +1228,7 @@ function renderCandidates() {
       <td><div style="display:flex;gap:6px">
         <button class="btn btn-primary btn-sm" onclick="openCandProfile(${c.id})">View</button>
         <button class="btn btn-ghost btn-sm" onclick="openMoveStage(${c.id})">Move</button>
+        <button class="btn btn-ghost btn-sm" onclick="openCandInNewTab(${c.id})" title="Open in new tab">↗</button>
       </div></td>
     </tr>`;}).join('')
     : `<tr><td colspan="6"><div class="empty-state"><div class="empty-icon">👥</div><div class="empty-title">No candidates</div></div></td></tr>`;
@@ -2155,15 +2156,15 @@ function populateJobFilters() {
 }
 
 // ===================== NAVIGATION =====================
-function showPage(name, navEl) {
-  // Page loader bar
+function showPage(name, navEl, pushHistory=true) {
+  if(pushHistory) history.pushState({page:name}, '', '#'+name);
+
   document.querySelector('.page-loader')?.remove();
   const loader = document.createElement('div');
   loader.className = 'page-loader';
   document.body.appendChild(loader);
   setTimeout(()=>loader.remove(), 500);
 
-  // Fade title
   const titleEl = document.getElementById('topbar-title');
   if(titleEl) {
     titleEl.style.opacity = '0';
@@ -2176,6 +2177,17 @@ function showPage(name, navEl) {
   document.getElementById('page-'+name)?.classList.add('active');
   document.querySelectorAll('.nav-item').forEach(n=>n.classList.remove('active'));
   if(navEl) navEl.classList.add('active');
+  else {
+    document.querySelectorAll('.nav-item').forEach(n=>{
+      const txt = n.textContent.trim();
+      if((name==='dashboard'&&txt.startsWith('Dashboard'))||(name==='jobs'&&txt.startsWith('Jobs'))||
+         (name==='candidates'&&txt.startsWith('Candidates'))||(name==='pipeline'&&txt.startsWith('Pipeline'))||
+         (name==='interviews'&&txt.startsWith('Interviews'))||(name==='offers'&&txt.startsWith('Offers'))||
+         (name==='analytics'&&txt.startsWith('Analytics'))||(name==='reports'&&txt.startsWith('Reports'))||
+         (name==='inbox'&&txt.startsWith('Inbox'))||(name==='settings'&&txt.startsWith('Settings')))
+        n.classList.add('active');
+    });
+  }
   closeDetail();
 
   if(name==='dashboard') renderDashboard();
@@ -2189,7 +2201,6 @@ function showPage(name, navEl) {
   else if(name==='inbox') renderInbox();
   else if(name==='settings') renderSettings();
 
-  // Animate stat numbers after render
   if(name==='dashboard') {
     setTimeout(()=>{
       document.querySelectorAll('.stat-val').forEach(el=>{
@@ -2248,19 +2259,212 @@ function showSkeleton(containerId, rows=5) {
     </div>`).join('');
 }
 
-
 // ===================== CANDIDATE FULL PROFILE PAGE =====================
-function openCandProfile(id) {
+function openCandProfile(id, pushHistory=true) {
   const c = getCand(id);
   if(!c) return;
-  const job = getJob(c.jobId);
+  if(pushHistory) history.pushState({page:'candidate', id}, '', '#candidate/'+id);
   document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
   document.getElementById('page-candprofile').classList.add('active');
-  document.querySelectorAll('.nav-item').forEach(n=>n.classList.remove('active'));
+  document.querySelectorAll('.nav-item').forEach(n=>{
+    n.classList.remove('active');
+    if(n.textContent.trim().startsWith('Candidates')) n.classList.add('active');
+  });
   document.getElementById('topbar-title').textContent = c.name;
   closeDetail();
   renderCandProfileContent(id);
 }
+
+function openCandInNewTab(id) {
+  const url = location.href.split('#')[0] + '#candidate/' + id;
+  window.open(url, '_blank');
+}
+
+// ===================== URL ROUTING =====================
+function navigateToHash(hash) {
+  if(!hash || hash==='#' || hash==='') { showPage('dashboard', null, false); return; }
+  const path = hash.replace('#','');
+  if(path.startsWith('candidate/')) {
+    const id = parseInt(path.split('/')[1]);
+    if(!isNaN(id)) {
+      // Wait for data to load if needed
+      const tryOpen = () => {
+        const c = getCand(id);
+        if(c) { openCandProfile(id, false); }
+        else { showPage('candidates', null, false); }
+      };
+      if(candidates.length > 0) tryOpen();
+      else setTimeout(tryOpen, 1500); // wait for Firebase load
+    }
+  } else {
+    const valid = ['dashboard','jobs','candidates','pipeline','interviews','offers','analytics','reports','inbox','settings'];
+    showPage(valid.includes(path)?path:'dashboard', null, false);
+  }
+}
+
+window.addEventListener('popstate', e => {
+  if(e.state?.page==='candidate') openCandProfile(e.state.id, false);
+  else if(e.state?.page) showPage(e.state.page, null, false);
+  else navigateToHash(location.hash);
+});
+
+function restoreFromURL() {
+  if(location.hash && location.hash !== '#') navigateToHash(location.hash);
+}
+
+
+
+// ===================== NOTES SYSTEM =====================
+function getNotes(c) {
+  // Support both old string notes and new array format
+  if(!c.notesList) {
+    c.notesList = [];
+    if(c.notes) {
+      // Migrate old single note
+      c.notesList.push({ id: Date.now(), text: c.notes, createdAt: c.applied || new Date().toISOString(), editedAt: null });
+      c.notes = '';
+    }
+  }
+  return c.notesList;
+}
+
+function renderNotesList(c) {
+  const notes = getNotes(c);
+  if(!notes.length) return `<div style="text-align:center;padding:20px;color:var(--text3);font-size:13px;background:var(--bg3);border-radius:8px;">No notes yet — click + Add Note to get started</div>`;
+  return notes.slice().reverse().map((n,i)=>`
+    <div id="note-card-${n.id}" style="background:var(--bg3);border:1px solid var(--border);border-radius:10px;padding:14px 16px;margin-bottom:10px;transition:border-color 0.15s;" onmouseover="this.style.borderColor='var(--border2)'" onmouseout="this.style.borderColor='var(--border)'">
+      <div style="display:flex;align-items:flex-start;gap:8px;">
+        <div style="flex:1;min-width:0;">
+          <div id="note-text-${n.id}" style="font-size:13px;color:var(--text);line-height:1.7;white-space:pre-wrap;word-break:break-word;">${escapeHtml(n.text)}</div>
+          <div style="display:none;" id="note-edit-${n.id}">
+            <textarea id="note-textarea-${n.id}" style="width:100%;min-height:80px;margin-top:6px;resize:vertical;">${n.text}</textarea>
+            <div style="display:flex;gap:6px;margin-top:8px;">
+              <button class="btn btn-primary btn-sm" onclick="saveNoteEdit(${c.id},'${n.id}')">Save</button>
+              <button class="btn btn-ghost btn-sm" onclick="cancelNoteEdit('${n.id}')">Cancel</button>
+            </div>
+          </div>
+          <div style="display:flex;align-items:center;gap:10px;margin-top:8px;flex-wrap:wrap;">
+            <span style="font-size:11px;color:var(--text3);font-family:'JetBrains Mono';">📝 ${formatDateTime(n.createdAt)}</span>
+            ${n.editedAt?`<span style="font-size:11px;color:var(--text3);font-family:'JetBrains Mono';">✏️ edited ${formatDateTime(n.editedAt)}</span>`:''}
+          </div>
+        </div>
+        <div style="display:flex;gap:4px;flex-shrink:0;">
+          <button class="btn btn-ghost btn-sm" style="padding:4px 8px;font-size:11px;" onclick="startNoteEdit('${n.id}')">✏️</button>
+          <button class="btn btn-ghost btn-sm" style="padding:4px 8px;font-size:11px;color:var(--red);" onclick="deleteNote(${c.id},'${n.id}')">✕</button>
+        </div>
+      </div>
+    </div>`).join('');
+}
+
+function escapeHtml(str) {
+  return String(str||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+}
+
+function formatDateTime(isoStr) {
+  if(!isoStr) return '–';
+  try {
+    const d = new Date(isoStr);
+    const date = d.toLocaleDateString('en-MY', {day:'numeric',month:'short',year:'numeric'});
+    const time = d.toLocaleTimeString('en-MY', {hour:'2-digit',minute:'2-digit'});
+    return `${date} · ${time}`;
+  } catch(e) { return isoStr; }
+}
+
+function openAddNote(id) {
+  const c = getCand(id); if(!c) return;
+  document.getElementById('modal-title').textContent = '📝 Add Note — ' + c.name;
+  document.getElementById('modal-body').innerHTML = `
+    <div class="form-group">
+      <label>Note</label>
+      <textarea id="new-note-text" style="min-height:140px;" placeholder="Write your note here... (supports multiple lines)"></textarea>
+    </div>
+    <div style="font-size:12px;color:var(--text3);">📅 Will be saved with today's date and time automatically.</div>`;
+  document.getElementById('modal-footer').innerHTML = `
+    <button class="btn btn-ghost" onclick="closeModal()">Cancel</button>
+    <button class="btn btn-primary" onclick="saveNewNote(${id})">Save Note</button>`;
+  document.getElementById('modal-overlay').classList.add('open');
+  setTimeout(()=>document.getElementById('new-note-text')?.focus(), 100);
+}
+
+function saveNewNote(id) {
+  const c = getCand(id); if(!c) return;
+  const text = document.getElementById('new-note-text')?.value.trim();
+  if(!text) { showToast('Please write something first'); return; }
+  const notes = getNotes(c);
+  const newNote = { id: Date.now(), text, createdAt: new Date().toISOString(), editedAt: null };
+  notes.push(newNote);
+  c.notesList = notes;
+  addToTimeline(c, 'Note added', 'var(--amber)');
+  save();
+  closeModal();
+  // Refresh just the notes section without reloading whole page
+  const el = document.getElementById(`notes-section-${id}`);
+  if(el) {
+    el.innerHTML = `
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;">
+        <div class="cp-field-label">Notes</div>
+        <button class="btn btn-primary btn-sm" onclick="openAddNote(${id})">+ Add Note</button>
+      </div>
+      ${renderNotesList(c)}`;
+  }
+  showToast('Note saved! 📝');
+}
+
+function startNoteEdit(noteId) {
+  document.getElementById(`note-text-${noteId}`).style.display = 'none';
+  document.getElementById(`note-edit-${noteId}`).style.display = 'block';
+  document.getElementById(`note-textarea-${noteId}`)?.focus();
+}
+
+function cancelNoteEdit(noteId) {
+  document.getElementById(`note-text-${noteId}`).style.display = 'block';
+  document.getElementById(`note-edit-${noteId}`).style.display = 'none';
+}
+
+function saveNoteEdit(candId, noteId) {
+  const c = getCand(candId); if(!c) return;
+  const notes = getNotes(c);
+  const note = notes.find(n=>String(n.id)===String(noteId));
+  if(!note) return;
+  const newText = document.getElementById(`note-textarea-${noteId}`)?.value.trim();
+  if(!newText) return;
+  note.text = newText;
+  note.editedAt = new Date().toISOString();
+  c.notesList = notes;
+  save();
+  // Update in place without full page reload
+  document.getElementById(`note-text-${noteId}`).textContent = newText;
+  cancelNoteEdit(noteId);
+  // Refresh the section to show updated edit time
+  const el = document.getElementById(`notes-section-${candId}`);
+  if(el) el.innerHTML = `
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;">
+      <div class="cp-field-label">Notes</div>
+      <button class="btn btn-primary btn-sm" onclick="openAddNote(${candId})">+ Add Note</button>
+    </div>
+    ${renderNotesList(c)}`;
+  showToast('Note updated!');
+}
+
+function deleteNote(candId, noteId) {
+  if(!confirm('Delete this note?')) return;
+  const c = getCand(candId); if(!c) return;
+  const notes = getNotes(c);
+  c.notesList = notes.filter(n=>String(n.id)!==String(noteId));
+  save();
+  const el = document.getElementById(`notes-section-${candId}`);
+  if(el) el.innerHTML = `
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;">
+      <div class="cp-field-label">Notes</div>
+      <button class="btn btn-primary btn-sm" onclick="openAddNote(${candId})">+ Add Note</button>
+    </div>
+    ${renderNotesList(c)}`;
+  showToast('Note deleted');
+}
+
+// Legacy wrapper (still called from some places)
+function openEditNotes(id) { openAddNote(id); }
+function saveNotes(id) { saveNewNote(id); }
 
 
 function renderCandProfileContent(id) {
@@ -2294,6 +2498,7 @@ function renderCandProfileContent(id) {
       <button class="btn btn-ghost btn-sm" onclick="openEditNotes(${c.id})">📝 Note</button>
       <button class="btn btn-ghost btn-sm" onclick="openScheduleInterview(${c.id})">📅 Schedule Interview</button>
       <button class="btn btn-ghost btn-sm" onclick="openCreateOffer(${c.id})">📄 Offer</button>
+      <button class="btn btn-ghost btn-sm" onclick="openCandInNewTab(${c.id})" title="Open in new tab">↗ New Tab</button>
       <button class="btn btn-primary btn-sm" onclick="openMoveStage(${c.id})">Move Stage ↕</button>
       <button class="btn btn-ghost btn-sm" style="color:var(--red);border-color:var(--red-dim)" onclick="rejectCandidate(${c.id})">✕ Reject</button>
     </div>
@@ -2463,7 +2668,7 @@ function renderCandProfileContent(id) {
       <div style="padding:12px 16px;border-bottom:1px solid var(--border);background:var(--bg3);">
         <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:4px;">
           <span style="font-size:13px;font-weight:700;cursor:pointer;color:var(--accent);" onclick="showPage('jobs',null);setTimeout(()=>openJobDetail(${c.jobId}),100)">${job?job.title:'Unknown Job'}</span>
-          <span class="badge ${j&&j.status==='Active'?'badge-green':j&&j.status==='Paused'?'badge-amber':'badge-gray'}" style="font-size:10px">${job?job.status:'–'}</span>
+          <span class="badge ${job&&job.status==='Active'?'badge-green':job&&job.status==='Paused'?'badge-amber':'badge-gray'}" style="font-size:10px">${job?job.status:'–'}</span>
         </div>
         <div style="font-size:11px;color:var(--text3);">${job?job.dept:''} · ${job?job.location:''} · Applied ${c.applied}</div>
       </div>
@@ -2972,158 +3177,6 @@ function saveFeedback(id) {
   if(document.getElementById('page-candprofile').classList.contains('active')) renderCandProfileContent(id);
   showToast(`Feedback saved! ${recommendation==='Strong Yes'||recommendation==='Yes'?'👍':''}`)
 }
-
-// ===================== NOTES SYSTEM =====================
-function getNotes(c) {
-  // Support both old string notes and new array format
-  if(!c.notesList) {
-    c.notesList = [];
-    if(c.notes) {
-      // Migrate old single note
-      c.notesList.push({ id: Date.now(), text: c.notes, createdAt: c.applied || new Date().toISOString(), editedAt: null });
-      c.notes = '';
-    }
-  }
-  return c.notesList;
-}
-
-function renderNotesList(c) {
-  const notes = getNotes(c);
-  if(!notes.length) return `<div style="text-align:center;padding:20px;color:var(--text3);font-size:13px;background:var(--bg3);border-radius:8px;">No notes yet — click + Add Note to get started</div>`;
-  return notes.slice().reverse().map((n,i)=>`
-    <div id="note-card-${n.id}" style="background:var(--bg3);border:1px solid var(--border);border-radius:10px;padding:14px 16px;margin-bottom:10px;transition:border-color 0.15s;" onmouseover="this.style.borderColor='var(--border2)'" onmouseout="this.style.borderColor='var(--border)'">
-      <div style="display:flex;align-items:flex-start;gap:8px;">
-        <div style="flex:1;min-width:0;">
-          <div id="note-text-${n.id}" style="font-size:13px;color:var(--text);line-height:1.7;white-space:pre-wrap;word-break:break-word;">${escapeHtml(n.text)}</div>
-          <div style="display:none;" id="note-edit-${n.id}">
-            <textarea id="note-textarea-${n.id}" style="width:100%;min-height:80px;margin-top:6px;resize:vertical;">${n.text}</textarea>
-            <div style="display:flex;gap:6px;margin-top:8px;">
-              <button class="btn btn-primary btn-sm" onclick="saveNoteEdit(${c.id},'${n.id}')">Save</button>
-              <button class="btn btn-ghost btn-sm" onclick="cancelNoteEdit('${n.id}')">Cancel</button>
-            </div>
-          </div>
-          <div style="display:flex;align-items:center;gap:10px;margin-top:8px;flex-wrap:wrap;">
-            <span style="font-size:11px;color:var(--text3);font-family:'JetBrains Mono';">📝 ${formatDateTime(n.createdAt)}</span>
-            ${n.editedAt?`<span style="font-size:11px;color:var(--text3);font-family:'JetBrains Mono';">✏️ edited ${formatDateTime(n.editedAt)}</span>`:''}
-          </div>
-        </div>
-        <div style="display:flex;gap:4px;flex-shrink:0;">
-          <button class="btn btn-ghost btn-sm" style="padding:4px 8px;font-size:11px;" onclick="startNoteEdit('${n.id}')">✏️</button>
-          <button class="btn btn-ghost btn-sm" style="padding:4px 8px;font-size:11px;color:var(--red);" onclick="deleteNote(${c.id},'${n.id}')">✕</button>
-        </div>
-      </div>
-    </div>`).join('');
-}
-
-function escapeHtml(str) {
-  return String(str||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
-}
-
-function formatDateTime(isoStr) {
-  if(!isoStr) return '–';
-  try {
-    const d = new Date(isoStr);
-    const date = d.toLocaleDateString('en-MY', {day:'numeric',month:'short',year:'numeric'});
-    const time = d.toLocaleTimeString('en-MY', {hour:'2-digit',minute:'2-digit'});
-    return `${date} · ${time}`;
-  } catch(e) { return isoStr; }
-}
-
-function openAddNote(id) {
-  const c = getCand(id); if(!c) return;
-  document.getElementById('modal-title').textContent = '📝 Add Note — ' + c.name;
-  document.getElementById('modal-body').innerHTML = `
-    <div class="form-group">
-      <label>Note</label>
-      <textarea id="new-note-text" style="min-height:140px;" placeholder="Write your note here... (supports multiple lines)"></textarea>
-    </div>
-    <div style="font-size:12px;color:var(--text3);">📅 Will be saved with today's date and time automatically.</div>`;
-  document.getElementById('modal-footer').innerHTML = `
-    <button class="btn btn-ghost" onclick="closeModal()">Cancel</button>
-    <button class="btn btn-primary" onclick="saveNewNote(${id})">Save Note</button>`;
-  document.getElementById('modal-overlay').classList.add('open');
-  setTimeout(()=>document.getElementById('new-note-text')?.focus(), 100);
-}
-
-function saveNewNote(id) {
-  const c = getCand(id); if(!c) return;
-  const text = document.getElementById('new-note-text')?.value.trim();
-  if(!text) { showToast('Please write something first'); return; }
-  const notes = getNotes(c);
-  const newNote = { id: Date.now(), text, createdAt: new Date().toISOString(), editedAt: null };
-  notes.push(newNote);
-  c.notesList = notes;
-  addToTimeline(c, 'Note added', 'var(--amber)');
-  save();
-  closeModal();
-  // Refresh just the notes section without reloading whole page
-  const el = document.getElementById(`notes-section-${id}`);
-  if(el) {
-    el.innerHTML = `
-      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;">
-        <div class="cp-field-label">Notes</div>
-        <button class="btn btn-primary btn-sm" onclick="openAddNote(${id})">+ Add Note</button>
-      </div>
-      ${renderNotesList(c)}`;
-  }
-  showToast('Note saved! 📝');
-}
-
-function startNoteEdit(noteId) {
-  document.getElementById(`note-text-${noteId}`).style.display = 'none';
-  document.getElementById(`note-edit-${noteId}`).style.display = 'block';
-  document.getElementById(`note-textarea-${noteId}`)?.focus();
-}
-
-function cancelNoteEdit(noteId) {
-  document.getElementById(`note-text-${noteId}`).style.display = 'block';
-  document.getElementById(`note-edit-${noteId}`).style.display = 'none';
-}
-
-function saveNoteEdit(candId, noteId) {
-  const c = getCand(candId); if(!c) return;
-  const notes = getNotes(c);
-  const note = notes.find(n=>String(n.id)===String(noteId));
-  if(!note) return;
-  const newText = document.getElementById(`note-textarea-${noteId}`)?.value.trim();
-  if(!newText) return;
-  note.text = newText;
-  note.editedAt = new Date().toISOString();
-  c.notesList = notes;
-  save();
-  // Update in place without full page reload
-  document.getElementById(`note-text-${noteId}`).textContent = newText;
-  cancelNoteEdit(noteId);
-  // Refresh the section to show updated edit time
-  const el = document.getElementById(`notes-section-${candId}`);
-  if(el) el.innerHTML = `
-    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;">
-      <div class="cp-field-label">Notes</div>
-      <button class="btn btn-primary btn-sm" onclick="openAddNote(${candId})">+ Add Note</button>
-    </div>
-    ${renderNotesList(c)}`;
-  showToast('Note updated!');
-}
-
-function deleteNote(candId, noteId) {
-  if(!confirm('Delete this note?')) return;
-  const c = getCand(candId); if(!c) return;
-  const notes = getNotes(c);
-  c.notesList = notes.filter(n=>String(n.id)!==String(noteId));
-  save();
-  const el = document.getElementById(`notes-section-${candId}`);
-  if(el) el.innerHTML = `
-    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;">
-      <div class="cp-field-label">Notes</div>
-      <button class="btn btn-primary btn-sm" onclick="openAddNote(${candId})">+ Add Note</button>
-    </div>
-    ${renderNotesList(c)}`;
-  showToast('Note deleted');
-}
-
-// Legacy wrapper (still called from some places)
-function openEditNotes(id) { openAddNote(id); }
-function saveNotes(id) { saveNewNote(id); }
 
 
 function openEditCandidate(id) {
@@ -4455,6 +4508,8 @@ async function loadFromFirestore(uid) {
     populateJobFilters();
     renderDashboard();
     showSyncing(false);
+    // Restore page from URL after data is loaded
+    setTimeout(restoreFromURL, 100);
 
     // Real-time listener for candidates (so changes on other devices sync instantly)
     const unsub = onSnapshot(collection(db, `users/${uid}/candidates`), snap => {
