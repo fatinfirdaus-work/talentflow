@@ -91,32 +91,32 @@
 
   /* ── CONTENT & PAGES ── */
   .content { flex: 1; overflow-y: auto; }
+
+  /* Default: all pages get 24px padding, full width */
   .page { display: none; }
-  .page.active { display: block; padding: 24px; width: 100%; box-sizing: border-box; }
-  /* Pages that manage their own layout - no content padding */
-  #page-candidates.active,
-  #page-pipeline.active,
-  #page-candprofile.active,
-  #page-jobdetail.active,
-  #page-projectdetail.active { padding: 0; }
-  /* Jobs page - sticky toolbar + scrollable list */
+  .page.active { display: block; padding: 24px; box-sizing: border-box; }
+
+  /* Jobs: sticky toolbar on top, list scrolls below */
   #page-jobs.active { padding: 0; display: flex; flex-direction: column; }
   #page-jobs.active .panel { flex: 1; overflow-y: auto; min-height: 0; }
-  /* Settings page - uses its own grid layout */
-  #page-settings.active { padding: 0; overflow: hidden; height: calc(100vh - 52px); }
+
+  /* Candidates: flex row, full height, no padding */
+  #page-candidates.active { padding: 0; display: flex; flex-direction: row; overflow: hidden; height: calc(100vh - 52px); }
+
+  /* Pipeline: flex column for kanban scroll */
+  #page-pipeline.active { padding: 0; display: flex; flex-direction: column; }
+  #page-pipeline.active .kanban-wrap { flex: 1; overflow: auto; padding: 20px; }
+
+  /* Projects: flex column, no padding (handled internally) */
   #page-projects.active { padding: 0; display: flex; flex-direction: column; }
-  /* Pipeline needs flex for kanban */
-  #page-pipeline.active { display: flex; flex-direction: column; }
-  #page-pipeline.active .kanban-wrap { flex: 1; overflow: auto; }
-  /* Candidates sidebar layout */
-  #page-candidates.active { display: flex; flex-direction: row; overflow: hidden; height: calc(100vh - 52px); }
+
+  /* Settings: full height, grid layout handled internally, NO grid override here */
+  #page-settings.active { padding: 0; height: calc(100vh - 52px); overflow: hidden; display: flex; }
+
   /* Full-height detail pages */
   #page-candprofile.active,
   #page-jobdetail.active,
-  #page-projectdetail.active { overflow: hidden; height: calc(100vh - 52px); }
-  /* Mobile override */
-  #page-candidates { padding-bottom: 0; }
-  #page-settings > div { grid-template-columns: 1fr !important; }
+  #page-projectdetail.active { padding: 0; overflow: hidden; height: calc(100vh - 52px); }
 
   /* ── STATS ROW ── */
   .stats-row { display: grid; grid-template-columns: repeat(4,1fr); gap: 14px; margin-bottom: 22px; }
@@ -680,6 +680,103 @@
 
   /* Profile page entrance */
   #candprofile-content { animation:fadeIn 0.2s ease; }
+
+  /* ── RICH INTERACTIONS ── */
+
+  /* Clickable cards lift on hover */
+  .job-item:hover { transform:translateY(-1px); box-shadow:0 4px 20px rgba(0,0,0,0.12); background:var(--bg3); }
+  .job-item:active { transform:translateY(0); box-shadow:none; }
+
+  /* Panel hover glow */
+  .panel { transition:box-shadow 0.2s ease; }
+  .panel:hover { box-shadow:0 2px 12px rgba(0,0,0,0.08); }
+
+  /* Stat cards interactive */
+  .stat-card { transition:transform 0.2s ease, box-shadow 0.2s ease; cursor:default; }
+  .stat-card:hover { transform:translateY(-2px); box-shadow:0 6px 24px rgba(0,0,0,0.12); }
+
+  /* Buttons: scale + shadow on hover */
+  .btn-primary:hover { transform:translateY(-1px); box-shadow:0 4px 14px rgba(79,142,247,0.4); }
+  .btn-ghost:hover { transform:translateY(-1px); }
+  .btn:active { transform:scale(0.96) !important; box-shadow:none !important; transition:all 0.08s; }
+
+  /* Nav items */
+  .nav-item { transition:background 0.15s, color 0.15s, padding-left 0.15s; }
+  .nav-item:hover { padding-left:14px; }
+  .nav-item.active { padding-left:14px; }
+
+  /* Kanban cards */
+  .cand-card { transition:transform 0.15s ease, box-shadow 0.15s ease, border-color 0.15s; }
+  .cand-card:hover { transform:translateY(-3px); box-shadow:0 8px 24px rgba(0,0,0,0.2); border-color:var(--accent); }
+
+  /* Table rows */
+  tbody tr { transition:background 0.1s, box-shadow 0.1s; }
+  tbody tr:hover { background:var(--bg3); box-shadow:inset 3px 0 0 var(--accent); }
+
+  /* Stage pills */
+  .badge { transition:transform 0.15s, box-shadow 0.15s; }
+  .badge:hover { transform:scale(1.08); box-shadow:0 2px 8px rgba(0,0,0,0.15); }
+
+  /* Input focus */
+  input:focus, select:focus, textarea:focus {
+    box-shadow:0 0 0 3px var(--accent-dim);
+    border-color:var(--accent) !important;
+    outline:none;
+    transition:box-shadow 0.15s, border-color 0.15s;
+  }
+
+  /* Click feedback for any interactive element */
+  [onclick]:not(.btn):not(.nav-item):not(.cp-tab):not(th):active { opacity:0.7; }
+
+  /* Smooth page switch */
+  .page.active { animation:pageIn 0.18s cubic-bezier(0.4,0,0.2,1) both; }
+  @keyframes pageIn { from{opacity:0;transform:translateY(6px)} to{opacity:1;transform:translateY(0)} }
+
+  /* Toast pop */
+  .toast { animation:toastIn 0.3s cubic-bezier(0.34,1.56,0.64,1); }
+  @keyframes toastIn { from{transform:translateY(100%) scale(0.8);opacity:0} to{transform:translateY(0) scale(1);opacity:1} }
+
+  /* Checkbox interactive */
+  input[type=checkbox] { cursor:pointer; accent-color:var(--accent); transform:scale(1); transition:transform 0.1s; }
+  input[type=checkbox]:hover { transform:scale(1.15); }
+  input[type=checkbox]:checked { animation:checkPop 0.2s cubic-bezier(0.34,1.56,0.64,1); }
+  @keyframes checkPop { 0%{transform:scale(0.8)} 60%{transform:scale(1.2)} 100%{transform:scale(1)} }
+
+  /* Sidebar nav badge bounce */
+  .nav-badge { transition:transform 0.15s; }
+  .nav-item:hover .nav-badge { transform:scale(1.2); }
+
+  /* Avatar initials hover */
+  .job-avatar, .cand-avatar { transition:transform 0.2s ease; }
+  .job-item:hover .job-avatar { transform:scale(1.1) rotate(-3deg); }
+
+  /* Funnel bars smooth */
+  .funnel-bar { transition:width 0.8s cubic-bezier(0.4,0,0.2,1), opacity 0.3s; }
+
+  /* Score bars */
+  .score-fill { transition:width 0.7s cubic-bezier(0.4,0,0.2,1); }
+
+  /* Tab active indicator slide */
+  .cp-tab { transition:color 0.15s, border-color 0.15s; }
+
+  /* Dropdown arrow rotation */
+  select { transition:border-color 0.15s; }
+
+  /* Tooltip fade */
+  [data-tip]:hover::after { animation:fadeIn 0.15s ease; }
+
+  /* Sidebar collapse button spin */
+  .sidebar-toggle { transition:transform 0.25s ease, background 0.15s; }
+  .sidebar-toggle:hover { transform:scale(1.1); background:var(--bg3); }
+
+  /* Offer cards */
+  .offer-card { transition:transform 0.15s ease, box-shadow 0.15s ease; }
+  .offer-card:hover { transform:translateY(-2px); box-shadow:0 6px 20px rgba(0,0,0,0.15); }
+
+  /* Link/cursor feel */
+  [onclick] { cursor:pointer; }
+  a { transition:color 0.15s; }
+  a:hover { opacity:0.8; }
 </style>
 </head>
 <body>
@@ -1242,9 +1339,9 @@
 
     <!-- SETTINGS PAGE -->
     <div class="page" id="page-settings">
-      <div style="display:grid;grid-template-columns:200px 1fr;gap:0;min-height:calc(100vh - 56px - 48px);">
+      <div style="display:grid;grid-template-columns:200px 1fr;gap:0;flex:1;overflow:hidden;">
         <!-- Settings sidebar -->
-        <div style="border-right:1px solid var(--border);padding:16px 8px;" id="settings-sidebar">
+        <div style="border-right:1px solid var(--border);padding:16px 8px;overflow-y:auto;" id="settings-sidebar">
           <div onclick="switchSettingsTab('s-company')" id="stab-s-company" class="nav-item active"><span class="icon">🏢</span>Company Profile</div>
           <div onclick="switchSettingsTab('s-departments')" id="stab-s-departments" class="nav-item"><span class="icon">🏷️</span>Departments</div>
           <div onclick="switchSettingsTab('s-team')" id="stab-s-team" class="nav-item"><span class="icon">👥</span>Team Members</div>
@@ -6955,11 +7052,83 @@ applySavedSettings();
 initSidebarState();
 initMobileNav();
 updateSidebarBadges();
+initInteractions();
+
 // Refresh timestamps every 60 seconds so "2m ago" etc stay accurate
 setInterval(() => {
   if(document.getElementById('activity-feed')) renderDashboard();
   updateSidebarBadges();
 }, 60000);
+
+function initInteractions() {
+  // ── Ripple on all buttons ──
+  document.addEventListener('click', e => {
+    const btn = e.target.closest('.btn');
+    if(!btn) return;
+    const r = document.createElement('span');
+    r.className = 'ripple';
+    const rect = btn.getBoundingClientRect();
+    const size = Math.max(rect.width, rect.height);
+    r.style.cssText = `width:${size}px;height:${size}px;left:${e.clientX-rect.left-size/2}px;top:${e.clientY-rect.top-size/2}px`;
+    btn.appendChild(r);
+    setTimeout(() => r.remove(), 500);
+  });
+
+  // ── Keyboard shortcuts ──
+  document.addEventListener('keydown', e => {
+    // Skip if typing in input
+    if(['INPUT','TEXTAREA','SELECT'].includes(e.target.tagName)) return;
+    if(e.metaKey || e.ctrlKey) {
+      switch(e.key) {
+        case 'k': e.preventDefault(); document.getElementById('globalSearch')?.focus(); break;
+        case 'n': e.preventDefault(); openModal('add'); break;
+      }
+      return;
+    }
+    switch(e.key) {
+      case 'g': showPage('dashboard'); break;
+      case 'j': showPage('jobs'); break;
+      case 'c': showPage('candidates'); break;
+      case 'p': showPage('pipeline'); break;
+      case 'i': showPage('inbox'); break;
+      case 'Escape':
+        closeModal();
+        closeDetail();
+        const gs = document.getElementById('globalSearch');
+        if(gs && document.activeElement !== gs) gs.blur();
+        break;
+    }
+  });
+
+  // ── Click feedback flash on job items & table rows ──
+  document.addEventListener('click', e => {
+    const item = e.target.closest('.job-item');
+    if(item && !e.target.closest('button') && !e.target.closest('input')) {
+      item.style.transition = 'background 0.05s';
+      item.style.background = 'var(--accent-dim)';
+      setTimeout(() => { item.style.background = ''; item.style.transition = ''; }, 150);
+    }
+  });
+
+  // ── Animate stat cards on hover ──
+  document.querySelectorAll('.stat-card').forEach(card => {
+    card.addEventListener('mouseenter', () => {
+      const val = card.querySelector('.stat-val');
+      if(val) { val.style.transform = 'scale(1.05)'; val.style.transition = 'transform 0.2s'; }
+    });
+    card.addEventListener('mouseleave', () => {
+      const val = card.querySelector('.stat-val');
+      if(val) { val.style.transform = ''; }
+    });
+  });
+
+  // ── Show keyboard shortcut hint in search placeholder ──
+  const gs = document.getElementById('globalSearch');
+  if(gs) {
+    const isMac = navigator.platform.includes('Mac');
+    gs.placeholder = `Search anything... (${isMac?'⌘':'Ctrl'}+K)`;
+  }
+}
 
 function initMobileNav() {
   // Show mobile nav on small screens
