@@ -162,8 +162,8 @@
   .td-name { display: flex; align-items: center; gap: 10px; }
 
   /* ── FILTERS BAR ── */
-  .filters-bar { display: flex; align-items: center; gap: 8px; padding: 14px 18px; border-bottom: 1px solid var(--border); flex-wrap: wrap; background: var(--bg2); }
-  .filter-select { background: var(--bg3); border: 1px solid var(--border); border-radius: 7px; padding: 5px 9px; color: var(--text2); font-family: inherit; font-size: 12px; outline: none; cursor: pointer; transition: border-color 0.12s; }
+  .filters-bar { display: flex; align-items: center; gap: 8px; padding: 12px 18px; flex-wrap: nowrap; overflow-x: auto; }
+  .filter-select { background: var(--bg3); border: 1px solid var(--border); border-radius: 7px; padding: 5px 9px; color: var(--text2); font-family: inherit; font-size: 12px; outline: none; cursor: pointer; transition: border-color 0.12s; flex-shrink: 0; }
   .filter-select:focus, .filter-select:hover { border-color: var(--border2); color: var(--text); }
 
   /* ── MODAL ── */
@@ -885,33 +885,33 @@
 
     <!-- JOBS PAGE -->
     <div class="page" id="page-jobs">
-      <div class="filters-bar" style="flex-wrap:wrap;gap:8px;">
+      <div style="display:flex;align-items:center;gap:8px;padding:12px 18px;border-bottom:1px solid var(--border);background:var(--bg2);flex-wrap:nowrap;overflow-x:auto;">
         <!-- Job search -->
-        <div style="display:flex;align-items:center;gap:0;background:var(--bg3);border:1px solid var(--border);border-radius:8px;overflow:hidden;min-width:200px;flex:1;max-width:300px;">
-          <span style="padding:0 10px;color:var(--text3);">🔍</span>
+        <div style="display:flex;align-items:center;background:var(--bg3);border:1px solid var(--border);border-radius:7px;overflow:hidden;min-width:160px;flex:1;max-width:260px;flex-shrink:0;">
+          <span style="padding:0 8px;color:var(--text3);font-size:13px;">🔍</span>
           <input type="text" id="job-search" placeholder="Search jobs..." oninput="renderJobs()"
-            style="flex:1;background:transparent;border:none;outline:none;padding:8px 8px;font-size:13px;color:var(--text);font-family:inherit;">
+            style="flex:1;background:transparent;border:none;outline:none;padding:7px 6px;font-size:12.5px;color:var(--text);font-family:inherit;min-width:80px;">
         </div>
-        <select class="filter-select" id="job-dept-filter" onchange="renderJobs()">
-          <option value="">All Departments</option>
+        <select class="filter-select" id="job-dept-filter" onchange="renderJobs()" style="flex-shrink:0;">
+          <option value="">All Depts</option>
         </select>
-        <select class="filter-select" id="job-status-filter" onchange="renderJobs()">
+        <select class="filter-select" id="job-status-filter" onchange="renderJobs()" style="flex-shrink:0;">
           <option value="">All Status</option>
           <option>Active</option><option>Paused</option><option>Closed</option>
         </select>
-        <select class="filter-select" id="job-type-filter" onchange="renderJobs()">
+        <select class="filter-select" id="job-type-filter" onchange="renderJobs()" style="flex-shrink:0;">
           <option value="">All Types</option>
           <option>Full-time</option><option>Part-time</option><option>Contract</option><option>Internship</option>
         </select>
-        <select class="filter-select" id="job-sort" onchange="renderJobs()">
-          <option value="date">Sort: Newest</option>
-          <option value="applicants">Sort: Most Applicants</option>
-          <option value="title">Sort: Title A–Z</option>
-          <option value="priority">Sort: Priority</option>
+        <select class="filter-select" id="job-sort" onchange="renderJobs()" style="flex-shrink:0;">
+          <option value="date">Newest</option>
+          <option value="applicants">Most Applicants</option>
+          <option value="title">Title A–Z</option>
+          <option value="priority">Priority</option>
         </select>
-        <span style="color:var(--text3);font-size:12px;margin-left:auto" id="jobs-count"></span>
+        <span style="color:var(--text3);font-size:12px;margin-left:auto;white-space:nowrap;flex-shrink:0;" id="jobs-count"></span>
       </div>
-      <div class="panel" style="overflow:hidden;">
+      <div class="panel" style="overflow:hidden;margin:18px;border-radius:var(--radius);">
         <div id="jobs-list"></div>
       </div>
     </div>
@@ -945,13 +945,12 @@
     </div>
 
     <div class="page" id="page-candidates">
-      <!-- PIPELINE FUNNEL -->
-      <div id="cand-pipeline-funnel" style="padding:16px 20px 0;"></div>
 
-      <div class="filters-bar" style="flex-wrap:wrap;gap:8px;padding:12px 20px;">
-        <!-- Search input with field picker -->
-        <div style="display:flex;align-items:center;gap:0;background:var(--bg3);border:1px solid var(--border);border-radius:8px;overflow:hidden;min-width:260px;flex:1;max-width:380px;">
-          <select id="cand-search-field" onchange="renderCandidates()" style="background:var(--bg4);border:none;border-right:1px solid var(--border);border-radius:0;padding:8px 10px;font-size:12px;color:var(--text2);cursor:pointer;outline:none;">
+      <div style="display:flex;align-items:center;gap:8px;padding:12px 18px;border-bottom:1px solid var(--border);background:var(--bg2);flex-wrap:nowrap;overflow-x:auto;">
+        <!-- Search with field picker -->
+        <div style="display:flex;align-items:center;background:var(--bg3);border:1px solid var(--border);border-radius:7px;overflow:hidden;min-width:180px;flex:1;max-width:320px;flex-shrink:0;">
+          <select id="cand-search-field" onchange="renderCandidates()"
+            style="background:var(--bg4);border:none;border-right:1px solid var(--border);padding:6px 8px;font-size:11.5px;color:var(--text2);cursor:pointer;outline:none;flex-shrink:0;">
             <option value="all">All Fields</option>
             <option value="name">Name</option>
             <option value="email">Email</option>
@@ -962,20 +961,24 @@
             <option value="source">Source</option>
           </select>
           <input type="text" id="cand-search" placeholder="Search..." oninput="renderCandidates()"
-            style="flex:1;background:transparent;border:none;outline:none;padding:8px 12px;font-size:13px;color:var(--text);font-family:inherit;">
-          <button onclick="document.getElementById('cand-search').value='';renderCandidates()" style="background:none;border:none;color:var(--text3);cursor:pointer;padding:0 10px;font-size:14px;" title="Clear">✕</button>
+            style="flex:1;background:transparent;border:none;outline:none;padding:6px 10px;font-size:12.5px;color:var(--text);font-family:inherit;min-width:60px;">
+          <button onclick="document.getElementById('cand-search').value='';renderCandidates()"
+            style="background:none;border:none;color:var(--text3);cursor:pointer;padding:0 8px;font-size:13px;">✕</button>
         </div>
-        <select class="filter-select" id="cand-stage-filter" onchange="renderCandidates()">
+        <select class="filter-select" id="cand-stage-filter" onchange="renderCandidates()" style="flex-shrink:0;">
           <option value="">All Stages</option>
         </select>
-        <select class="filter-select" id="cand-job-filter" onchange="renderCandidates()">
+        <select class="filter-select" id="cand-job-filter" onchange="renderCandidates()" style="flex-shrink:0;">
           <option value="">All Jobs</option>
         </select>
-        <button class="btn btn-primary btn-sm" onclick="openModal('addCandidate')" style="margin-left:auto">+ Add Candidate</button>
-        <span style="color:var(--text3);font-size:12px" id="cand-count"></span>
+        <button class="btn btn-primary btn-sm" onclick="openModal('addCandidate')" style="flex-shrink:0;white-space:nowrap;">+ Add Candidate</button>
+        <span style="color:var(--text3);font-size:12px;white-space:nowrap;flex-shrink:0;" id="cand-count"></span>
       </div>
 
-      <div class="panel" style="margin:0 20px 20px;">
+      <!-- PIPELINE FUNNEL -->
+      <div id="cand-pipeline-funnel" style="padding:12px 18px 0;"></div>
+
+      <div class="panel" style="margin:12px 18px 18px;">
         <div class="table-wrap">
           <table>
             <thead>
@@ -1502,52 +1505,65 @@ function renderJobs() {
   el.innerHTML = filtered.map(j=>{
     const jobCands = candidates.filter(c=>getCandJobIds(c).includes(j.id));
     const total = jobCands.length;
-    // Pipeline breakdown
-    const stageCounts = stages.map(s=>({ s, n: jobCands.filter(c=>getCandStageForJob(c,j.id)===s).length }));
-    const hired  = stageCounts.find(x=>x.s==='Hired')?.n||0;
-    const intvw  = stageCounts.find(x=>x.s==='Interview')?.n||0;
-    const offer  = stageCounts.find(x=>x.s==='Offer')?.n||0;
-
-    // Pipeline mini-bar segments
-    const pipeBar = total>0 ? stageCounts.filter(x=>x.n>0).map(x=>
-      `<div class="job-pipeline-seg" title="${x.s}: ${x.n}" style="flex:${x.n};background:${stageColors[x.s]||'var(--border)'};opacity:0.85;"></div>`
-    ).join('') : `<div style="flex:1;background:var(--border);border-radius:2px;"></div>`;
-
-    const prioClass = j.priority==='High'?'badge-red':j.priority==='Medium'?'badge-amber':'badge-gray';
+    const stageCounts = stages.map(s=>({ s, n: jobCands.filter(c=>getCandStageForJob(c,j.id)===s).length, color: stageColors[s]||'var(--text3)' }));
+    const hired = stageCounts.find(x=>x.s==='Hired')?.n||0;
+    const intvw = stageCounts.find(x=>x.s==='Interview')?.n||0;
+    const offer = stageCounts.find(x=>x.s==='Offer')?.n||0;
+    const prioClass   = j.priority==='High'?'badge-red':j.priority==='Medium'?'badge-amber':'badge-gray';
     const statusClass = j.status==='Active'?'badge-green':j.status==='Paused'?'badge-amber':'badge-gray';
 
-    return `<div class="job-item" onclick="openJobDetail(${j.id})" style="flex-direction:column;align-items:stretch;padding:16px 20px;gap:8px;">
+    // Inline chevron funnel — single row
+    const funnelSegments = stages.map((s, i, arr) => {
+      const sc = stageCounts.find(x=>x.s===s);
+      const n = sc?.n||0;
+      const color = sc?.color||'var(--text3)';
+      const isFirst = i===0, isLast = i===arr.length-1;
+      const clip = isLast
+        ? 'polygon(8px 0%,100% 0%,100% 100%,8px 100%,0% 50%)'
+        : isFirst
+        ? 'polygon(0% 0%,calc(100% - 8px) 0%,100% 50%,calc(100% - 8px) 100%,0% 100%)'
+        : 'polygon(8px 0%,calc(100% - 8px) 0%,100% 50%,calc(100% - 8px) 100%,8px 100%,0% 50%)';
+      const bg = n>0 ? color+'30' : 'var(--bg4)';
+      const textColor = n>0 ? color : 'var(--text3)';
+      return `<div onclick="event.stopPropagation();filterCandsByJob(${j.id},'${s}')"
+        title="${s}: ${n} candidate${n!==1?'s':''} — click to view"
+        style="flex:1;height:36px;clip-path:${clip};background:${bg};
+          display:flex;align-items:center;justify-content:center;gap:4px;
+          cursor:pointer;transition:background 0.13s;margin-left:${i>0?'-1px':'0'};
+          min-width:48px;"
+        onmouseover="this.style.background='${color}50'"
+        onmouseout="this.style.background='${bg}'">
+        <span style="font-size:13px;font-weight:800;color:${textColor};">${n}</span>
+        <span style="font-size:9px;font-weight:700;color:${textColor};white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:52px;">${s}</span>
+      </div>`;
+    }).join('');
+
+    return `<div class="job-item" onclick="openJobDetail(${j.id})" style="flex-direction:column;align-items:stretch;padding:14px 18px;gap:10px;">
+      <!-- Top row: icon + title + stats -->
       <div style="display:flex;align-items:center;gap:12px;">
-        <div class="job-avatar" style="background:${j.color}22;font-size:20px;flex-shrink:0;">${j.icon}</div>
+        <div class="job-avatar" style="background:${j.color}22;font-size:18px;flex-shrink:0;">${j.icon}</div>
         <div style="flex:1;min-width:0;">
-          <div style="display:flex;align-items:center;gap:8px;margin-bottom:3px;flex-wrap:wrap;">
-            <div class="job-title" style="margin:0;">${searchQ?highlightMatch(j.title,searchQ):escapeHtml(j.title)}</div>
-            <span class="badge ${statusClass}" style="font-size:10px;">${j.status}</span>
-            <span class="badge ${prioClass}" style="font-size:10px;">${j.priority}</span>
+          <div style="display:flex;align-items:center;gap:7px;margin-bottom:3px;flex-wrap:wrap;">
+            <span style="font-size:13.5px;font-weight:700;">${searchQ?highlightMatch(j.title,searchQ):escapeHtml(j.title)}</span>
+            <span class="badge ${statusClass}">${j.status}</span>
+            <span class="badge ${prioClass}">${j.priority}</span>
           </div>
           <div class="job-meta">
             <span>${j.dept}</span><span>·</span><span>${j.type}</span><span>·</span><span>${j.location}</span>
             ${j.salary&&j.salary!=='TBD'?`<span>·</span><span style="font-family:'JetBrains Mono';font-size:11px">${j.salary}</span>`:''}
           </div>
         </div>
-        <div style="display:flex;gap:16px;font-size:12px;color:var(--text3);flex-shrink:0;text-align:center;">
-          <div><div style="font-size:16px;font-weight:800;color:var(--accent);">${total}</div><div>Total</div></div>
-          <div><div style="font-size:16px;font-weight:800;color:var(--amber);">${intvw}</div><div>Interview</div></div>
-          <div><div style="font-size:16px;font-weight:800;color:var(--purple);">${offer}</div><div>Offer</div></div>
-          <div><div style="font-size:16px;font-weight:800;color:var(--green);">${hired}</div><div>Hired</div></div>
+        <!-- Mini stats -->
+        <div style="display:flex;gap:14px;font-size:11px;color:var(--text3);flex-shrink:0;text-align:center;">
+          <div><div style="font-size:15px;font-weight:800;color:var(--accent);">${total}</div><div>Total</div></div>
+          <div><div style="font-size:15px;font-weight:800;color:var(--amber);">${intvw}</div><div>Interview</div></div>
+          <div><div style="font-size:15px;font-weight:800;color:var(--purple);">${offer}</div><div>Offer</div></div>
+          <div><div style="font-size:15px;font-weight:800;color:var(--green);">${hired}</div><div>Hired</div></div>
         </div>
       </div>
-      <!-- Inline pipeline bar -->
-      <div>
-        <div style="display:flex;justify-content:space-between;font-size:10px;color:var(--text3);margin-bottom:3px;">
-          <span>Pipeline</span>
-          <span>${total} candidate${total!==1?'s':''}</span>
-        </div>
-        <div class="job-pipeline-bar">${pipeBar}</div>
-        <!-- Stage breakdown labels -->
-        ${total>0?`<div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:6px;">
-          ${stageCounts.filter(x=>x.n>0).map(x=>`<span style="font-size:10px;color:${stageColors[x.s]||'var(--text3)'};">● ${x.s} <strong>${x.n}</strong></span>`).join('')}
-        </div>`:'<div style="font-size:11px;color:var(--text3);margin-top:4px;">No candidates yet — <span style="color:var(--accent);cursor:pointer;" onclick="event.stopPropagation();openModal(\'addCandidate\')">Add one</span></div>'}
+      <!-- Chevron funnel row -->
+      <div style="display:flex;align-items:stretch;gap:0;overflow:hidden;border-radius:6px;" onclick="event.stopPropagation()">
+        ${funnelSegments}
       </div>
     </div>`;
   }).join('');
