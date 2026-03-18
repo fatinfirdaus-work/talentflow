@@ -5,6 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>TalentFlow ATS</title>
 <link href="https://fonts.googleapis.com/css2?family=Sora:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
 <style>
   :root {
     --bg: #0d0f14;
@@ -341,6 +342,7 @@
   .cp-tab:hover { color:var(--text); }
   .cp-tab-content { display:none;flex:1;overflow-y:auto; }
   .cp-tab-content.active { display:block; }
+  #lt-resume.active { display:flex;flex-direction:column; }
   .cp-section { padding:20px 24px;border-bottom:1px solid var(--border); }
   .cp-section-title { font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.5px;color:var(--text3);margin-bottom:12px; }
   .cp-field-row { display:flex;gap:16px;flex-wrap:wrap;margin-bottom:8px; }
@@ -2301,7 +2303,7 @@ function renderCandProfileContent(id) {
   <div style="display:grid;grid-template-columns:1fr 420px;flex:1;overflow:hidden;min-height:0;">
 
     <!-- LEFT: Resume + Info -->
-    <div style="overflow-y:auto;border-right:1px solid var(--border);display:flex;flex-direction:column;">
+    <div id="cp-left-panel" style="overflow-y:auto;border-right:1px solid var(--border);display:flex;flex-direction:column;">
 
       <!-- Candidate header -->
       <div style="padding:20px 24px;border-bottom:1px solid var(--border);">
@@ -2350,25 +2352,42 @@ function renderCandProfileContent(id) {
       </div>
 
       <!-- TAB: Resume -->
-      <div id="lt-resume" class="cp-tab-content active" style="flex:1;padding:20px 24px;">
+      <div id="lt-resume" class="cp-tab-content active" style="flex:1;flex-direction:column;overflow:hidden;">
         ${c.hasResume ? `
-          <div style="display:flex;align-items:center;gap:10px;background:var(--bg3);border:1px solid var(--border);border-radius:8px;padding:10px 14px;margin-bottom:16px;">
-            <span>📎</span>
-            <span style="font-size:13px;font-weight:600;flex:1">${c.resumeFilename||'Resume'}</span>
-            <button class="btn btn-ghost btn-sm" onclick="viewResume(${c.id})">🔍 View</button>
-            <button class="btn btn-ghost btn-sm" onclick="downloadResume(${c.id})">⬇ Download</button>
+          <!-- Resume toolbar -->
+          <div style="display:flex;align-items:center;gap:8px;padding:10px 16px;background:var(--bg2);border-bottom:1px solid var(--border);flex-shrink:0;flex-wrap:wrap;">
+            <span style="font-size:13px;font-weight:600;flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">📎 ${c.resumeFilename||'Resume'}</span>
+            <!-- Page controls -->
+            <div style="display:flex;align-items:center;gap:6px;background:var(--bg3);border:1px solid var(--border);border-radius:8px;padding:4px 8px;">
+              <button onclick="pdfPrevPage()" class="btn btn-ghost btn-sm" style="padding:2px 8px;font-size:14px;" title="Previous page">‹</button>
+              <span style="font-size:12px;font-family:'JetBrains Mono';color:var(--text2);">
+                <span id="pdf-page-num">1</span> / <span id="pdf-page-total">–</span>
+              </span>
+              <button onclick="pdfNextPage()" class="btn btn-ghost btn-sm" style="padding:2px 8px;font-size:14px;" title="Next page">›</button>
+            </div>
+            <!-- Zoom controls -->
+            <div style="display:flex;align-items:center;gap:4px;background:var(--bg3);border:1px solid var(--border);border-radius:8px;padding:4px 8px;">
+              <button onclick="pdfZoomOut()" class="btn btn-ghost btn-sm" style="padding:2px 8px;" title="Zoom out">−</button>
+              <span id="pdf-zoom-label" style="font-size:12px;font-family:'JetBrains Mono';color:var(--text2);min-width:40px;text-align:center;">100%</span>
+              <button onclick="pdfZoomIn()" class="btn btn-ghost btn-sm" style="padding:2px 8px;" title="Zoom in">+</button>
+              <button onclick="pdfZoomFit()" class="btn btn-ghost btn-sm" style="padding:2px 8px;font-size:11px;" title="Fit to width">⊡</button>
+            </div>
+            <button class="btn btn-ghost btn-sm" onclick="downloadResume(${c.id})" title="Download">⬇</button>
+            <button class="btn btn-ghost btn-sm" onclick="viewResume(${c.id})" title="Open in new tab">↗</button>
           </div>
-          <div style="background:var(--bg3);border-radius:10px;padding:32px;text-align:center;color:var(--text3);">
-            <div style="font-size:48px;margin-bottom:12px;">📄</div>
-            <div style="font-size:14px;font-weight:600;color:var(--text);margin-bottom:6px;">${c.resumeFilename||'Resume.pdf'}</div>
-            <div style="font-size:12px;margin-bottom:16px;">Click below to open the resume in a new tab</div>
-            <button class="btn btn-primary" onclick="viewResume(${c.id})">Open Resume</button>
+
+          <!-- PDF canvas container -->
+          <div id="pdf-container" style="flex:1;overflow:auto;background:#525659;display:flex;flex-direction:column;align-items:center;padding:16px;gap:12px;">
+            <div style="text-align:center;color:#ccc;padding:40px;">
+              <div style="font-size:32px;margin-bottom:10px;">⏳</div>
+              <div style="font-size:14px;">Loading resume...</div>
+            </div>
           </div>`
-        : `<div style="text-align:center;padding:48px 24px;color:var(--text3);">
+        : `<div style="flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;color:var(--text3);padding:40px;">
             <div style="font-size:48px;margin-bottom:12px;">📂</div>
             <div style="font-size:14px;font-weight:600;color:var(--text);margin-bottom:6px;">No resume uploaded</div>
             <div style="font-size:12px;margin-bottom:16px;">Edit this candidate to upload their resume</div>
-            <button class="btn btn-primary" onclick="openEditCandidate(${c.id})">Edit Candidate</button>
+            <button class="btn btn-primary" onclick="openEditCandidate(${c.id})">Upload Resume</button>
           </div>`}
       </div>
 
@@ -2394,9 +2413,13 @@ function renderCandProfileContent(id) {
             <div style="font-size:11px;color:var(--text3);margin-top:3px;">${c.score>=80?'Strong match':c.score>=60?'Moderate match':'Weak match'}</div></div>
           </div>
         </div>
-        <div><div class="cp-field-label" style="margin-bottom:6px;">Notes</div>
-          ${c.notes?`<div class="note-box" style="white-space:pre-wrap;">${c.notes}</div>`:'<div style="color:var(--text3);font-size:12px;">No notes</div>'}
-          <button class="btn btn-ghost btn-sm" style="margin-top:8px;" onclick="openEditNotes(${c.id})">✏️ Edit Notes</button>
+        <!-- NOTES SECTION — inline, timestamped, editable -->
+        <div id="notes-section-${c.id}">
+          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;">
+            <div class="cp-field-label">Notes</div>
+            <button class="btn btn-primary btn-sm" onclick="openAddNote(${c.id})">+ Add Note</button>
+          </div>
+          ${renderNotesList(c)}
         </div>
       </div>
 
@@ -2428,7 +2451,7 @@ function renderCandProfileContent(id) {
         ${allFeedback.map(fb=>`
           <div class="history-item" style="padding:14px 24px;border-bottom:1px solid var(--border);">
             <div class="history-dot" style="background:var(--purple-dim);color:var(--purple);width:32px;height:32px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:14px;flex-shrink:0;">📝</div>
-            <div style="flex:1;"><div style="font-size:13px;font-weight:600;">Feedback by ${fb.interviewer} — <span style="color:${fb.recommendation==='Strong Yes'||fb.recommendation==='Yes'?'var(--green)':fb.recommendation==='No'||fb.recommendation==='Strong No'?'var(--red)':'var(--amber)'}">${fb.recommendation}</span></div><div style="font-size:11px;color:var(--text3);font-family:'JetBrains Mono';">${fb.date} · ${fb.round}</div></div>
+            <div style="flex:1;"><div style="font-size:13px;font-weight:600;">Feedback by ${fb.interviewer} — <span style="color:${fb.recommendation==='Strong Yes'||fb.recommendation==='Yes'?'var(--green)':fb.recommendation==='No'||fb.recommendation==='Strong No'?'var(--red)':'var(--amber)'}">${fb.recommendation}</span></div><div style="font-size:11px;color:var(--text3);font-family:'JetBrains Mono';">${fb.round} · ${formatDateTime(fb.createdAt||fb.date)}</div></div>
           </div>`).join('')}
       </div>
     </div>
@@ -2560,22 +2583,26 @@ function renderCandProfileContent(id) {
     </div>
   </div>`;
 
-  // Store j ref for use in template
-  function j() { return job; }
+  // Load PDF inline if candidate has resume
+  if(c.hasResume) {
+    setTimeout(()=>loadInlinePdf(id), 200);
+  }
 }
 
 function switchLeftTab(el, tabId) {
-  const container = el.closest('div').nextElementSibling;
+  // Deactivate all tabs in the tab bar
   el.closest('div').querySelectorAll('.cp-tab').forEach(t=>t.classList.remove('active'));
   el.classList.add('active');
-  // Find all tab content siblings
-  let node = el.closest('div').nextElementSibling;
-  while(node) {
-    if(node.classList&&node.classList.contains('cp-tab-content')) node.classList.remove('active');
-    node = node.nextElementSibling;
-  }
+  // Hide all tab contents in the left panel
+  const leftPanel = document.getElementById('cp-left-panel');
+  if(leftPanel) leftPanel.querySelectorAll('.cp-tab-content').forEach(t=>t.classList.remove('active'));
+  // Show the target tab
   const target = document.getElementById(tabId);
   if(target) target.classList.add('active');
+  // Reload PDF when switching back to resume tab
+  if(tabId==='lt-resume' && pdfCandId) {
+    setTimeout(()=>loadInlinePdf(pdfCandId), 150);
+  }
 }
 
 function shareCandidate(id) {
@@ -2938,7 +2965,7 @@ function saveFeedback(id) {
 
   saveInterviewerName(interviewer);
   if(!c.feedback) c.feedback=[];
-  c.feedback.push({ interviewer, round, date, rating, recommendation, notes, strengths, concerns, skillRatings });
+  c.feedback.push({ interviewer, round, date, rating, recommendation, notes, strengths, concerns, skillRatings, createdAt: new Date().toISOString() });
   addToTimeline(c, `${round} feedback by ${interviewer} — ${recommendation}`, 'var(--purple)');
   activities.unshift({ text:`<strong>${interviewer}</strong> submitted feedback for <strong>${c.name}</strong> — <strong>${recommendation}</strong>`, time:'Just now', color:'var(--purple)', ts:Date.now() });
   save(); closeModal();
@@ -2946,26 +2973,158 @@ function saveFeedback(id) {
   showToast(`Feedback saved! ${recommendation==='Strong Yes'||recommendation==='Yes'?'👍':''}`)
 }
 
-function openEditNotes(id) {
-  const c = getCand(id); if(!c) return;
-  const overlay = document.getElementById('modal-overlay');
-  document.getElementById('modal-title').textContent = 'Edit Notes — ' + c.name;
-  document.getElementById('modal-body').innerHTML = `
-    <div class="form-group"><label>Notes</label>
-      <textarea id="edit-notes" style="min-height:160px" placeholder="Add any notes about this candidate...">${c.notes||''}</textarea>
-    </div>`;
-  document.getElementById('modal-footer').innerHTML = `
-    <button class="btn btn-ghost" onclick="closeModal()">Cancel</button>
-    <button class="btn btn-primary" onclick="saveNotes(${id})">Save Notes</button>`;
-  overlay.classList.add('open');
+// ===================== NOTES SYSTEM =====================
+function getNotes(c) {
+  // Support both old string notes and new array format
+  if(!c.notesList) {
+    c.notesList = [];
+    if(c.notes) {
+      // Migrate old single note
+      c.notesList.push({ id: Date.now(), text: c.notes, createdAt: c.applied || new Date().toISOString(), editedAt: null });
+      c.notes = '';
+    }
+  }
+  return c.notesList;
 }
 
-function saveNotes(id) {
-  const c = getCand(id); if(!c) return;
-  c.notes = document.getElementById('edit-notes').value;
-  save(); closeModal(); openCandProfile(id);
-  showToast('Notes saved!');
+function renderNotesList(c) {
+  const notes = getNotes(c);
+  if(!notes.length) return `<div style="text-align:center;padding:20px;color:var(--text3);font-size:13px;background:var(--bg3);border-radius:8px;">No notes yet — click + Add Note to get started</div>`;
+  return notes.slice().reverse().map((n,i)=>`
+    <div id="note-card-${n.id}" style="background:var(--bg3);border:1px solid var(--border);border-radius:10px;padding:14px 16px;margin-bottom:10px;transition:border-color 0.15s;" onmouseover="this.style.borderColor='var(--border2)'" onmouseout="this.style.borderColor='var(--border)'">
+      <div style="display:flex;align-items:flex-start;gap:8px;">
+        <div style="flex:1;min-width:0;">
+          <div id="note-text-${n.id}" style="font-size:13px;color:var(--text);line-height:1.7;white-space:pre-wrap;word-break:break-word;">${escapeHtml(n.text)}</div>
+          <div style="display:none;" id="note-edit-${n.id}">
+            <textarea id="note-textarea-${n.id}" style="width:100%;min-height:80px;margin-top:6px;resize:vertical;">${n.text}</textarea>
+            <div style="display:flex;gap:6px;margin-top:8px;">
+              <button class="btn btn-primary btn-sm" onclick="saveNoteEdit(${c.id},'${n.id}')">Save</button>
+              <button class="btn btn-ghost btn-sm" onclick="cancelNoteEdit('${n.id}')">Cancel</button>
+            </div>
+          </div>
+          <div style="display:flex;align-items:center;gap:10px;margin-top:8px;flex-wrap:wrap;">
+            <span style="font-size:11px;color:var(--text3);font-family:'JetBrains Mono';">📝 ${formatDateTime(n.createdAt)}</span>
+            ${n.editedAt?`<span style="font-size:11px;color:var(--text3);font-family:'JetBrains Mono';">✏️ edited ${formatDateTime(n.editedAt)}</span>`:''}
+          </div>
+        </div>
+        <div style="display:flex;gap:4px;flex-shrink:0;">
+          <button class="btn btn-ghost btn-sm" style="padding:4px 8px;font-size:11px;" onclick="startNoteEdit('${n.id}')">✏️</button>
+          <button class="btn btn-ghost btn-sm" style="padding:4px 8px;font-size:11px;color:var(--red);" onclick="deleteNote(${c.id},'${n.id}')">✕</button>
+        </div>
+      </div>
+    </div>`).join('');
 }
+
+function escapeHtml(str) {
+  return String(str||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+}
+
+function formatDateTime(isoStr) {
+  if(!isoStr) return '–';
+  try {
+    const d = new Date(isoStr);
+    const date = d.toLocaleDateString('en-MY', {day:'numeric',month:'short',year:'numeric'});
+    const time = d.toLocaleTimeString('en-MY', {hour:'2-digit',minute:'2-digit'});
+    return `${date} · ${time}`;
+  } catch(e) { return isoStr; }
+}
+
+function openAddNote(id) {
+  const c = getCand(id); if(!c) return;
+  document.getElementById('modal-title').textContent = '📝 Add Note — ' + c.name;
+  document.getElementById('modal-body').innerHTML = `
+    <div class="form-group">
+      <label>Note</label>
+      <textarea id="new-note-text" style="min-height:140px;" placeholder="Write your note here... (supports multiple lines)"></textarea>
+    </div>
+    <div style="font-size:12px;color:var(--text3);">📅 Will be saved with today's date and time automatically.</div>`;
+  document.getElementById('modal-footer').innerHTML = `
+    <button class="btn btn-ghost" onclick="closeModal()">Cancel</button>
+    <button class="btn btn-primary" onclick="saveNewNote(${id})">Save Note</button>`;
+  document.getElementById('modal-overlay').classList.add('open');
+  setTimeout(()=>document.getElementById('new-note-text')?.focus(), 100);
+}
+
+function saveNewNote(id) {
+  const c = getCand(id); if(!c) return;
+  const text = document.getElementById('new-note-text')?.value.trim();
+  if(!text) { showToast('Please write something first'); return; }
+  const notes = getNotes(c);
+  const newNote = { id: Date.now(), text, createdAt: new Date().toISOString(), editedAt: null };
+  notes.push(newNote);
+  c.notesList = notes;
+  addToTimeline(c, 'Note added', 'var(--amber)');
+  save();
+  closeModal();
+  // Refresh just the notes section without reloading whole page
+  const el = document.getElementById(`notes-section-${id}`);
+  if(el) {
+    el.innerHTML = `
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;">
+        <div class="cp-field-label">Notes</div>
+        <button class="btn btn-primary btn-sm" onclick="openAddNote(${id})">+ Add Note</button>
+      </div>
+      ${renderNotesList(c)}`;
+  }
+  showToast('Note saved! 📝');
+}
+
+function startNoteEdit(noteId) {
+  document.getElementById(`note-text-${noteId}`).style.display = 'none';
+  document.getElementById(`note-edit-${noteId}`).style.display = 'block';
+  document.getElementById(`note-textarea-${noteId}`)?.focus();
+}
+
+function cancelNoteEdit(noteId) {
+  document.getElementById(`note-text-${noteId}`).style.display = 'block';
+  document.getElementById(`note-edit-${noteId}`).style.display = 'none';
+}
+
+function saveNoteEdit(candId, noteId) {
+  const c = getCand(candId); if(!c) return;
+  const notes = getNotes(c);
+  const note = notes.find(n=>String(n.id)===String(noteId));
+  if(!note) return;
+  const newText = document.getElementById(`note-textarea-${noteId}`)?.value.trim();
+  if(!newText) return;
+  note.text = newText;
+  note.editedAt = new Date().toISOString();
+  c.notesList = notes;
+  save();
+  // Update in place without full page reload
+  document.getElementById(`note-text-${noteId}`).textContent = newText;
+  cancelNoteEdit(noteId);
+  // Refresh the section to show updated edit time
+  const el = document.getElementById(`notes-section-${candId}`);
+  if(el) el.innerHTML = `
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;">
+      <div class="cp-field-label">Notes</div>
+      <button class="btn btn-primary btn-sm" onclick="openAddNote(${candId})">+ Add Note</button>
+    </div>
+    ${renderNotesList(c)}`;
+  showToast('Note updated!');
+}
+
+function deleteNote(candId, noteId) {
+  if(!confirm('Delete this note?')) return;
+  const c = getCand(candId); if(!c) return;
+  const notes = getNotes(c);
+  c.notesList = notes.filter(n=>String(n.id)!==String(noteId));
+  save();
+  const el = document.getElementById(`notes-section-${candId}`);
+  if(el) el.innerHTML = `
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;">
+      <div class="cp-field-label">Notes</div>
+      <button class="btn btn-primary btn-sm" onclick="openAddNote(${candId})">+ Add Note</button>
+    </div>
+    ${renderNotesList(c)}`;
+  showToast('Note deleted');
+}
+
+// Legacy wrapper (still called from some places)
+function openEditNotes(id) { openAddNote(id); }
+function saveNotes(id) { saveNewNote(id); }
+
 
 function openEditCandidate(id) {
   const c = getCand(id); if(!c) return;
@@ -4062,7 +4221,110 @@ function initCustomStages() {
   saveCustomStagesToStorage(getCustomStages());
 }
 
-// ===================== INIT =====================
+// ===================== PDF VIEWER =====================
+let pdfDoc = null, pdfPage = 1, pdfZoom = 1.3, pdfRendering = false, pdfCandId = null;
+
+async function loadInlinePdf(candId) {
+  pdfCandId = candId;
+  const c = getCand(candId);
+  if(!c?.hasResume) return;
+
+  const container = document.getElementById('pdf-container');
+  if(!container) return;
+  container.innerHTML = `<div style="text-align:center;color:#ccc;padding:40px;"><div style="font-size:32px;margin-bottom:10px;">⏳</div><div>Loading resume...</div></div>`;
+
+  try {
+    // Setup PDF.js worker
+    if(window.pdfjsLib) {
+      pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+    }
+
+    // Get resume data
+    let pdfData;
+    if(window.getResumeData) {
+      // Cloud (Firebase) mode
+      const r = await getResumeData(candId);
+      if(!r) { container.innerHTML = `<div style="color:#ccc;padding:40px;text-align:center;">Resume not found in cloud storage</div>`; return; }
+      if(r.url) {
+        // Fetch the PDF bytes from Firebase Storage URL
+        const resp = await fetch(r.url);
+        const buf = await resp.arrayBuffer();
+        pdfData = new Uint8Array(buf);
+      }
+    }
+    // Local storage fallback
+    if(!pdfData) {
+      try {
+        const stored = JSON.parse(localStorage.getItem(`tf_resume_${candId}`)||'null');
+        if(stored?.b64) {
+          const bin = atob(stored.b64);
+          pdfData = new Uint8Array(bin.length);
+          for(let i=0;i<bin.length;i++) pdfData[i]=bin.charCodeAt(i);
+        }
+      } catch(e) {}
+    }
+
+    if(!pdfData) { container.innerHTML = `<div style="color:#ccc;padding:40px;text-align:center;">📄 Unable to load PDF inline.<br><br><button class="btn btn-primary" onclick="viewResume(${candId})">Open in New Tab</button></div>`; return; }
+
+    pdfDoc = await pdfjsLib.getDocument({ data: pdfData }).promise;
+    pdfPage = 1;
+    document.getElementById('pdf-page-total').textContent = pdfDoc.numPages;
+    await renderPdfPage();
+
+  } catch(err) {
+    console.error('PDF load error:', err);
+    container.innerHTML = `<div style="color:#ccc;padding:40px;text-align:center;">
+      <div style="font-size:32px;margin-bottom:10px;">⚠️</div>
+      <div style="margin-bottom:16px;">Couldn't render PDF inline</div>
+      <button class="btn btn-primary" onclick="viewResume(${candId})">Open in New Tab ↗</button>
+    </div>`;
+  }
+}
+
+async function renderPdfPage() {
+  if(!pdfDoc || pdfRendering) return;
+  pdfRendering = true;
+  const container = document.getElementById('pdf-container');
+  if(!container) { pdfRendering=false; return; }
+
+  try {
+    const page = await pdfDoc.getPage(pdfPage);
+    const containerWidth = container.clientWidth - 32;
+    const viewport = page.getViewport({ scale: 1 });
+    const fitScale = containerWidth / viewport.width;
+    const scale = fitScale * pdfZoom;
+    const scaledViewport = page.getViewport({ scale });
+
+    const canvas = document.createElement('canvas');
+    canvas.width = scaledViewport.width;
+    canvas.height = scaledViewport.height;
+    canvas.style.cssText = `box-shadow:0 4px 24px rgba(0,0,0,0.4);border-radius:4px;max-width:100%;display:block;`;
+
+    const ctx = canvas.getContext('2d');
+    await page.render({ canvasContext: ctx, viewport: scaledViewport }).promise;
+
+    container.innerHTML = '';
+    container.appendChild(canvas);
+
+    document.getElementById('pdf-page-num').textContent = pdfPage;
+    document.getElementById('pdf-zoom-label').textContent = Math.round(pdfZoom * 100) + '%';
+  } catch(e) { console.error('Render error', e); }
+  pdfRendering = false;
+}
+
+function pdfNextPage() {
+  if(!pdfDoc || pdfPage >= pdfDoc.numPages) return;
+  pdfPage++; renderPdfPage();
+}
+function pdfPrevPage() {
+  if(!pdfDoc || pdfPage <= 1) return;
+  pdfPage--; renderPdfPage();
+}
+function pdfZoomIn()  { pdfZoom = Math.min(pdfZoom + 0.25, 4); renderPdfPage(); }
+function pdfZoomOut() { pdfZoom = Math.max(pdfZoom - 0.25, 0.5); renderPdfPage(); }
+function pdfZoomFit() { pdfZoom = 1.0; renderPdfPage(); }
+
+
 populateJobFilters();
 initCustomStages();
 renderDashboard();
