@@ -1365,6 +1365,7 @@
           <div onclick="switchSettingsTab('s-apikey')" id="stab-s-apikey" class="nav-item"><span class="icon">🔑</span>AI & Integrations</div>
           <div onclick="switchSettingsTab('s-notifs')" id="stab-s-notifs" class="nav-item"><span class="icon">🔔</span>Notifications</div>
           <div onclick="switchSettingsTab('s-appearance')" id="stab-s-appearance" class="nav-item"><span class="icon">🎨</span>Appearance</div>
+          <div onclick="switchSettingsTab('s-offer-fields')" id="stab-s-offer-fields" class="nav-item"><span class="icon">📄</span>Offer Fields</div>
           <div onclick="switchSettingsTab('s-danger')" id="stab-s-danger" class="nav-item"><span class="icon">⚠️</span>Danger Zone</div>
           <div onclick="switchSettingsTab('s-archive')" id="stab-s-archive" class="nav-item"><span class="icon">🗄️</span>Archive</div>
         </div>
@@ -2346,6 +2347,11 @@ function saveEditInterview(candId, ivIdx) {
 function renderOffers() {
   const grid = document.getElementById('offers-grid');
   if(!grid) return;
+  const fields = getOfferFields().filter(f => f.enabled && f.type !== 'textarea' && f.id !== 'notes' && f.id !== 'expiryDate');
+  const notesField = getOfferFields().find(f => f.id === 'notes' && f.enabled);
+  const expiryField = getOfferFields().find(f => f.id === 'expiryDate' && f.enabled);
+  const displayFields = fields.slice(0, 4); // max 4 in card grid
+
   grid.innerHTML = offers.length ? offers.map((o,oi)=>{
     const c = getCand(o.candidateId);
     const job = c ? getJob(c.jobId) : null;
@@ -2359,13 +2365,14 @@ function renderOffers() {
         <span class="badge ${o.status==='Accepted'?'badge-green':o.status==='Rejected'?'badge-red':'badge-amber'}">${o.status}</span>
       </div>
       <div class="offer-grid">
-        <div class="offer-field"><div class="offer-field-label">Base Salary</div><div class="offer-field-val" style="font-size:13px">${o.salary||'–'}</div></div>
-        <div class="offer-field"><div class="offer-field-label">Equity / Benefits</div><div class="offer-field-val" style="font-size:13px">${o.equity||'–'}</div></div>
-        <div class="offer-field"><div class="offer-field-label">Signing Bonus</div><div class="offer-field-val" style="font-size:13px">${o.bonus||'–'}</div></div>
-        <div class="offer-field"><div class="offer-field-label">Start Date</div><div class="offer-field-val" style="font-size:13px">${o.startDate||'–'}</div></div>
+        ${displayFields.map(f => `
+          <div class="offer-field">
+            <div class="offer-field-label">${escapeHtml(f.label)}</div>
+            <div class="offer-field-val" style="font-size:13px">${o[f.id]||'–'}</div>
+          </div>`).join('')}
       </div>
-      ${o.expiryDate?`<div style="font-size:11px;color:var(--text3);margin-top:8px">⏰ Expires: ${o.expiryDate}</div>`:''}
-      ${o.notes?`<div style="font-size:12px;color:var(--text2);margin-top:8px;background:var(--bg3);border-radius:6px;padding:8px">${o.notes}</div>`:''}
+      ${expiryField && o.expiryDate ? `<div style="font-size:11px;color:var(--text3);margin-top:8px">⏰ Expires: ${o.expiryDate}</div>` : ''}
+      ${notesField && o.notes ? `<div style="font-size:12px;color:var(--text2);margin-top:8px;background:var(--bg3);border-radius:6px;padding:8px">${escapeHtml(o.notes)}</div>` : ''}
       <div style="display:flex;gap:8px;margin-top:12px;flex-wrap:wrap">
         ${o.status==='Pending'?`
           <button class="btn btn-primary btn-sm" onclick="updateOfferStatus(${oi},'Accepted')">✓ Mark Accepted</button>
@@ -2393,17 +2400,7 @@ function openEditOfferModal(idx) {
   const o = offers[idx];
   const c = getCand(o.candidateId);
   document.getElementById('modal-title').textContent = 'Edit Offer — ' + (c?c.name:'Candidate');
-  document.getElementById('modal-body').innerHTML = `
-    <div class="form-row">
-      <div class="form-group"><label>Base Salary</label><input type="text" id="eo-salary" value="${o.salary||''}"></div>
-      <div class="form-group"><label>Signing Bonus</label><input type="text" id="eo-bonus" value="${o.bonus||''}"></div>
-    </div>
-    <div class="form-row">
-      <div class="form-group"><label>Equity / Benefits</label><input type="text" id="eo-equity" value="${o.equity||''}"></div>
-      <div class="form-group"><label>Start Date</label><input type="date" id="eo-start" value="${o.startDate||''}"></div>
-    </div>
-    <div class="form-group"><label>Expiry Date</label><input type="date" id="eo-expiry" value="${o.expiryDate||''}"></div>
-    <div class="form-group"><label>Notes</label><textarea id="eo-notes">${o.notes||''}</textarea></div>`;
+  document.getElementById('modal-body').innerHTML = buildOfferFormHTML(o);
   document.getElementById('modal-footer').innerHTML = `
     <button class="btn btn-ghost" onclick="closeModal()">Cancel</button>
     <button class="btn btn-primary" onclick="saveEditOffer(${idx})">Save</button>`;
@@ -2411,12 +2408,8 @@ function openEditOfferModal(idx) {
 }
 
 function saveEditOffer(idx) {
-  offers[idx].salary = document.getElementById('eo-salary')?.value;
-  offers[idx].bonus = document.getElementById('eo-bonus')?.value;
-  offers[idx].equity = document.getElementById('eo-equity')?.value;
-  offers[idx].startDate = document.getElementById('eo-start')?.value;
-  offers[idx].expiryDate = document.getElementById('eo-expiry')?.value;
-  offers[idx].notes = document.getElementById('eo-notes')?.value;
+  const fields = getOfferFields().filter(f => f.enabled);
+  fields.forEach(f => { offers[idx][f.id] = document.getElementById('of-'+f.id)?.value || ''; });
   save(); closeModal(); renderOffers();
   showToast('Offer updated!');
 }
@@ -2711,6 +2704,20 @@ function markAllRead() {
 
 function getSettings() {
   try { return JSON.parse(localStorage.getItem('tf_settings')||'{}'); } catch(e){ return {}; }
+}
+
+// ---- OFFER FIELDS (customisable) ----
+const DEFAULT_OFFER_FIELDS = [
+  { id: 'salary',    label: 'Base Salary',      type: 'text',   placeholder: 'e.g. RM 8,000/month', enabled: true,  required: true  },
+  { id: 'bonus',     label: 'Signing Bonus',     type: 'text',   placeholder: 'e.g. RM 5,000',       enabled: true,  required: false },
+  { id: 'equity',    label: 'Equity / Benefits', type: 'text',   placeholder: 'e.g. 0.5% or Medical', enabled: true, required: false },
+  { id: 'startDate', label: 'Start Date',        type: 'date',   placeholder: '',                     enabled: true,  required: false },
+  { id: 'expiryDate',label: 'Offer Expiry Date', type: 'date',   placeholder: '',                     enabled: true,  required: false },
+  { id: 'notes',     label: 'Additional Notes',  type: 'textarea',placeholder: 'Special conditions, probation...', enabled: true, required: false },
+];
+function getOfferFields() {
+  const s = getSettings();
+  return s.offerFields && s.offerFields.length ? s.offerFields : JSON.parse(JSON.stringify(DEFAULT_OFFER_FIELDS));
 }
 
 // ---- DEPARTMENTS (customisable) ----
@@ -3207,6 +3214,69 @@ function switchSettingsTab(tabId) {
       <div style="font-size:13px;color:var(--text3);margin-bottom:20px;">Deleted jobs and candidates are kept here. You can restore them at any time.</div>
       <div id="archive-list"><div style="text-align:center;padding:40px;color:var(--text3);">Loading archive...</div></div>`;
     loadArchive();
+  } else if(tabId==='s-offer-fields') {
+    const fields = getOfferFields();
+    el.innerHTML = `
+      <div style="font-size:18px;font-weight:800;margin-bottom:4px;">📄 Offer Fields</div>
+      <div style="font-size:13px;color:var(--text3);margin-bottom:20px;">Customise the fields shown when creating or editing an offer. Drag to reorder, rename labels, toggle visibility, or add new fields.</div>
+
+      <div class="panel" style="margin-bottom:16px;">
+        <div class="panel-header">
+          <span class="panel-title">Offer Form Fields</span>
+          <button class="btn btn-primary btn-sm" onclick="addOfferField()">+ Add Field</button>
+        </div>
+        <div style="padding:12px 16px;background:var(--bg3);border-bottom:1px solid var(--border);">
+          <div style="font-size:11px;color:var(--text3);">💡 Toggle to show/hide · Click label to rename · Required fields always show</div>
+        </div>
+        <div id="offer-fields-list" style="padding:8px 16px;">
+          ${fields.map((f,i) => `
+            <div style="display:flex;align-items:center;gap:10px;padding:10px 0;border-bottom:1px solid var(--border);" id="ofrow-${i}">
+              <span style="color:var(--text3);cursor:grab;font-size:16px;">⠿</span>
+              <div style="flex:1;display:flex;flex-direction:column;gap:4px;">
+                <div style="display:flex;gap:8px;align-items:center;">
+                  <input value="${escapeHtml(f.label)}" onchange="updateOfferField(${i},'label',this.value)"
+                    style="flex:1;background:var(--bg3);border:1px solid var(--border);border-radius:6px;padding:5px 10px;font-size:13px;font-weight:600;color:var(--text);outline:none;">
+                  <select onchange="updateOfferField(${i},'type',this.value)"
+                    style="background:var(--bg3);border:1px solid var(--border);border-radius:6px;padding:5px 8px;font-size:12px;color:var(--text2);outline:none;">
+                    <option value="text" ${f.type==='text'?'selected':''}>Text</option>
+                    <option value="number" ${f.type==='number'?'selected':''}>Number</option>
+                    <option value="date" ${f.type==='date'?'selected':''}>Date</option>
+                    <option value="textarea" ${f.type==='textarea'?'selected':''}>Text Area</option>
+                  </select>
+                </div>
+                <input value="${escapeHtml(f.placeholder||'')}" placeholder="Placeholder text (optional)"
+                  onchange="updateOfferField(${i},'placeholder',this.value)"
+                  style="background:var(--bg4);border:1px solid var(--border);border-radius:6px;padding:4px 10px;font-size:11.5px;color:var(--text3);outline:none;">
+              </div>
+              <div style="display:flex;gap:6px;align-items:center;flex-shrink:0;">
+                <label style="display:flex;align-items:center;gap:4px;font-size:11.5px;color:var(--text3);cursor:pointer;">
+                  <input type="checkbox" ${f.required?'checked':''} onchange="updateOfferField(${i},'required',this.checked)"
+                    style="accent-color:var(--accent);">Required
+                </label>
+                <label class="toggle-wrap" style="cursor:pointer;">
+                  <input type="checkbox" ${f.enabled?'checked':''} onchange="updateOfferField(${i},'enabled',this.checked)" style="display:none;">
+                  <div style="width:36px;height:20px;border-radius:10px;background:${f.enabled?'var(--accent)':'var(--border2)'};position:relative;transition:background 0.2s;">
+                    <div style="width:16px;height:16px;border-radius:50%;background:#fff;position:absolute;top:2px;left:${f.enabled?'18px':'2px'};transition:left 0.2s;"></div>
+                  </div>
+                </label>
+                ${!['salary','startDate'].includes(f.id) ? `<button class="btn btn-ghost btn-sm" style="color:var(--red);padding:4px 6px;" onclick="removeOfferField(${i})">✕</button>` : '<div style="width:28px;"></div>'}
+              </div>
+            </div>`).join('')}
+        </div>
+        <div style="padding:12px 16px;border-top:1px solid var(--border);display:flex;gap:8px;">
+          <button class="btn btn-primary btn-sm" onclick="saveOfferFields()">💾 Save Changes</button>
+          <button class="btn btn-ghost btn-sm" onclick="resetOfferFields()">↺ Reset to Default</button>
+        </div>
+      </div>
+
+      <!-- Live preview -->
+      <div class="panel">
+        <div class="panel-header"><span class="panel-title">Preview</span></div>
+        <div style="padding:16px 20px;">
+          <div style="font-size:11px;color:var(--text3);margin-bottom:12px;">How the offer form will look</div>
+          ${buildOfferFormPreview(fields)}
+        </div>
+      </div>`;
   } else if(tabId==='s-danger') {
     el.innerHTML = `
       <div style="font-size:18px;font-weight:800;margin-bottom:20px;color:var(--red);">⚠️ Danger Zone</div>
@@ -4767,49 +4837,33 @@ function saveEditCandidate(id) {
 
 function openCreateOffer(id) {
   const c = getCand(id); if(!c) return;
-  const overlay = document.getElementById('modal-overlay');
   document.getElementById('modal-title').textContent = '📄 Create Offer — ' + c.name;
-  document.getElementById('modal-body').innerHTML = `
-    <div class="form-row">
-      <div class="form-group"><label>Base Salary</label><input type="text" id="of-salary" placeholder="e.g. RM 8,000/month"></div>
-      <div class="form-group"><label>Employment Type</label>
-        <select id="of-type"><option>Full-time</option><option>Part-time</option><option>Contract</option></select>
-      </div>
-    </div>
-    <div class="form-row">
-      <div class="form-group"><label>Signing Bonus</label><input type="text" id="of-bonus" placeholder="e.g. RM 5,000"></div>
-      <div class="form-group"><label>Equity / Benefits</label><input type="text" id="of-equity" placeholder="e.g. 0.5% or Medical + EPF"></div>
-    </div>
-    <div class="form-row">
-      <div class="form-group"><label>Start Date</label><input type="date" id="of-start"></div>
-      <div class="form-group"><label>Offer Expiry Date</label><input type="date" id="of-expiry"></div>
-    </div>
-    <div class="form-group"><label>Additional Notes</label><textarea id="of-notes" placeholder="Any special conditions, probation period..."></textarea></div>`;
+  document.getElementById('modal-body').innerHTML = buildOfferFormHTML();
   document.getElementById('modal-footer').innerHTML = `
     <button class="btn btn-ghost" onclick="closeModal()">Cancel</button>
     <button class="btn btn-primary" onclick="saveOffer(${id})">Create & Send Offer</button>`;
-  overlay.classList.add('open');
+  document.getElementById('modal-overlay').classList.add('open');
 }
 
 function saveOffer(id) {
   const c = getCand(id); if(!c) return;
-  const salary = document.getElementById('of-salary')?.value;
-  if(!salary) { showToast('Please enter salary'); return; }
-  const offer = {
-    candidateId: id,
-    salary, bonus: document.getElementById('of-bonus')?.value,
-    equity: document.getElementById('of-equity')?.value,
-    startDate: document.getElementById('of-start')?.value,
-    expiryDate: document.getElementById('of-expiry')?.value,
-    notes: document.getElementById('of-notes')?.value,
-    status: 'Pending', sentDate: new Date().toISOString().split('T')[0]
-  };
+  const fields = getOfferFields().filter(f => f.enabled);
+  // Check required fields
+  for(const f of fields) {
+    if(f.required && !document.getElementById('of-'+f.id)?.value.trim()) {
+      showToast('Please fill in: ' + f.label); return;
+    }
+  }
+  const offer = { candidateId: id, status: 'Pending', sentDate: new Date().toISOString().split('T')[0] };
+  fields.forEach(f => { offer[f.id] = document.getElementById('of-'+f.id)?.value || ''; });
+  // Keep backward compat aliases
+  offer.salary = offer.salary || offer['of-salary'] || '';
   offers.push(offer);
   c.stage = 'Offer';
   addToTimeline(c, 'Offer created', 'var(--purple)');
-  activities.unshift({ text:`Offer created for <strong>${c.name}</strong> at ${salary}`, color:'var(--purple)', ts:Date.now() });
+  activities.unshift({ text:`Offer created for <strong>${c.name}</strong>${offer.salary?' at '+offer.salary:''}`, color:'var(--purple)', ts:Date.now() });
   save(); closeModal(); openCandProfile(id);
-  showToast('Offer created!');
+  showToast('Offer created! 🎉');
 }
 
 function openJobDetail(id, pushHistory=true) {
@@ -5856,9 +5910,110 @@ async function permanentlyDelete(docId) {
     showToast('Delete failed');
   }
 }
-function closeModal() {
-  document.getElementById('modal-overlay').classList.remove('open');
+function buildOfferFormPreview(fields) {
+  const enabled = fields.filter(f => f.enabled);
+  const rows = [];
+  for(let i = 0; i < enabled.length; i += 2) {
+    const pair = enabled.slice(i, i+2);
+    if(pair[0].type === 'textarea') {
+      rows.push(`<div class="form-group" style="opacity:0.7;pointer-events:none;"><label style="font-size:11px;font-weight:700;color:var(--text3);">${escapeHtml(pair[0].label)}${pair[0].required?' *':''}</label><textarea placeholder="${escapeHtml(pair[0].placeholder||'')}" style="resize:none;height:60px;"></textarea></div>`);
+    } else if(pair.length === 2 && pair[1].type !== 'textarea') {
+      rows.push(`<div class="form-row" style="opacity:0.7;pointer-events:none;">
+        <div class="form-group"><label style="font-size:11px;font-weight:700;color:var(--text3);">${escapeHtml(pair[0].label)}${pair[0].required?' *':''}</label><input type="${pair[0].type}" placeholder="${escapeHtml(pair[0].placeholder||'')}"></div>
+        <div class="form-group"><label style="font-size:11px;font-weight:700;color:var(--text3);">${escapeHtml(pair[1].label)}${pair[1].required?' *':''}</label><input type="${pair[1].type}" placeholder="${escapeHtml(pair[1].placeholder||'')}"></div>
+      </div>`);
+      i++; // skip next since we handled it
+    } else {
+      rows.push(`<div class="form-group" style="opacity:0.7;pointer-events:none;"><label style="font-size:11px;font-weight:700;color:var(--text3);">${escapeHtml(pair[0].label)}${pair[0].required?' *':''}</label><input type="${pair[0].type}" placeholder="${escapeHtml(pair[0].placeholder||'')}"></div>`);
+    }
+  }
+  return rows.join('') || '<div style="color:var(--text3);text-align:center;padding:20px;">No fields enabled</div>';
 }
+
+function updateOfferField(i, key, val) {
+  const fields = getOfferFields();
+  fields[i][key] = val;
+  const s = getSettings();
+  s.offerFields = fields;
+  localStorage.setItem('tf_settings', JSON.stringify(s));
+  switchSettingsTab('s-offer-fields');
+}
+
+function addOfferField() {
+  const fields = getOfferFields();
+  fields.push({ id: 'custom_' + Date.now(), label: 'New Field', type: 'text', placeholder: '', enabled: true, required: false });
+  const s = getSettings();
+  s.offerFields = fields;
+  localStorage.setItem('tf_settings', JSON.stringify(s));
+  switchSettingsTab('s-offer-fields');
+}
+
+function removeOfferField(i) {
+  const fields = getOfferFields();
+  fields.splice(i, 1);
+  const s = getSettings();
+  s.offerFields = fields;
+  localStorage.setItem('tf_settings', JSON.stringify(s));
+  switchSettingsTab('s-offer-fields');
+}
+
+function saveOfferFields() {
+  showToast('Offer fields saved ✓');
+  switchSettingsTab('s-offer-fields');
+}
+
+function resetOfferFields() {
+  if(!confirm('Reset offer fields to default?')) return;
+  const s = getSettings();
+  delete s.offerFields;
+  localStorage.setItem('tf_settings', JSON.stringify(s));
+  switchSettingsTab('s-offer-fields');
+  showToast('Reset to default');
+}
+
+function buildOfferFormHTML(values = {}) {
+  const fields = getOfferFields().filter(f => f.enabled);
+  let html = '';
+  const pairs = [];
+  let i = 0;
+  while(i < fields.length) {
+    const f = fields[i];
+    if(f.type === 'textarea') {
+      pairs.push([f]);
+      i++;
+    } else if(i + 1 < fields.length && fields[i+1].type !== 'textarea') {
+      pairs.push([f, fields[i+1]]);
+      i += 2;
+    } else {
+      pairs.push([f]);
+      i++;
+    }
+  }
+  pairs.forEach(pair => {
+    if(pair.length === 2) {
+      html += '<div class="form-row">';
+      pair.forEach(f => {
+        const val = values[f.id] || '';
+        html += `<div class="form-group"><label>${escapeHtml(f.label)}${f.required?' <span style="color:var(--red)">*</span>':''}</label>`;
+        html += `<input type="${f.type}" id="of-${f.id}" placeholder="${escapeHtml(f.placeholder||'')}" value="${escapeHtml(val)}"></div>`;
+      });
+      html += '</div>';
+    } else {
+      const f = pair[0];
+      const val = values[f.id] || '';
+      html += `<div class="form-group"><label>${escapeHtml(f.label)}${f.required?' <span style="color:var(--red)">*</span>':''}</label>`;
+      if(f.type === 'textarea') {
+        html += `<textarea id="of-${f.id}" placeholder="${escapeHtml(f.placeholder||'')}">${escapeHtml(val)}</textarea>`;
+      } else {
+        html += `<input type="${f.type}" id="of-${f.id}" placeholder="${escapeHtml(f.placeholder||'')}" value="${escapeHtml(val)}">`;
+      }
+      html += '</div>';
+    }
+  });
+  return html;
+}
+
+
 function closeModalOuter(e) { if(e.target===document.getElementById('modal-overlay')) closeModal(); }
 
 // ===================== SEARCH =====================
