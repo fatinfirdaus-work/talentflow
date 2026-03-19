@@ -4111,16 +4111,13 @@ function refreshRightPanel(id) {
   const allFeedback = (c.feedback||[]).slice().sort((a,b)=>new Date(b.createdAt||b.date||0)-new Date(a.createdAt||a.date||0));
 
   // Refresh stage badge + action buttons at top of sidebar
-  const stageBadgeEl = document.querySelector('#cp-action-buttons')?.closest('div');
-  const stageTrackerWrap = document.getElementById('cp-stage-tracker-wrap');
-  if(stageTrackerWrap) stageTrackerWrap.innerHTML = buildStageTrackerHTML(c);
   const actionBtns = document.getElementById('cp-action-buttons');
   if(actionBtns) actionBtns.innerHTML = buildStageActions(c);
-  // Also refresh the stage badge text
-  const stageBadgeSpan = document.querySelector('[data-cp-stage-badge]');
-  if(stageBadgeSpan) {
-    stageBadgeSpan.textContent = c.stage;
-    stageBadgeSpan.className = 'badge ' + (stageBadge[c.stage]||'badge-gray');
+  // Update stage badge
+  const stageBadgeEl = actionBtns?.previousElementSibling?.querySelector('.badge');
+  if(stageBadgeEl) {
+    stageBadgeEl.textContent = c.stage;
+    stageBadgeEl.className = 'badge ' + (stageBadge[c.stage]||'badge-gray') + ' font-size:12px;padding:4px 10px;';
   }
 
   // Refresh offers section
@@ -4150,16 +4147,19 @@ function buildStageTrackerHTML(c, jobId) {
   return enabledStages.map((s,i,arr)=>{
     const isActive = currentStage===s;
     const isPast = stages.indexOf(currentStage) > stages.indexOf(s) && currentStage!=='Rejected';
+    const col = isActive ? stageColors[s] : isPast ? 'var(--green)' : 'var(--border2)';
     return '<div style="display:flex;align-items:center;flex-shrink:0;">' +
-      '<div onclick="quickMoveStage(' + c.id + ',\'' + s + '\',' + (targetJobId||'null') + ')" style="display:flex;flex-direction:column;align-items:center;gap:3px;cursor:pointer;padding:0 4px;">' +
-      '<div style="width:28px;height:28px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;' +
-      'background:' + (isActive?stageColors[s]:isPast?'var(--green-dim)':'var(--bg4)') + ';' +
-      'color:' + (isActive?stageColors[s]:isPast?'var(--green)':'var(--text3)') + ';' +
-      'border:2px solid ' + (isActive?stageColors[s]:isPast?'var(--green)':'var(--border)') + ';' +
-      'transition:all 0.2s;">' + (isPast?'✓':i+1) + '</div>' +
-      '<div style="font-size:9px;color:' + (isActive?stageColors[s]:'var(--text3)') + ';font-weight:' + (isActive?'700':'400') + ';white-space:nowrap;">' + s + '</div>' +
+      '<div onclick="quickMoveStage(' + c.id + ',\'' + s + '\',' + (targetJobId||'null') + ')" ' +
+      'title="' + s + '" ' +
+      'style="display:flex;flex-direction:column;align-items:center;gap:2px;cursor:pointer;padding:0 3px;">' +
+      '<div style="width:22px;height:22px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:9px;font-weight:700;' +
+      'background:' + (isActive ? stageColors[s]+'22' : isPast ? 'var(--green-dim)' : 'var(--bg4)') + ';' +
+      'color:' + col + ';' +
+      'border:2px solid ' + col + ';' +
+      'transition:all 0.2s;">' + (isPast?'✓':(i+1)) + '</div>' +
+      '<div style="font-size:8px;color:' + (isActive?stageColors[s]:'var(--text3)') + ';font-weight:' + (isActive?'700':'400') + ';white-space:nowrap;max-width:42px;overflow:hidden;text-overflow:ellipsis;">' + s + '</div>' +
       '</div>' +
-      (i<arr.length-1?'<div style="width:16px;height:2px;background:' + (isPast?'var(--green)':'var(--border)') + ';flex-shrink:0;margin-bottom:14px;"></div>':'') +
+      (i<arr.length-1 ? '<div style="width:10px;height:2px;background:' + (isPast?'var(--green)':'var(--border)') + ';flex-shrink:0;margin-bottom:12px;"></div>' : '') +
       '</div>';
   }).join('');
 }
@@ -4479,12 +4479,11 @@ function renderCandProfileContent(id, fromJobId=null) {
     '<div style="overflow-y:auto;background:var(--bg3);display:flex;flex-direction:column;gap:0;">' +
 
     // ── STAGE & ACTIONS — top of sidebar ──
-    '<div style="background:var(--bg2);padding:14px 16px;border-bottom:1px solid var(--border);">' +
-    '<div style="display:flex;align-items:center;gap:8px;margin-bottom:10px;">' +
-    '<span class="badge ' + (stageBadge[c.stage]||'badge-gray') + '" style="font-size:12px;">' + c.stage + '</span>' +
+    '<div style="background:var(--bg2);padding:12px 16px;border-bottom:1px solid var(--border);">' +
+    '<div style="display:flex;align-items:center;gap:6px;margin-bottom:10px;">' +
+    '<span class="badge ' + (stageBadge[c.stage]||'badge-gray') + '" style="font-size:12px;padding:4px 10px;">' + c.stage + '</span>' +
     (c.rejectionReasonLabel ? '<span class="badge badge-red" style="font-size:10px;">🚫 ' + escapeHtml(c.rejectionReasonLabel) + '</span>' : '') +
     '</div>' +
-    '<div id="cp-stage-tracker-wrap" style="margin-bottom:12px;">' + buildStageTrackerHTML(c) + '</div>' +
     '<div id="cp-action-buttons" style="display:flex;gap:6px;flex-wrap:wrap;">' + buildStageActions(c) + '</div>' +
     '</div>' +
 
@@ -4600,11 +4599,12 @@ function buildJobApplicationsHTML(c) {
     }
     html += '</div>';
 
-    // Stage tracker for this specific job
-    html += '<div style="padding:6px 16px 12px;overflow-x:auto;">';
-    html += '<div style="display:flex;align-items:center;gap:8px;">' + buildStageTrackerHTML(c, app.jobId) + '';
-    html += '<button class="btn btn-ghost btn-sm" style="font-size:11px;flex-shrink:0;" onclick="openMoveStage(' + c.id + ',' + app.jobId + ')">↕ Move</button>';
+    // Stage tracker for this specific job — scrollable
+    html += '<div style="padding:4px 16px 10px;overflow-x:auto;-webkit-overflow-scrolling:touch;">';
+    html += '<div style="display:flex;align-items:center;gap:0;min-width:max-content;">' + buildStageTrackerHTML(c, app.jobId) + '</div>';
     html += '</div>';
+    html += '<div style="padding:0 16px 12px;">';
+    html += '<button class="btn btn-ghost btn-sm" style="font-size:11px;" onclick="openMoveStage(' + c.id + ',' + app.jobId + ')">↕ Move Stage</button>';
     html += '</div>';
 
     html += '</div>';
