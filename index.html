@@ -926,23 +926,23 @@
       <div class="stats-row">
         <div class="stat-card">
           <div class="stat-label">Open Positions</div>
-          <div class="stat-val" style="color:var(--accent)">12</div>
-          <div class="stat-change up">↑ 3 this month</div>
+          <div class="stat-val" style="color:var(--accent)">–</div>
+          <div class="stat-change" id="dash-sub-jobs">active jobs</div>
         </div>
         <div class="stat-card">
           <div class="stat-label">Total Applicants</div>
-          <div class="stat-val" style="color:var(--purple)">284</div>
-          <div class="stat-change up">↑ 42 new</div>
+          <div class="stat-val" style="color:var(--purple)">–</div>
+          <div class="stat-change" id="dash-sub-cands">total candidates</div>
         </div>
         <div class="stat-card">
           <div class="stat-label">In Interview</div>
-          <div class="stat-val" style="color:var(--amber)">31</div>
-          <div class="stat-change down">↓ 2 this week</div>
+          <div class="stat-val" style="color:var(--amber)">–</div>
+          <div class="stat-change" id="dash-sub-interview">in pipeline</div>
         </div>
         <div class="stat-card">
           <div class="stat-label">Hires This Month</div>
-          <div class="stat-val" style="color:var(--green)">8</div>
-          <div class="stat-change up">↑ 2 vs last month</div>
+          <div class="stat-val" style="color:var(--green)">–</div>
+          <div class="stat-change" id="dash-sub-hires">no hires yet</div>
         </div>
       </div>
 
@@ -1235,7 +1235,19 @@
           <div class="panel-header"><span class="panel-title">Stage Conversion Rate</span></div>
           <div class="funnel" id="analytics-funnel"></div>
         </div>
-    </div>
+      </div>
+      <div class="two-col" style="margin-top:16px;">
+        <div class="panel">
+          <div class="panel-header"><span class="panel-title">🚫 Rejection Reasons</span></div>
+          <div style="padding:20px;" id="rejection-reasons-chart"></div>
+        </div>
+        <div class="panel">
+          <div class="panel-header"><span class="panel-title">📊 Pipeline Breakdown</span></div>
+          <div style="padding:20px;">
+            <div id="analytics-pipeline-breakdown"></div>
+          </div>
+        </div>
+      </div>
     </div>
 
     </div>
@@ -1366,6 +1378,7 @@
           <div onclick="switchSettingsTab('s-notifs')" id="stab-s-notifs" class="nav-item"><span class="icon">🔔</span>Notifications</div>
           <div onclick="switchSettingsTab('s-appearance')" id="stab-s-appearance" class="nav-item"><span class="icon">🎨</span>Appearance</div>
           <div onclick="switchSettingsTab('s-offer-fields')" id="stab-s-offer-fields" class="nav-item"><span class="icon">📄</span>Offer Fields</div>
+          <div onclick="switchSettingsTab('s-rejection-reasons')" id="stab-s-rejection-reasons" class="nav-item"><span class="icon">🚫</span>Rejection Reasons</div>
           <div onclick="switchSettingsTab('s-danger')" id="stab-s-danger" class="nav-item"><span class="icon">⚠️</span>Danger Zone</div>
           <div onclick="switchSettingsTab('s-archive')" id="stab-s-archive" class="nav-item"><span class="icon">🗄️</span>Archive</div>
         </div>
@@ -1407,35 +1420,9 @@
 
 <script>
 // ===================== DEFAULT DATA =====================
-const DEFAULT_JOBS = [
-  { id:1, title:'Senior Frontend Engineer', dept:'Engineering', type:'Full-time', location:'Remote', status:'Active', applicants:34, salary:'$120k–$160k', posted:'2024-01-05', color:'#4f8ef7', icon:'⚙️', skills:['React','TypeScript','CSS'], priority:'High' },
-  { id:2, title:'Product Designer', dept:'Design', type:'Full-time', location:'San Francisco, CA', status:'Active', applicants:28, salary:'$100k–$130k', posted:'2024-01-08', color:'#a78bfa', icon:'🎨', skills:['Figma','Prototyping','UX Research'], priority:'Medium' },
-  { id:3, title:'Head of Growth', dept:'Marketing', type:'Full-time', location:'New York, NY', status:'Active', applicants:19, salary:'$130k–$170k', posted:'2024-01-10', color:'#34d399', icon:'📈', skills:['SEO','Paid Ads','Analytics'], priority:'High' },
-  { id:4, title:'Backend Engineer (Go)', dept:'Engineering', type:'Full-time', location:'Remote', status:'Active', applicants:22, salary:'$110k–$150k', posted:'2024-01-12', color:'#fbbf24', icon:'🔧', skills:['Go','PostgreSQL','Docker'], priority:'Medium' },
-  { id:5, title:'Data Analyst', dept:'Product', type:'Full-time', location:'Austin, TX', status:'Paused', applicants:15, salary:'$85k–$110k', posted:'2023-12-28', color:'#f472b6', icon:'📊', skills:['SQL','Python','Tableau'], priority:'Low' },
-  { id:6, title:'Enterprise Account Executive', dept:'Sales', type:'Full-time', location:'Chicago, IL', status:'Active', applicants:11, salary:'$90k + OTE', posted:'2024-01-14', color:'#fb7185', icon:'💰', skills:['SaaS','Salesforce','Negotiation'], priority:'High' },
-  { id:7, title:'DevOps Engineer', dept:'Engineering', type:'Contract', location:'Remote', status:'Active', applicants:9, salary:'$80–$120/hr', posted:'2024-01-15', color:'#06b6d4', icon:'🖥️', skills:['Kubernetes','AWS','CI/CD'], priority:'Medium' },
-  { id:8, title:'Content Strategist', dept:'Marketing', type:'Part-time', location:'Remote', status:'Closed', applicants:31, salary:'$55k–$70k', posted:'2023-11-20', color:'#84cc16', icon:'✍️', skills:['SEO','Copywriting','Strategy'], priority:'Low' },
-];
-const DEFAULT_CANDIDATES = [
-  { id:1, name:'Alicia Chen', email:'alicia@email.com', jobId:1, stage:'Interview', score:92, applied:'2024-01-07', initials:'AC', color:'#4f8ef7', exp:'5 yrs', location:'Seattle, WA', skills:['React','TypeScript','Node.js'], source:'LinkedIn', notes:'Strong portfolio. Culture fit excellent.', rating:5 },
-  { id:2, name:'Marcus Webb', email:'marcus@email.com', jobId:1, stage:'Screening', score:78, applied:'2024-01-09', initials:'MW', color:'#a78bfa', exp:'3 yrs', location:'Austin, TX', skills:['Vue','JavaScript','CSS'], source:'Referral', notes:'Referred by James in Eng team.', rating:4 },
-  { id:3, name:'Priya Sharma', email:'priya@email.com', jobId:2, stage:'Offer', score:95, applied:'2024-01-10', initials:'PS', color:'#34d399', exp:'6 yrs', location:'San Francisco, CA', skills:['Figma','Sketch','UX Research'], source:'Direct', notes:'Exceptional portfolio. Final offer stage.', rating:5 },
-  { id:4, name:'Jordan Miles', email:'jordan@email.com', jobId:3, stage:'Applied', score:65, applied:'2024-01-11', initials:'JM', color:'#fbbf24', exp:'4 yrs', location:'New York, NY', skills:['SEO','Google Ads'], source:'Job Board', notes:'Good background, needs review.', rating:3 },
-  { id:5, name:'Sofia Reyes', email:'sofia@email.com', jobId:1, stage:'Hired', score:90, applied:'2023-12-20', initials:'SR', color:'#f472b6', exp:'7 yrs', location:'Remote', skills:['React','GraphQL','AWS'], source:'LinkedIn', notes:'Joined Jan 15. Great addition to team.', rating:5 },
-  { id:6, name:'Tyler Ross', email:'tyler@email.com', jobId:4, stage:'Interview', score:82, applied:'2024-01-13', initials:'TR', color:'#fb7185', exp:'4 yrs', location:'Denver, CO', skills:['Go','Rust','PostgreSQL'], source:'GitHub', notes:'Open source contributions impressive.', rating:4 },
-  { id:7, name:'Nina Patel', email:'nina@email.com', jobId:5, stage:'Rejected', score:45, applied:'2024-01-06', initials:'NP', color:'#06b6d4', exp:'1 yr', location:'Remote', skills:['Excel','SQL'], source:'Job Board', notes:'Lacks required experience.', rating:2 },
-  { id:8, name:'Kai Nakamura', email:'kai@email.com', jobId:2, stage:'Screening', score:88, applied:'2024-01-14', initials:'KN', color:'#84cc16', exp:'5 yrs', location:'Tokyo, Japan', skills:['Figma','Framer','Illustration'], source:'Portfolio', notes:'Incredible visual work.', rating:5 },
-  { id:9, name:'Avery Johnson', email:'avery@email.com', jobId:6, stage:'Applied', score:71, applied:'2024-01-15', initials:'AJ', color:'#8b91a8', exp:'3 yrs', location:'Chicago, IL', skills:['SaaS Sales','HubSpot'], source:'Referral', notes:'', rating:3 },
-  { id:10, name:'Leo Fernandez', email:'leo@email.com', jobId:3, stage:'Interview', score:85, applied:'2024-01-12', initials:'LF', color:'#c084fc', exp:'6 yrs', location:'Miami, FL', skills:['Growth','Paid','Analytics'], source:'LinkedIn', notes:'Former CMO at startup.', rating:4 },
-];
-const DEFAULT_INTERVIEWS = [
-  { candidateId:1, date:'2024-01-18', time:'10:00 AM', type:'Technical', interviewer:'Dan K.', round:'Round 2' },
-  { candidateId:6, date:'2024-01-18', time:'2:00 PM', type:'Technical', interviewer:'Sam L.', round:'Round 1' },
-  { candidateId:10, date:'2024-01-19', time:'11:00 AM', type:'Culture Fit', interviewer:'Jamie L.', round:'Final' },
-  { candidateId:2, date:'2024-01-20', time:'9:30 AM', type:'Screening Call', interviewer:'Jamie L.', round:'Round 1' },
-  { candidateId:8, date:'2024-01-22', time:'3:00 PM', type:'Portfolio Review', interviewer:'Riley M.', round:'Round 1' },
-];
+const DEFAULT_JOBS = []
+const DEFAULT_CANDIDATES = []
+const DEFAULT_INTERVIEWS = [];
 
 // ===================== STORAGE =====================
 function save() {
@@ -1466,19 +1453,9 @@ let jobs = stored.jobs;
 let candidates = stored.candidates;
 let interviews = stored.interviews;
 
-let offers = stored.offers || [
-  { candidateId:3, salary:'$125,000', equity:'0.3%', startDate:'2024-02-01', bonus:'$10,000', status:'Pending', sentDate:'2024-01-15' },
-  { candidateId:5, salary:'$145,000', equity:'0.5%', startDate:'2024-01-15', bonus:'$15,000', status:'Accepted', sentDate:'2024-01-08' },
-];
+let offers = stored.offers || [];
 
-let activities = stored.activities || [
-  { text:'<strong>Priya Sharma</strong> moved to Offer stage for <strong>Product Designer</strong>', time:'2 hours ago', color:'var(--green)' },
-  { text:'<strong>Alicia Chen</strong> completed Round 2 interview — scored 92/100', time:'4 hours ago', color:'var(--accent)' },
-  { text:'New applicant <strong>Avery Johnson</strong> applied for <strong>Enterprise Account Executive</strong>', time:'6 hours ago', color:'var(--purple)' },
-  { text:'<strong>Sofia Reyes</strong> accepted offer and marked as <strong>Hired</strong> 🎉', time:'Yesterday', color:'var(--amber)' },
-  { text:'Interview scheduled for <strong>Tyler Ross</strong> on Jan 18 at 2:00 PM', time:'Yesterday', color:'var(--pink)' },
-  { text:'<strong>Nina Patel</strong> marked as Rejected for Data Analyst role', time:'2 days ago', color:'var(--red)' },
-];
+let activities = stored.activities || [];
 
 const stages = ['Applied','Screening','Interview','Offer','Hired','Rejected'];
 const stageColors = {
@@ -1611,22 +1588,58 @@ function renderDashboard() {
   // Compute all stats from live data
   const activeJobs   = jobs.filter(j=>j.status==='Active').length;
   const totalCands   = candidates.length;
-  // Use getCandStageForJob-aware stage counting across all candidates
   const stageCounts  = {};
   stages.forEach(s => stageCounts[s] = 0);
   candidates.forEach(c => {
     const s = c.stage || 'Applied';
     if(stageCounts[s] !== undefined) stageCounts[s]++;
   });
-  const inInterview = stageCounts['Interview'] || 0;
-  const hiredCount  = stageCounts['Hired'] || 0;
+  const inInterview  = stageCounts['Interview'] || 0;
+  const inScreening  = stageCounts['Screening'] || 0;
+  const hiredCount   = stageCounts['Hired'] || 0;
+  const rejectedCount = stageCounts['Rejected'] || 0;
+  const inOfferCount = stageCounts['Offer'] || 0;
 
-  // Animate stat cards
+  // This month hires
+  const thisMonth = new Date().toISOString().slice(0,7);
+  const hiredThisMonth = candidates.filter(c => c.stage==='Hired' && (c.applied||'').startsWith(thisMonth)).length;
+
+  // New candidates this week
+  const weekAgo = new Date(Date.now() - 7*24*60*60*1000).toISOString().split('T')[0];
+  const newThisWeek = candidates.filter(c => (c.applied||'') >= weekAgo).length;
+
+  // Animate stat card values
   const statCards = document.querySelectorAll('#page-dashboard .stat-val');
-  const statData  = [activeJobs, totalCands, inInterview, hiredCount];
+  const statData  = [activeJobs, totalCands, inInterview, hiredThisMonth];
   statCards.forEach((el, i) => {
     if(statData[i]!==undefined) setTimeout(()=>animateCount(el, String(statData[i])), i*60);
   });
+
+  // Update sub-labels with live data
+  const subJobs = document.getElementById('dash-sub-jobs');
+  if(subJobs) {
+    const pausedJobs = jobs.filter(j=>j.status==='Paused').length;
+    subJobs.textContent = pausedJobs > 0 ? `${pausedJobs} paused` : `${jobs.length} total`;
+    subJobs.className = 'stat-change';
+  }
+  const subCands = document.getElementById('dash-sub-cands');
+  if(subCands) {
+    subCands.textContent = newThisWeek > 0 ? `↑ ${newThisWeek} new this week` : 'total candidates';
+    subCands.className = 'stat-change ' + (newThisWeek > 0 ? 'up' : '');
+  }
+  const subInterview = document.getElementById('dash-sub-interview');
+  if(subInterview) {
+    subInterview.textContent = inScreening > 0 ? `${inScreening} in screening` : `${inOfferCount} in offer`;
+    subInterview.className = 'stat-change';
+  }
+  // 4th card (hires this month) — update both value and sub-label
+  const subHires = document.getElementById('dash-sub-hires');
+  if(subHires) {
+    const lastMonth = new Date(new Date().setMonth(new Date().getMonth()-1)).toISOString().slice(0,7);
+    const hiredLastMonth = candidates.filter(c => c.stage==='Hired' && (c.applied||'').startsWith(lastMonth)).length;
+    subHires.textContent = hiredLastMonth > 0 ? `vs ${hiredLastMonth} last month` : hiredCount > 0 ? `${hiredCount} total hired` : 'no hires yet';
+    subHires.className = 'stat-change ' + (hiredThisMonth >= hiredLastMonth && hiredThisMonth > 0 ? 'up' : '');
+  }
 
   // Jobs list — use real candidate counts, not stale j.applicants
   const list = document.getElementById('dash-jobs-list');
@@ -2254,11 +2267,7 @@ function renderInterviews() {
 
   // Scorecard — compute real average scores from feedback
   const allFeedback = candidates.flatMap(c=>c.feedback||[]);
-  const cats = ['Communication Skills','Technical Knowledge','Problem Solving','Culture Fit','Work Experience'];
-  const COMPETENCIES_MAP = {
-    'Communication Skills':'Communication Skills','Technical Knowledge':'Technical Knowledge',
-    'Problem Solving':'Problem Solving','Culture Fit':'Culture Fit','Work Experience':'Work Experience'
-  };
+  const cats = getCompetencies();
   document.getElementById('scorecard').innerHTML = cats.map(cat=>{
     const ratings = allFeedback.map(fb=>(fb.skillRatings||{})[cat]).filter(r=>r!=null&&!isNaN(r));
     const avg = ratings.length ? Math.round((ratings.reduce((a,b)=>a+b,0)/ratings.length)*20) : null;
@@ -2515,7 +2524,57 @@ function renderAnalytics() {
     }
   }
 
-  // ── STAGE CONVERSION FUNNEL (real) ──
+  // ── REJECTION REASONS (real) ──
+  const rejectedCands = candidates.filter(c => c.stage === 'Rejected' && c.rejectionReasonLabel);
+  const rejEl = document.getElementById('rejection-reasons-chart');
+  if(rejEl) {
+    if(!rejectedCands.length) {
+      rejEl.innerHTML = '<div style="text-align:center;padding:20px;color:var(--text3);font-size:12px;">No rejections recorded yet</div>';
+    } else {
+      const reasonCts = {};
+      rejectedCands.forEach(c => {
+        const label = c.rejectionReasonLabel || 'Other';
+        reasonCts[label] = (reasonCts[label]||0) + 1;
+      });
+      const reasonEntries = Object.entries(reasonCts).sort((a,b)=>b[1]-a[1]);
+      const maxR = reasonEntries[0][1];
+      rejEl.innerHTML = reasonEntries.map(([label, count]) => {
+        const pct = Math.round(count/rejectedCands.length*100);
+        const barW = Math.round(count/maxR*100);
+        return `<div style="margin-bottom:12px;">
+          <div style="display:flex;justify-content:space-between;font-size:12.5px;margin-bottom:4px;">
+            <span style="color:var(--text2);font-weight:500;">${escapeHtml(label)}</span>
+            <span style="font-weight:700;font-family:'JetBrains Mono';">${count} <span style="color:var(--text3);font-weight:400;">(${pct}%)</span></span>
+          </div>
+          <div class="score-bar" style="height:7px;">
+            <div class="score-fill" style="width:${barW}%;background:var(--red);transition:width 0.6s;"></div>
+          </div>
+        </div>`;
+      }).join('');
+    }
+  }
+
+  // ── PIPELINE BREAKDOWN ──
+  const pbEl = document.getElementById('analytics-pipeline-breakdown');
+  if(pbEl) {
+    const stageList = stages.filter(s => s !== 'Rejected');
+    const totalActive = candidates.filter(c => c.stage !== 'Rejected').length || 1;
+    pbEl.innerHTML = stageList.map(s => {
+      const count = stageCts[s] || 0;
+      const pct = Math.round(count/Math.max(candidates.length,1)*100);
+      const color = stageColors[s] || 'var(--text3)';
+      const barW = Math.round(count/Math.max(...stageList.map(x=>stageCts[x]||0),1)*100);
+      return `<div style="margin-bottom:12px;">
+        <div style="display:flex;justify-content:space-between;font-size:12.5px;margin-bottom:4px;">
+          <span style="color:${color};font-weight:600;">${s}</span>
+          <span style="font-weight:700;font-family:'JetBrains Mono';">${count} <span style="color:var(--text3);font-weight:400;">(${pct}%)</span></span>
+        </div>
+        <div class="score-bar" style="height:7px;">
+          <div class="score-fill" style="width:${barW}%;background:${color};transition:width 0.6s;"></div>
+        </div>
+      </div>`;
+    }).join('');
+  }
   const funnelData = [
     {stage:'Applied → Screening', rate:a2s, from:applied+inScreening+inInterview+offered+hired+rejected, to:inScreening, color:'#4f8ef7'},
     {stage:'Screening → Interview', rate:s2i, from:inScreening+inInterview, to:inInterview, color:'#a78bfa'},
@@ -2718,6 +2777,96 @@ const DEFAULT_OFFER_FIELDS = [
 function getOfferFields() {
   const s = getSettings();
   return s.offerFields && s.offerFields.length ? s.offerFields : JSON.parse(JSON.stringify(DEFAULT_OFFER_FIELDS));
+}
+
+// ---- REJECTION REASONS (customisable) ----
+const DEFAULT_REJECTION_REASONS = [
+  { id: 'withdrawal',         label: 'Candidate Withdrawal',      desc: 'Candidate withdrew from the process' },
+  { id: 'hm_rejection',       label: 'Hiring Manager Rejection',   desc: 'HM decided not to proceed' },
+  { id: 'culture_unfit',      label: 'Culture Unfit',              desc: 'Not a culture/values match' },
+  { id: 'overqualified',      label: 'Overqualified',              desc: 'Experience exceeds role requirements' },
+  { id: 'underqualified',     label: 'Underqualified',             desc: 'Does not meet minimum requirements' },
+  { id: 'salary_mismatch',    label: 'Salary Mismatch',            desc: 'Compensation expectations misaligned' },
+  { id: 'failed_assessment',  label: 'Failed Assessment',          desc: 'Did not pass technical/skills assessment' },
+  { id: 'no_show',            label: 'No Show',                    desc: 'Did not attend scheduled interview' },
+  { id: 'offer_declined',     label: 'Offer Declined',             desc: 'Candidate declined the offer' },
+  { id: 'position_filled',    label: 'Position Filled',            desc: 'Role was filled by another candidate' },
+  { id: 'other',              label: 'Other',                      desc: 'Other reason (add note below)' },
+];
+function getRejectionReasons() {
+  const s = getSettings();
+  return s.rejectionReasons && s.rejectionReasons.length ? s.rejectionReasons : JSON.parse(JSON.stringify(DEFAULT_REJECTION_REASONS));
+}
+function saveRejectionReasons(reasons) {
+  const s = getSettings();
+  s.rejectionReasons = reasons;
+  localStorage.setItem('tf_settings', JSON.stringify(s));
+}
+
+// ---- HIRING ROUNDS CRUD ----
+function updateHiringRound(i, key, val) {
+  const rounds = getHiringRounds();
+  rounds[i][key] = val;
+  const s = getSettings(); s.hiringRounds = rounds;
+  localStorage.setItem('tf_settings', JSON.stringify(s));
+}
+function addHiringRound() {
+  const rounds = getHiringRounds();
+  rounds.push({ id: 'custom_' + Date.now(), label: 'New Round', icon: '📋', desc: '' });
+  const s = getSettings(); s.hiringRounds = rounds;
+  localStorage.setItem('tf_settings', JSON.stringify(s));
+  switchSettingsTab('s-rounds');
+}
+function removeHiringRound(i) {
+  const rounds = getHiringRounds();
+  rounds.splice(i, 1);
+  const s = getSettings(); s.hiringRounds = rounds;
+  localStorage.setItem('tf_settings', JSON.stringify(s));
+  switchSettingsTab('s-rounds');
+}
+function saveHiringRounds() {
+  showToast('Interview rounds saved ✓');
+  switchSettingsTab('s-rounds');
+}
+function resetHiringRounds() {
+  if(!confirm('Reset interview rounds to default?')) return;
+  const s = getSettings(); delete s.hiringRounds;
+  localStorage.setItem('tf_settings', JSON.stringify(s));
+  switchSettingsTab('s-rounds');
+  showToast('Reset to default');
+}
+
+// ---- COMPETENCIES CRUD ----
+function updateCompetency(i, val) {
+  const comps = getCompetencies();
+  comps[i] = val;
+  const s = getSettings(); s.competencies = comps;
+  localStorage.setItem('tf_settings', JSON.stringify(s));
+}
+function addCompetency() {
+  const comps = getCompetencies();
+  comps.push('New Competency');
+  const s = getSettings(); s.competencies = comps;
+  localStorage.setItem('tf_settings', JSON.stringify(s));
+  switchSettingsTab('s-rounds');
+}
+function removeCompetency(i) {
+  const comps = getCompetencies();
+  comps.splice(i, 1);
+  const s = getSettings(); s.competencies = comps;
+  localStorage.setItem('tf_settings', JSON.stringify(s));
+  switchSettingsTab('s-rounds');
+}
+function saveCompetencies() {
+  showToast('Competencies saved ✓');
+  switchSettingsTab('s-rounds');
+}
+function resetCompetencies() {
+  if(!confirm('Reset competencies to default?')) return;
+  const s = getSettings(); delete s.competencies;
+  localStorage.setItem('tf_settings', JSON.stringify(s));
+  switchSettingsTab('s-rounds');
+  showToast('Reset to default');
 }
 
 // ---- DEPARTMENTS (customisable) ----
@@ -3026,33 +3175,59 @@ function switchSettingsTab(tabId) {
 
 
   } else if(tabId==='s-rounds') {
+    const rounds = getHiringRounds();
+    const comps = getCompetencies();
     el.innerHTML = `
-      <div style="font-size:18px;font-weight:800;margin-bottom:20px;">📋 Interview Rounds</div>
-      <div style="font-size:13px;color:var(--text3);margin-bottom:16px;">Your configured hiring rounds. These appear as options when scheduling interviews and submitting feedback.</div>
+      <div style="font-size:18px;font-weight:800;margin-bottom:4px;">📋 Interview Rounds & Competencies</div>
+      <div style="font-size:13px;color:var(--text3);margin-bottom:20px;">Customise your hiring rounds and the competencies evaluated in every feedback form.</div>
       <div class="panel" style="margin-bottom:16px;">
-        <div class="panel-header"><span class="panel-title">Your Interview Rounds</span></div>
-        <div style="padding:20px;display:flex;flex-direction:column;gap:10px;">
-          ${HIRING_ROUNDS.map((r,i)=>`
-            <div style="display:flex;align-items:center;gap:12px;padding:12px 14px;background:var(--bg3);border-radius:8px;">
-              <span style="font-size:20px;">${r.icon}</span>
-              <div style="flex:1;">
-                <div style="font-size:13px;font-weight:700;">${r.label}</div>
-                <div style="font-size:12px;color:var(--text3);">${r.desc}</div>
+        <div class="panel-header">
+          <span class="panel-title">Interview Rounds</span>
+          <button class="btn btn-primary btn-sm" onclick="addHiringRound()">+ Add Round</button>
+        </div>
+        <div style="padding:10px 16px;background:var(--bg3);border-bottom:1px solid var(--border);">
+          <div style="font-size:11px;color:var(--text3);">💡 Rename, reorder, or add rounds. These appear when scheduling interviews.</div>
+        </div>
+        <div id="rounds-list">
+          ${rounds.map((r,i) => `
+            <div style="display:flex;align-items:center;gap:10px;padding:11px 16px;border-bottom:1px solid var(--border);">
+              <input value="${r.icon||'📋'}" onchange="updateHiringRound(${i},'icon',this.value)"
+                style="width:44px;text-align:center;background:var(--bg3);border:1px solid var(--border);border-radius:6px;padding:5px;font-size:16px;outline:none;">
+              <div style="flex:1;display:flex;flex-direction:column;gap:4px;">
+                <input value="${escapeHtml(r.label)}" onchange="updateHiringRound(${i},'label',this.value)"
+                  style="background:var(--bg3);border:1px solid var(--border);border-radius:6px;padding:5px 10px;font-size:13px;font-weight:600;color:var(--text);outline:none;">
+                <input value="${escapeHtml(r.desc||'')}" placeholder="Short description..."
+                  onchange="updateHiringRound(${i},'desc',this.value)"
+                  style="background:var(--bg4);border:1px solid var(--border);border-radius:6px;padding:4px 10px;font-size:11.5px;color:var(--text3);outline:none;">
               </div>
-              <span style="font-size:12px;color:var(--text3);">Round ${i+1}</span>
-              <label class="toggle-switch"><input type="checkbox" checked><div class="toggle-track"></div></label>
+              <button class="btn btn-ghost btn-sm" style="color:var(--red);" onclick="removeHiringRound(${i})">✕</button>
             </div>`).join('')}
+        </div>
+        <div style="padding:12px 16px;border-top:1px solid var(--border);display:flex;gap:8px;">
+          <button class="btn btn-primary btn-sm" onclick="saveHiringRounds()">💾 Save Rounds</button>
+          <button class="btn btn-ghost btn-sm" onclick="resetHiringRounds()">↺ Reset to Default</button>
         </div>
       </div>
       <div class="panel">
-        <div class="panel-header"><span class="panel-title">Competency Framework</span></div>
-        <div style="padding:20px;display:flex;flex-direction:column;gap:10px;">
-          <div style="font-size:12px;color:var(--text3);margin-bottom:4px;">These competencies appear in every feedback form for structured evaluation.</div>
-          ${COMPETENCIES.map(c=>`
-            <div style="display:flex;align-items:center;justify-content:space-between;padding:8px 12px;background:var(--bg3);border-radius:8px;">
-              <span style="font-size:13px;font-weight:500;">${c}</span>
-              <label class="toggle-switch"><input type="checkbox" checked><div class="toggle-track"></div></label>
+        <div class="panel-header">
+          <span class="panel-title">Competency Framework</span>
+          <button class="btn btn-primary btn-sm" onclick="addCompetency()">+ Add</button>
+        </div>
+        <div style="padding:10px 16px;background:var(--bg3);border-bottom:1px solid var(--border);">
+          <div style="font-size:11px;color:var(--text3);">💡 These appear in every feedback form and the interview scorecard.</div>
+        </div>
+        <div id="competencies-list">
+          ${comps.map((comp, i) => `
+            <div style="display:flex;align-items:center;gap:10px;padding:10px 16px;border-bottom:1px solid var(--border);">
+              <span style="width:8px;height:8px;border-radius:50%;background:var(--accent);flex-shrink:0;display:inline-block;"></span>
+              <input value="${escapeHtml(comp)}" onchange="updateCompetency(${i},this.value)"
+                style="flex:1;background:var(--bg3);border:1px solid var(--border);border-radius:6px;padding:5px 10px;font-size:13px;font-weight:500;color:var(--text);outline:none;">
+              <button class="btn btn-ghost btn-sm" style="color:var(--red);" onclick="removeCompetency(${i})">✕</button>
             </div>`).join('')}
+        </div>
+        <div style="padding:12px 16px;border-top:1px solid var(--border);display:flex;gap:8px;">
+          <button class="btn btn-primary btn-sm" onclick="saveCompetencies()">💾 Save Competencies</button>
+          <button class="btn btn-ghost btn-sm" onclick="resetCompetencies()">↺ Reset to Default</button>
         </div>
       </div>`;
 
@@ -3214,6 +3389,37 @@ function switchSettingsTab(tabId) {
       <div style="font-size:13px;color:var(--text3);margin-bottom:20px;">Deleted jobs and candidates are kept here. You can restore them at any time.</div>
       <div id="archive-list"><div style="text-align:center;padding:40px;color:var(--text3);">Loading archive...</div></div>`;
     loadArchive();
+  } else if(tabId==='s-rejection-reasons') {
+    const reasons = getRejectionReasons();
+    el.innerHTML = `
+      <div style="font-size:18px;font-weight:800;margin-bottom:4px;">🚫 Rejection Reasons</div>
+      <div style="font-size:13px;color:var(--text3);margin-bottom:20px;">Customise the list of reasons shown when rejecting a candidate. These appear on their profile and in analytics.</div>
+      <div class="panel" style="margin-bottom:16px;">
+        <div class="panel-header">
+          <span class="panel-title">Rejection Reasons</span>
+          <button class="btn btn-primary btn-sm" onclick="addRejectionReason()">+ Add Reason</button>
+        </div>
+        <div style="padding:12px 16px;background:var(--bg3);border-bottom:1px solid var(--border);">
+          <div style="font-size:11px;color:var(--text3);">💡 Click label to rename · Edit description · Remove custom reasons</div>
+        </div>
+        <div id="rejection-reasons-list">
+          ${reasons.map((r,i) => `
+            <div style="display:flex;align-items:center;gap:10px;padding:10px 16px;border-bottom:1px solid var(--border);">
+              <div style="width:8px;height:8px;border-radius:50%;background:var(--red);flex-shrink:0;"></div>
+              <div style="flex:1;display:flex;flex-direction:column;gap:4px;">
+                <input value="${escapeHtml(r.label)}" onchange="updateRejectionReason(${i},'label',this.value)"
+                  style="background:var(--bg3);border:1px solid var(--border);border-radius:6px;padding:5px 10px;font-size:13px;font-weight:600;color:var(--text);outline:none;width:100%;">
+                <input value="${escapeHtml(r.desc||'')}" placeholder="Short description (optional)" onchange="updateRejectionReason(${i},'desc',this.value)"
+                  style="background:var(--bg4);border:1px solid var(--border);border-radius:6px;padding:4px 10px;font-size:11.5px;color:var(--text3);outline:none;width:100%;">
+              </div>
+              <button class="btn btn-ghost btn-sm" style="color:var(--red);flex-shrink:0;" onclick="removeRejectionReason(${i})">✕</button>
+            </div>`).join('')}
+        </div>
+        <div style="padding:12px 16px;border-top:1px solid var(--border);display:flex;gap:8px;">
+          <button class="btn btn-primary btn-sm" onclick="showToast('Rejection reasons saved ✓')">💾 Save Changes</button>
+          <button class="btn btn-ghost btn-sm" onclick="resetRejectionReasons()">↺ Reset to Default</button>
+        </div>
+      </div>`;
   } else if(tabId==='s-offer-fields') {
     const fields = getOfferFields();
     el.innerHTML = `
@@ -3381,42 +3587,58 @@ function clearApiKeySettings() {
 }
 
 function openAddTeamMember() {
-  document.getElementById('modal-title').textContent = '👤 Add Team Member';
+  document.getElementById('modal-title').textContent = '👤 Invite Team Member';
   document.getElementById('modal-body').innerHTML = `
     <div class="form-row">
-      <div class="form-group"><label>Full Name</label><input type="text" id="tm-name" placeholder="e.g. Sarah Kaur"></div>
+      <div class="form-group"><label>Full Name *</label><input type="text" id="tm-name" placeholder="e.g. Sarah Kaur"></div>
+      <div class="form-group"><label>Work Email *</label><input type="email" id="tm-email" placeholder="e.g. sarah@company.com"></div>
+    </div>
+    <div class="form-row">
       <div class="form-group"><label>Role / Title</label><input type="text" id="tm-role" placeholder="e.g. HR Manager"></div>
+      <div class="form-group"><label>Department</label>
+        <select id="tm-dept">${getDepts().map(d=>`<option>${d}</option>`).join('')}</select>
+      </div>
     </div>
-    <div class="form-group"><label>Department</label>
-      <select id="tm-dept"><option>HR</option><option>Engineering</option><option>Design</option><option>Product</option><option>Management</option><option>Operations</option></select>
+    <div class="form-group"><label>Access Level</label>
+      <select id="tm-access-role" style="width:100%;">
+        <option value="recruiter">Recruiter — can add/edit candidates, post jobs</option>
+        <option value="interviewer" selected>Interviewer — can view candidates, submit feedback</option>
+        <option value="viewer">Viewer — read only</option>
+        <option value="admin">Admin — full access</option>
+      </select>
     </div>
-    <div class="form-group" style="display:flex;align-items:center;justify-content:space-between;">
-      <div><div style="font-size:13px;font-weight:600;">Can conduct interviews</div><div style="font-size:12px;color:var(--text3);">Name will appear in interviewer quick-select</div></div>
+    <div class="form-group" style="display:flex;align-items:center;justify-content:space-between;padding:10px 14px;background:var(--bg3);border-radius:8px;">
+      <div><div style="font-size:13px;font-weight:600;">Can conduct interviews</div><div style="font-size:12px;color:var(--text3);">Name appears in interviewer quick-select</div></div>
       <label class="toggle-switch"><input type="checkbox" id="tm-canInterview" checked><div class="toggle-track"></div></label>
     </div>`;
   document.getElementById('modal-footer').innerHTML = `
     <button class="btn btn-ghost" onclick="closeModal()">Cancel</button>
-    <button class="btn btn-primary" onclick="saveTeamMember()">Add Member</button>`;
+    <button class="btn btn-primary" onclick="saveTeamMember()">+ Add Member</button>`;
   document.getElementById('modal-overlay').classList.add('open');
 }
 
 function saveTeamMember() {
   const name = document.getElementById('tm-name')?.value.trim();
+  const email = document.getElementById('tm-email')?.value.trim();
   if(!name) { showToast('Please enter a name'); return; }
+  if(!email) { showToast('Please enter an email'); return; }
   const s = getSettings();
   const team = s.team||[];
   const colors = [['var(--accent-dim)','var(--accent)'],['var(--purple-dim)','var(--purple)'],['var(--green-dim)','var(--green)'],['var(--amber-dim)','var(--amber)']];
   const col = colors[team.length%colors.length];
   team.push({
-    name, role: document.getElementById('tm-role')?.value,
+    name, email,
+    role: document.getElementById('tm-access-role')?.value || 'interviewer',
     dept: document.getElementById('tm-dept')?.value,
     canInterview: document.getElementById('tm-canInterview')?.checked,
-    color: col[0], textColor: col[1]
+    color: col[0], textColor: col[1],
+    jobIds: [] // empty = all jobs
   });
   saveSettings({ team });
   saveInterviewerName(name);
   closeModal();
   switchSettingsTab('s-team');
+  showToast(`${name} added to team ✓`);
 }
 
 function removeTeamMember(i) {
@@ -3772,16 +3994,12 @@ function refreshRightPanel(id) {
   if(!c) return;
   if(!document.getElementById('page-candprofile').classList.contains('active')) return;
 
-  const allInterviews = c.interviews || [];
-  const allFeedback = c.feedback || [];
+  const allInterviews = (c.interviews||[]).slice().sort((a,b)=>new Date(b.date||0)-new Date(a.date||0));
+  const allFeedback = (c.feedback||[]).slice().sort((a,b)=>new Date(b.createdAt||b.date||0)-new Date(a.createdAt||a.date||0));
 
-  // Find the right panel
-  const rightPanel = document.getElementById('cp-right-panel');
-  if(!rightPanel) {
-    // If panel doesn't have ID yet, do full reload
-    renderCandProfileContent(id);
-    return;
-  }
+  // Refresh stage context panel (top of right panel)
+  const ctxPanel = document.getElementById('cp-stage-context');
+  if(ctxPanel) ctxPanel.innerHTML = buildStageContextPanel(c, allInterviews, allFeedback);
 
   // Rebuild interviews section
   const ivSection = document.getElementById('cp-interviews-section');
@@ -4104,6 +4322,7 @@ function renderCandProfileContent(id, fromJobId=null) {
     '<div style="display:flex;flex-wrap:wrap;gap:5px;margin-bottom:10px;">' +
     (c.source?'<span class="badge badge-amber">' + escapeHtml(c.source) + '</span>':'') +
     '<span class="badge ' + (stageBadge[c.stage]||'badge-gray') + '">' + c.stage + '</span>' +
+    (c.rejectionReasonLabel?'<span class="badge badge-red" style="font-size:10px;">🚫 ' + escapeHtml(c.rejectionReasonLabel) + '</span>':'') +
     (c.hasResume?'<span class="badge badge-gray">📄 Resume</span>':'') +
     '</div>' +
     '<div style="display:flex;flex-wrap:wrap;gap:14px;font-size:12px;color:var(--text3);">' +
@@ -4114,13 +4333,9 @@ function renderCandProfileContent(id, fromJobId=null) {
     (c.location?'<span>📍 ' + escapeHtml(c.location) + '</span>':'') +
     (c.applied?'<span>📅 Applied ' + c.applied + '</span>':'') +
     '</div></div></div>' +
-    // Action buttons — one clean row
+    // Action buttons — stage-aware
     '<div style="display:flex;gap:6px;flex-wrap:wrap;">' +
-    '<button class="btn btn-ghost btn-sm" style="color:var(--red);border-color:var(--red-dim);" onclick="rejectCandidate(' + c.id + ')">✕ Reject</button>' +
-    '<button class="btn btn-ghost btn-sm" onclick="shareCandidate(' + c.id + ')">Share</button>' +
-    '<button class="btn btn-ghost btn-sm" onclick="openScheduleInterview(' + c.id + ')">📅 Schedule Interview</button>' +
-    '<button class="btn btn-primary btn-sm" onclick="openMoveStage(' + c.id + ')">Move Stage ↕</button>' +
-    (c.stage!=='Offer'&&c.stage!=='Hired'?'<button class="btn btn-ghost btn-sm" onclick="openCreateOffer(' + c.id + ')">📄 Create Offer</button>':'') +
+    buildStageActions(c) +
     '</div></div>' +
 
     // Left tabs
@@ -4140,8 +4355,11 @@ function renderCandProfileContent(id, fromJobId=null) {
     // ── RIGHT: job application + interviews + notes ──
     '<div style="overflow-y:auto;background:var(--bg3);display:flex;flex-direction:column;gap:0;">' +
 
+    // Stage context panel — changes based on current stage
+    '<div id="cp-stage-context">' + buildStageContextPanel(c, allInterviews, allFeedback) + '</div>' +
+
     // Job application section
-    '<div style="background:var(--bg2);">' +
+    '<div style="background:var(--bg2);margin-top:8px;">' +
     '<div id="cp-job-applications">' + buildJobApplicationsHTML(c) + '</div>' +
     '</div>' +
 
@@ -4447,11 +4665,97 @@ function rateCand(id, rating) {
 
 function rejectCandidate(id) {
   const c = getCand(id); if(!c) return;
-  if(!confirm(`Reject ${c.name}?`)) return;
+  const reasons = getRejectionReasons();
+
+  document.getElementById('modal-title').textContent = '🚫 Reject — ' + c.name;
+  document.getElementById('modal-body').innerHTML = `
+    <div style="font-size:13px;color:var(--text3);margin-bottom:16px;">
+      Select a rejection reason. This will be saved to the candidate's profile and tracked in analytics.
+    </div>
+    <div style="display:flex;flex-direction:column;gap:8px;margin-bottom:16px;">
+      ${reasons.map((r,i) => `
+        <label style="display:flex;align-items:flex-start;gap:10px;padding:10px 14px;background:var(--bg3);border:1.5px solid var(--border);border-radius:8px;cursor:pointer;transition:border-color 0.15s;"
+          onmouseover="this.style.borderColor='var(--red)'" onmouseout="this.style.borderColor='var(--border)'">
+          <input type="radio" name="reject-reason" value="${escapeHtml(r.id)}" data-label="${escapeHtml(r.label)}"
+            style="accent-color:var(--red);margin-top:2px;flex-shrink:0;" ${i===0?'checked':''}>
+          <div>
+            <div style="font-size:13px;font-weight:600;">${escapeHtml(r.label)}</div>
+            ${r.desc?`<div style="font-size:11.5px;color:var(--text3);margin-top:2px;">${escapeHtml(r.desc)}</div>`:''}
+          </div>
+        </label>`).join('')}
+    </div>
+    <div class="form-group">
+      <label>Additional Notes <span style="color:var(--text3);font-weight:400;">(optional)</span></label>
+      <textarea id="reject-note" placeholder="Add any extra context for your team..." style="height:80px;resize:vertical;"></textarea>
+    </div>`;
+  document.getElementById('modal-footer').innerHTML = `
+    <button class="btn btn-ghost" onclick="closeModal()">Cancel</button>
+    <button class="btn btn-primary" style="background:var(--red);border-color:var(--red);" onclick="confirmReject(${id})">🚫 Confirm Rejection</button>`;
+  document.getElementById('modal-overlay').classList.add('open');
+}
+
+function confirmReject(id) {
+  const c = getCand(id); if(!c) return;
+  const selected = document.querySelector('input[name="reject-reason"]:checked');
+  const reasonId = selected?.value || 'other';
+  const reasonLabel = selected?.dataset.label || 'Other';
+  const note = document.getElementById('reject-note')?.value.trim() || '';
+
   c.stage = 'Rejected';
-  addToTimeline(c, 'Rejected', 'var(--red)');
-  save(); closeDetail(); renderCandidates(); renderPipeline();
-  showToast(c.name + ' marked as rejected');
+  c.rejectionReason = reasonId;
+  c.rejectionReasonLabel = reasonLabel;
+  c.rejectionNote = note;
+  c.rejectedAt = new Date().toISOString();
+
+  // Update job application stage too
+  if(c.jobApplications?.length) c.jobApplications[0].stage = 'Rejected';
+
+  addToTimeline(c, `Rejected — ${reasonLabel}${note?' · '+note:''}`, 'var(--red)');
+  activities.unshift({
+    text: `<strong>${c.name}</strong> rejected — <span style="color:var(--red)">${reasonLabel}</span>`,
+    color: 'var(--red)', ts: Date.now()
+  });
+
+  save();
+  closeModal();
+
+  // If on candidate profile, refresh in place
+  if(document.getElementById('page-candprofile').classList.contains('active')) {
+    renderCandProfileContent(id);
+  } else {
+    renderCandidates();
+    renderPipeline();
+  }
+  showToast(`${c.name} rejected — ${reasonLabel}`);
+}
+
+function addRejectionReason() {
+  const reasons = getRejectionReasons();
+  reasons.push({ id: 'custom_' + Date.now(), label: 'New Reason', desc: '' });
+  saveRejectionReasons(reasons);
+  switchSettingsTab('s-rejection-reasons');
+}
+
+function removeRejectionReason(i) {
+  const reasons = getRejectionReasons();
+  reasons.splice(i, 1);
+  saveRejectionReasons(reasons);
+  switchSettingsTab('s-rejection-reasons');
+}
+
+function updateRejectionReason(i, key, val) {
+  const reasons = getRejectionReasons();
+  reasons[i][key] = val;
+  saveRejectionReasons(reasons);
+}
+
+function resetRejectionReasons() {
+  if(!confirm('Reset to default rejection reasons?')) return;
+  const s = getSettings();
+  delete s.rejectionReasons;
+  localStorage.setItem('tf_settings', JSON.stringify(s));
+  switchSettingsTab('s-rejection-reasons');
+  showToast('Reset to default');
 }
 
 function markInterviewDone(candId, ivIdx) {
@@ -4479,14 +4783,49 @@ function addToTimeline(c, title, color) {
 }
 
 // Your hiring rounds & team — pre-configured
-const HIRING_ROUNDS = [
+const DEFAULT_HIRING_ROUNDS = [
   { id:'hr_screening',   label:'HR Screening',         icon:'📋', desc:'Initial HR review & fit check' },
   { id:'hiring_manager', label:'Hiring Manager Review', icon:'👔', desc:'Hiring manager evaluation' },
   { id:'technical',      label:'Technical Interview',   icon:'💻', desc:'Technical skills assessment' },
   { id:'culture_fit',    label:'Culture Fit',           icon:'🤝', desc:'Team & culture alignment' },
   { id:'final_round',    label:'Final Round',           icon:'🏆', desc:'Final decision interview' },
 ];
-const COMPETENCIES = ['Communication Skills','Technical Knowledge','Problem Solving','Culture Fit','Work Experience','Leadership','Motivation & Initiative'];
+const DEFAULT_COMPETENCIES = ['Communication Skills','Technical Knowledge','Problem Solving','Culture Fit','Work Experience','Leadership','Motivation & Initiative'];
+
+function getHiringRounds() {
+  const s = getSettings();
+  return s.hiringRounds && s.hiringRounds.length ? s.hiringRounds : JSON.parse(JSON.stringify(DEFAULT_HIRING_ROUNDS));
+}
+function getCompetencies() {
+  const s = getSettings();
+  return s.competencies && s.competencies.length ? s.competencies : [...DEFAULT_COMPETENCIES];
+}
+// Keep backward compat references
+function getHIRING_ROUNDS() { return getHiringRounds(); }
+const HIRING_ROUNDS = new Proxy([], {
+  get(target, prop) {
+    const live = getHiringRounds();
+    if(prop === 'length') return live.length;
+    if(prop === 'map') return live.map.bind(live);
+    if(prop === 'find') return live.find.bind(live);
+    if(prop === 'filter') return live.filter.bind(live);
+    if(prop === 'forEach') return live.forEach.bind(live);
+    if(!isNaN(prop)) return live[prop];
+    return live[prop];
+  }
+});
+const COMPETENCIES = new Proxy([], {
+  get(target, prop) {
+    const live = getCompetencies();
+    if(prop === 'length') return live.length;
+    if(prop === 'map') return live.map.bind(live);
+    if(prop === 'find') return live.find.bind(live);
+    if(prop === 'filter') return live.filter.bind(live);
+    if(prop === 'forEach') return live.forEach.bind(live);
+    if(!isNaN(prop)) return live[prop];
+    return live[prop];
+  }
+});
 
 function openScheduleInterview(id) {
   const c = getCand(id); if(!c) return;
@@ -5909,6 +6248,200 @@ async function permanentlyDelete(docId) {
     showToast('Delete failed');
   }
 }
+function buildStageContextPanel(c, allInterviews, allFeedback) {
+  const stage = c.stage || 'Applied';
+  const id = c.id;
+  const stageColor = stageColors[stage] || 'var(--text2)';
+  const candOffers = offers.filter(o => o.candidateId === id);
+  const upcomingInterviews = allInterviews.filter(iv => iv.status !== 'Cancelled' && iv.status !== 'Completed');
+  const completedInterviews = allInterviews.filter(iv => iv.status === 'Completed');
+
+  let content = '';
+
+  if(stage === 'Applied') {
+    content = `
+      <div style="padding:16px;background:var(--accent-dim);border-bottom:3px solid var(--accent);">
+        <div style="font-size:12px;font-weight:700;color:var(--accent);margin-bottom:8px;">📋 NEXT STEPS — Applied</div>
+        <div style="font-size:12.5px;color:var(--text2);margin-bottom:12px;">Review this candidate's resume and decide whether to move them to screening.</div>
+        <div style="display:flex;gap:8px;flex-wrap:wrap;">
+          <button class="btn btn-primary btn-sm" onclick="quickMoveStageAndRefresh(${id},'Screening')">→ Move to Screening</button>
+          <button class="btn btn-ghost btn-sm" style="color:var(--red);" onclick="rejectCandidate(${id})">✕ Reject</button>
+        </div>
+      </div>`;
+  }
+  else if(stage === 'Screening') {
+    content = `
+      <div style="padding:16px;background:#4f8ef718;border-bottom:3px solid var(--accent);">
+        <div style="font-size:12px;font-weight:700;color:var(--accent);margin-bottom:8px;">📋 NEXT STEPS — Screening</div>
+        <div style="font-size:12.5px;color:var(--text2);margin-bottom:12px;">Schedule a screening call to evaluate fit. After the call, decide to proceed or reject.</div>
+        <div style="display:flex;gap:8px;flex-wrap:wrap;">
+          <button class="btn btn-primary btn-sm" onclick="openScheduleInterview(${id})">📅 Schedule Screening Call</button>
+          <button class="btn btn-ghost btn-sm" onclick="quickMoveStageAndRefresh(${id},'Interview')">→ Proceed to Interview</button>
+          <button class="btn btn-ghost btn-sm" style="color:var(--red);" onclick="rejectCandidate(${id})">✕ Reject</button>
+        </div>
+      </div>`;
+  }
+  else if(stage === 'Interview') {
+    const feedbackCount = allFeedback.length;
+    const pendingFeedback = upcomingInterviews.length > 0;
+    content = `
+      <div style="padding:16px;background:#fbbf2418;border-bottom:3px solid var(--amber);">
+        <div style="font-size:12px;font-weight:700;color:var(--amber);margin-bottom:8px;">📋 NEXT STEPS — Interview</div>
+        <div style="font-size:12.5px;color:var(--text2);margin-bottom:10px;">
+          ${upcomingInterviews.length} upcoming · ${completedInterviews.length} completed · ${feedbackCount} feedback submitted
+        </div>
+        <div style="display:flex;gap:8px;flex-wrap:wrap;">
+          <button class="btn btn-primary btn-sm" onclick="openScheduleInterview(${id})">📅 Schedule Interview</button>
+          <button class="btn btn-ghost btn-sm" onclick="openAddFeedbackRound(${id},'Interview','')">📝 Add Feedback</button>
+          <button class="btn btn-ghost btn-sm" onclick="quickMoveStageAndRefresh(${id},'Offer')">→ Move to Offer</button>
+          <button class="btn btn-ghost btn-sm" style="color:var(--red);" onclick="rejectCandidate(${id})">✕ Reject</button>
+        </div>
+      </div>`;
+  }
+  else if(stage === 'Offer') {
+    const hasOffer = candOffers.length > 0;
+    const latestOffer = candOffers[candOffers.length - 1];
+    content = `
+      <div style="padding:16px;background:#a78bfa18;border-bottom:3px solid var(--purple);">
+        <div style="font-size:12px;font-weight:700;color:var(--purple);margin-bottom:8px;">📋 NEXT STEPS — Offer Stage</div>
+        ${hasOffer ? `
+          <div style="background:var(--bg2);border:1px solid var(--border);border-radius:8px;padding:10px 14px;margin-bottom:10px;">
+            <div style="font-size:12px;font-weight:700;margin-bottom:6px;">Latest Offer <span class="badge ${latestOffer.status==='Accepted'?'badge-green':latestOffer.status==='Rejected'?'badge-red':'badge-amber'}" style="font-size:10px;">${latestOffer.status}</span></div>
+            ${getOfferFields().filter(f=>f.enabled&&f.type!=='textarea'&&f.id!=='notes'&&f.id!=='expiryDate').slice(0,3).map(f=>`
+              <div style="display:flex;justify-content:space-between;font-size:12px;padding:2px 0;">
+                <span style="color:var(--text3);">${escapeHtml(f.label)}</span>
+                <span style="font-weight:600;">${latestOffer[f.id]||'–'}</span>
+              </div>`).join('')}
+          </div>` : `
+          <div style="font-size:12.5px;color:var(--text2);margin-bottom:10px;">No offer created yet. Create an offer to send to the candidate.</div>`}
+        <div style="display:flex;gap:8px;flex-wrap:wrap;">
+          <button class="btn btn-primary btn-sm" onclick="openCreateOffer(${id})">📄 ${hasOffer?'Edit Offer':'Create Offer'}</button>
+          ${latestOffer?.status==='Accepted'?`<button class="btn btn-ghost btn-sm" style="color:var(--green);" onclick="quickMoveStageAndRefresh(${id},'Hired')">✓ Mark Hired</button>`:''}
+          ${latestOffer?.status!=='Accepted'?`<button class="btn btn-ghost btn-sm" style="color:var(--green);" onclick="quickMoveStageAndRefresh(${id},'Hired')">✓ Mark Hired</button>`:''}
+          <button class="btn btn-ghost btn-sm" style="color:var(--red);" onclick="rejectCandidate(${id})">✕ Reject Offer</button>
+        </div>
+      </div>`;
+  }
+  else if(stage === 'Hired') {
+    content = `
+      <div style="padding:16px;background:#34d39918;border-bottom:3px solid var(--green);">
+        <div style="font-size:12px;font-weight:700;color:var(--green);margin-bottom:6px;">🎉 HIRED</div>
+        <div style="font-size:12.5px;color:var(--text2);">This candidate has been successfully hired. Onboarding can begin.</div>
+        ${candOffers.length ? `<div style="font-size:11.5px;color:var(--text3);margin-top:6px;">Offer was ${candOffers[candOffers.length-1].status?.toLowerCase()||'pending'}.</div>` : ''}
+      </div>`;
+  }
+  else if(stage === 'Rejected') {
+    const rejectedDate = c.rejectedAt ? new Date(c.rejectedAt).toLocaleDateString('en-MY',{day:'numeric',month:'short',year:'numeric'}) : '';
+    content = `
+      <div style="padding:16px;background:#fb718518;border-bottom:3px solid var(--red);">
+        <div style="font-size:12px;font-weight:700;color:var(--red);margin-bottom:8px;">🚫 REJECTED${rejectedDate?' · '+rejectedDate:''}</div>
+        ${c.rejectionReasonLabel ? `
+          <div style="background:var(--bg2);border:1px solid var(--red-dim);border-radius:8px;padding:10px 14px;margin-bottom:10px;">
+            <div style="font-size:12px;color:var(--text3);margin-bottom:3px;">Rejection Reason</div>
+            <div style="font-size:13px;font-weight:700;color:var(--red);">${escapeHtml(c.rejectionReasonLabel)}</div>
+            ${c.rejectionNote?`<div style="font-size:12px;color:var(--text2);margin-top:4px;font-style:italic;">"${escapeHtml(c.rejectionNote)}"</div>`:''}
+          </div>` : `
+          <div style="font-size:12.5px;color:var(--text2);margin-bottom:10px;">No rejection reason recorded.</div>`}
+        <button class="btn btn-ghost btn-sm" onclick="quickMoveStageAndRefresh(${id},'Applied')">↩ Re-consider for this role</button>
+      </div>`;
+  }
+  else {
+    // Custom stage
+    content = `
+      <div style="padding:16px;background:${stageColor}18;border-bottom:3px solid ${stageColor};">
+        <div style="font-size:12px;font-weight:700;color:${stageColor};margin-bottom:8px;">📋 ${escapeHtml(stage)}</div>
+        <div style="display:flex;gap:8px;flex-wrap:wrap;">
+          <button class="btn btn-primary btn-sm" onclick="openScheduleInterview(${id})">📅 Schedule</button>
+          <button class="btn btn-ghost btn-sm" onclick="openAddFeedbackRound(${id},'${stage}','')">📝 Feedback</button>
+          <button class="btn btn-ghost btn-sm" onclick="openMoveStage(${id})">Move Stage ↕</button>
+          <button class="btn btn-ghost btn-sm" style="color:var(--red);" onclick="rejectCandidate(${id})">✕ Reject</button>
+        </div>
+      </div>`;
+  }
+
+  return content;
+}
+
+
+function buildStageActions(c) {
+  const id = c.id;
+  const stage = c.stage || 'Applied';
+  const stageColor = stageColors[stage] || 'var(--text2)';
+
+  // Stage banner showing current stage
+  let banner = `<div style="display:flex;align-items:center;gap:6px;padding:4px 10px;border-radius:6px;background:${stageColor}18;border:1px solid ${stageColor}40;font-size:12px;font-weight:700;color:${stageColor};">
+    <span>●</span> ${stage}
+  </div>`;
+
+  // Always-present buttons
+  let share = `<button class="btn btn-ghost btn-sm" onclick="shareCandidate(${id})">↗ Share</button>`;
+  let move = `<button class="btn btn-ghost btn-sm" onclick="openMoveStage(${id})">Move Stage ↕</button>`;
+
+  // Stage-specific primary actions
+  let primary = '';
+  let secondary = '';
+
+  if(stage === 'Applied') {
+    primary = `<button class="btn btn-primary btn-sm" onclick="quickMoveStageAndRefresh(${id},'Screening')">→ Move to Screening</button>`;
+    secondary = `<button class="btn btn-ghost btn-sm" style="color:var(--red);" onclick="rejectCandidate(${id})">✕ Reject</button>`;
+  }
+  else if(stage === 'Screening') {
+    primary = `<button class="btn btn-primary btn-sm" onclick="openScheduleInterview(${id})">📅 Schedule Interview</button>`;
+    secondary = `
+      <button class="btn btn-ghost btn-sm" onclick="quickMoveStageAndRefresh(${id},'Interview')">→ Proceed to Interview</button>
+      <button class="btn btn-ghost btn-sm" style="color:var(--red);" onclick="rejectCandidate(${id})">✕ Reject</button>`;
+  }
+  else if(stage === 'Interview') {
+    primary = `<button class="btn btn-primary btn-sm" onclick="openScheduleInterview(${id})">📅 Schedule Interview</button>`;
+    secondary = `
+      <button class="btn btn-ghost btn-sm" onclick="quickMoveStageAndRefresh(${id},'Offer')">→ Move to Offer</button>
+      <button class="btn btn-ghost btn-sm" onclick="openAddFeedbackRound(${id},'Interview','')">📝 Add Feedback</button>
+      <button class="btn btn-ghost btn-sm" style="color:var(--red);" onclick="rejectCandidate(${id})">✕ Reject</button>`;
+  }
+  else if(stage === 'Offer') {
+    primary = `<button class="btn btn-primary btn-sm" onclick="openCreateOffer(${id})">📄 Create / Edit Offer</button>`;
+    secondary = `
+      <button class="btn btn-ghost btn-sm" style="color:var(--green);" onclick="quickMoveStageAndRefresh(${id},'Hired')">✓ Mark Hired</button>
+      <button class="btn btn-ghost btn-sm" style="color:var(--red);" onclick="rejectCandidate(${id})">✕ Reject</button>`;
+  }
+  else if(stage === 'Hired') {
+    primary = `<span style="font-size:13px;color:var(--green);font-weight:700;">🎉 Hired!</span>`;
+    secondary = `<button class="btn btn-ghost btn-sm" onclick="shareCandidate(${id})">↗ Share Profile</button>`;
+    move = ''; // already hired, no move needed
+  }
+  else if(stage === 'Rejected') {
+    primary = `<button class="btn btn-ghost btn-sm" onclick="quickMoveStageAndRefresh(${id},'Applied')">↩ Re-consider</button>`;
+    secondary = '';
+    move = '';
+  }
+  else {
+    // Custom stages (e.g. Technical Assessment, etc.)
+    primary = `<button class="btn btn-primary btn-sm" onclick="openScheduleInterview(${id})">📅 Schedule</button>`;
+    secondary = `
+      <button class="btn btn-ghost btn-sm" onclick="openAddFeedbackRound(${id},'${stage}','')">📝 Feedback</button>
+      <button class="btn btn-ghost btn-sm" style="color:var(--red);" onclick="rejectCandidate(${id})">✕ Reject</button>`;
+  }
+
+  return banner + primary + secondary + share + move;
+}
+
+function quickMoveStageAndRefresh(id, stage) {
+  const c = getCand(id); if(!c) return;
+  const prevStage = c.stage;
+  c.stage = stage;
+  // Update jobApplications too
+  if(c.jobApplications?.length) c.jobApplications[0].stage = stage;
+  addToTimeline(c, `Moved from ${prevStage} → ${stage}`, stageColors[stage]||'var(--accent)');
+  activities.unshift({ text:`<strong>${c.name}</strong> moved to <strong>${stage}</strong>`, color:stageColors[stage]||'var(--accent)', ts:Date.now() });
+  save();
+  showToast(`Moved to ${stage} ✓`);
+  // Re-render the profile to update action buttons
+  renderCandProfileContent(id);
+  // Update right panel
+  refreshRightPanel(id);
+}
+
+
 function buildOfferFormPreview(fields) {
   const enabled = fields.filter(f => f.enabled);
   const rows = [];
@@ -6481,7 +7014,7 @@ function renderReports() {
       </div></td>
       <td style="color:var(--text3);font-size:12px">${c.email||'–'}</td>
       <td style="color:var(--text2);font-size:12px">${job?job.title:'–'}</td>
-      <td><span class="badge ${stageBadge[c.stage]}">${c.stage}</span></td>
+      <td><span class="badge ${stageBadge[c.stage]}">${c.stage}</span>${c.rejectionReasonLabel?`<div style="font-size:10px;color:var(--red);margin-top:2px;">🚫 ${escapeHtml(c.rejectionReasonLabel)}</div>`:''}</td>
       <td style="font-family:'JetBrains Mono';font-weight:700;color:${c.score>=80?'var(--green)':c.score>=60?'var(--amber)':'var(--red)'}">${c.score}</td>
       <td style="color:var(--text3);font-size:12px">${c.source||'–'}</td>
       <td style="color:var(--text3);font-size:12px">${c.exp||'–'}</td>
