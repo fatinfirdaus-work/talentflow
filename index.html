@@ -3430,7 +3430,7 @@ function removeTeamMember(i) {
 function updateMemberRole(i, role) {
   const s = getSettings();
   const team = s.team||[];
-  if(team[i]) { team[i].role = role; saveSettings({ team }); showToast('Role updated'); }
+  if(team[i]) { team[i].role = role; saveSettings({ team }); showToast('Role updated ✓'); }
 }
 
 function editMemberJobAccess(i) {
@@ -4856,12 +4856,11 @@ function saveOffer(id) {
   }
   const offer = { candidateId: id, status: 'Pending', sentDate: new Date().toISOString().split('T')[0] };
   fields.forEach(f => { offer[f.id] = document.getElementById('of-'+f.id)?.value || ''; });
-  // Keep backward compat aliases
-  offer.salary = offer.salary || offer['of-salary'] || '';
+  const salaryDisplay = offer.salary || '';
   offers.push(offer);
   c.stage = 'Offer';
   addToTimeline(c, 'Offer created', 'var(--purple)');
-  activities.unshift({ text:`Offer created for <strong>${c.name}</strong>${offer.salary?' at '+offer.salary:''}`, color:'var(--purple)', ts:Date.now() });
+  activities.unshift({ text:`Offer created for <strong>${c.name}</strong>${salaryDisplay?' at '+salaryDisplay:''}`, color:'var(--purple)', ts:Date.now() });
   save(); closeModal(); openCandProfile(id);
   showToast('Offer created! 🎉');
 }
@@ -5838,7 +5837,7 @@ async function loadArchive() {
   const el = document.getElementById('archive-list');
   if(!el || !currentUser) return;
   try {
-    const snap = await getDocs(collection(db, `users/${currentUser.uid}/archive`));
+    const snap = await __getDocs(_collection(_db, `users/${currentUser.uid}/archive`));
     if(snap.empty) {
       el.innerHTML = '<div style="text-align:center;padding:40px;color:var(--text3);font-size:13px;">No archived items yet. Deleted jobs and candidates will appear here.</div>';
       return;
@@ -5874,7 +5873,7 @@ async function loadArchive() {
 async function restoreFromArchive(docId, type) {
   if(!currentUser) return;
   try {
-    const snap = await getDocs(collection(db, `users/${currentUser.uid}/archive`));
+    const snap = await ___getDocs(_collection(_db, `users/${currentUser.uid}/archive`));
     const docData = snap.docs.find(d=>d.id===docId)?.data();
     if(!docData) { showToast('Item not found'); return; }
     // Remove archive metadata
@@ -5889,7 +5888,7 @@ async function restoreFromArchive(docId, type) {
       if(_firestoreCandIds) _firestoreCandIds.add(String(cleanData.id));
     }
     // Delete from archive
-    await deleteDoc(doc(db, `users/${currentUser.uid}/archive`, docId));
+    await ___deleteDoc(_doc(_db, `users/${currentUser.uid}/archive`, docId));
     await save();
     showToast('Restored successfully ✓');
     loadArchive();
@@ -5903,7 +5902,7 @@ async function permanentlyDelete(docId) {
   if(!confirm('Permanently delete this item? This cannot be undone.')) return;
   if(!currentUser) return;
   try {
-    await deleteDoc(doc(db, `users/${currentUser.uid}/archive`, docId));
+    await ____deleteDoc(_doc(_db, `users/${currentUser.uid}/archive`, docId));
     showToast('Permanently deleted');
     loadArchive();
   } catch(e) {
@@ -6014,6 +6013,11 @@ function buildOfferFormHTML(values = {}) {
 }
 
 
+function closeModal() {
+  document.getElementById('modal-overlay').classList.remove('open');
+  document.getElementById('modal-body').innerHTML = '';
+  document.getElementById('modal-footer').innerHTML = '';
+}
 function closeModalOuter(e) { if(e.target===document.getElementById('modal-overlay')) closeModal(); }
 
 // ===================== SEARCH =====================
@@ -6828,7 +6832,7 @@ function saveCustomStages() {
     const i=parseInt(inp.dataset.stageName); if(!isNaN(i)&&list[i]) list[i].name=inp.value.trim()||list[i].name;
   });
   saveCustomStagesToStorage(list);
-  populateJobFilters(); showToast('Pipeline saved! ✅');
+  save(); populateJobFilters(); showToast('Pipeline saved! ✅');
   switchSettingsTab('s-pipeline');
 }
 function resetStages() {
@@ -7567,6 +7571,11 @@ let unsubscribeFns = [];
 // Expose to global scope so non-module functions can use them
 window.currentUser = null;
 window._db = db;
+window._getDocs = getDocs;
+window._deleteDoc = deleteDoc;
+window._collection = collection;
+window._doc = doc;
+window._setDoc = setDoc;
 
 // Archive a document to users/{uid}/archive collection instead of deleting
 window._archiveToFirestore = async (type, id, data) => {
