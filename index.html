@@ -2406,14 +2406,22 @@ function updateOfferStatus(idx, status) {
   const c = getCand(offers[idx].candidateId);
   if(c && status==='Accepted') {
     c.stage = 'Pending Join';
-    if(c.jobApplications?.length) c.jobApplications[0].stage = 'Pending Join';
+    (c.jobApplications||[]).forEach(app => { app.stage = 'Pending Join'; });
     addToTimeline(c, 'Offer Accepted — Pending Join 🎉', '#06b6d4');
     activities.unshift({ text:`<strong>${c.name}</strong> accepted the offer — awaiting start date! 🎉`, color:'#06b6d4', ts:Date.now() });
   }
+  if(c && status==='Rejected') {
+    // Offer rejected doesn't change candidate stage back
+    activities.unshift({ text:`Offer rejected by <strong>${c.name}</strong>`, color:'var(--red)', ts:Date.now() });
+  }
   save();
   showToast(`Offer marked as ${status}!`);
-  reactiveUpdate(offers[idx]?.candidateId);
-  renderOffers();
+  const affectedId = offers[idx]?.candidateId;
+  setTimeout(() => {
+    reactiveUpdate(affectedId);
+    renderOffers();
+    if(status === 'Accepted' && affectedId) showStageFollowUp(affectedId, 'Pending Join', 'Offer');
+  }, 80);
 }
 
 function openEditOfferModal(idx) {
@@ -4849,8 +4857,8 @@ function confirmReject(id) {
   c.rejectionNote = note;
   c.rejectedAt = new Date().toISOString();
 
-  // Update job application stage too
-  if(c.jobApplications?.length) c.jobApplications[0].stage = 'Rejected';
+  // Update ALL job application stages
+  (c.jobApplications || []).forEach(app => { app.stage = 'Rejected'; });
 
   addToTimeline(c, `Rejected — ${reasonLabel}${note?' · '+note:''}`, 'var(--red)');
   activities.unshift({
@@ -4861,7 +4869,7 @@ function confirmReject(id) {
   save();
   closeModal();
   showToast(`${c.name} rejected — ${reasonLabel}`);
-  reactiveUpdate(id);
+  setTimeout(() => reactiveUpdate(id), 50);
 }
 
 function addRejectionReason() {
@@ -5398,10 +5406,12 @@ function saveOffer(id) {
   const salaryDisplay = offer.salary || '';
   offers.push(offer);
   c.stage = 'Offer';
+  (c.jobApplications || []).forEach(app => { app.stage = 'Offer'; });
   addToTimeline(c, 'Offer created', 'var(--purple)');
   activities.unshift({ text:`Offer created for <strong>${c.name}</strong>${salaryDisplay?' at '+salaryDisplay:''}`, color:'var(--purple)', ts:Date.now() });
-  save(); closeModal(); openCandProfile(id);
+  save(); closeModal();
   showToast('Offer created! 🎉');
+  setTimeout(() => reactiveUpdate(id), 80);
 }
 
 function openJobDetail(id, pushHistory=true) {
@@ -6328,27 +6338,57 @@ function openMoveStage(id, jobId) {
 // ── GLOBAL REACTIVE UPDATE ──
 // Call after ANY data change to update all currently visible UI
 function reactiveUpdate(candId) {
-  // Update nav badges
-  updateNavBadges();
-  // Update whichever page is currently active
+  // Always update sidebar badges regardless of page
+  updateSidebarBadges();
+
   const activePage = document.querySelector('.page.active')?.id;
-  if(activePage === 'page-candidates')  { renderCandidates(); renderCandJobSidebar(); renderCandStageTabs(); }
-  if(activePage === 'page-pipeline')    { renderPipeline(); }
-  if(activePage === 'page-dashboard')   { renderDashboard(); }
-  if(activePage === 'page-interviews')  { renderInterviews(); }
-  if(activePage === 'page-offers')      { renderOffers(); }
-  if(activePage === 'page-analytics')   { renderAnalytics(); }
-  if(activePage === 'page-reports')     { renderReports(); }
-  if(activePage === 'page-inbox')       { renderInbox(); }
-  if(activePage === 'page-jobdetail')   {
-    // Find which job detail is open
+
+  if(activePage === 'page-candidates') {
+    renderCandidates();
+    renderCandStageTabs();
+    renderCandJobSidebar();
+  }
+  else if(activePage === 'page-pipeline') {
+    renderPipeline();
+  }
+  else if(activePage === 'page-dashboard') {
+    renderDashboard();
+  }
+  else if(activePage === 'page-interviews') {
+    renderInterviews();
+  }
+  else if(activePage === 'page-offers') {
+    renderOffers();
+  }
+  else if(activePage === 'page-analytics') {
+    renderAnalytics();
+  }
+  else if(activePage === 'page-reports') {
+    renderReports();
+  }
+  else if(activePage === 'page-inbox') {
+    renderInbox();
+  }
+  else if(activePage === 'page-jobdetail') {
     const jobId = history.state?.id;
     if(jobId) renderJobDetailPage(jobId);
   }
-  // If on candidate profile, refresh it
-  if(activePage === 'page-candprofile' && candId) {
+  else if(activePage === 'page-candprofile' && candId) {
+    // Full profile re-render - rebuilds everything including stage badge, tracker, action buttons
     renderCandProfileContent(candId);
-    refreshRightPanel(candId);
+  }
+
+  // Also patch visible stage badges directly for instant feedback (no flicker wait)
+  if(candId) {
+    const cand = getCand(candId);
+    if(cand) {
+      // Update any stage badge showing in the DOM right now
+      const stageBadgeEl = document.querySelector(`[data-cand-stage="${candId}"]`);
+      if(stageBadgeEl) {
+        stageBadgeEl.textContent = cand.stage;
+        stageBadgeEl.className = 'badge ' + (stageBadge[cand.stage] || 'badge-gray');
+      }
+    }
   }
 }
 
@@ -6359,12 +6399,18 @@ function confirmMoveStage(id) {
   if(sel && c) {
     const targetJobId = jobIdEl ? parseInt(jobIdEl.value)||c.jobId : c.jobId;
     setCandStageForJob(c, targetJobId, sel.value);
+    // Update all jobApplications for this job
+    (c.jobApplications||[]).forEach(app => { if(app.jobId === targetJobId) app.stage = sel.value; });
     activities.unshift({ text:`<strong>${c.name}</strong> moved to <strong>${c.stage}</strong>`, color: stageColors[c.stage]||'var(--accent)', ts:Date.now() });
     save();
   }
   closeModal();
   showToast('Candidate moved! ✓');
-  reactiveUpdate(id);
+  const newStage = getCand(id)?.stage || '';
+  setTimeout(() => {
+    reactiveUpdate(id);
+    showStageFollowUp(id, newStage, '');
+  }, 80);
 }
 
 function deleteJob(id) {
@@ -6676,11 +6722,69 @@ function buildStageActions(c) {
   return banner + primary + secondary + share + move;
 }
 
+// ── STAGE FOLLOW-UP POPUP ──
+function showStageFollowUp(id, newStage, prevStage) {
+  const c = getCand(id); if(!c) return;
+
+  const stageColor = stageColors[newStage] || 'var(--accent)';
+
+  const configs = {
+    'Screening': {
+      icon:'📞', title:'Schedule Screening Call?',
+      body:`<strong>${escapeHtml(c.name)}</strong> is now in Screening. Would you like to schedule a screening call?`,
+      btnLabel:'📅 Schedule Now', btnAction:`closeModal();openScheduleInterview(${id})`, skip:'Skip for now'
+    },
+    'Interview': {
+      icon:'📅', title:'Schedule Interview?',
+      body:`<strong>${escapeHtml(c.name)}</strong> is ready for interviews. Schedule the first round now?`,
+      btnLabel:'📅 Schedule Interview', btnAction:`closeModal();openScheduleInterview(${id})`, skip:'Skip for now'
+    },
+    'Offer': {
+      icon:'📄', title:'Create Offer?',
+      body:`<strong>${escapeHtml(c.name)}</strong> has been moved to Offer stage. Create and send an offer now?`,
+      btnLabel:'📄 Create Offer', btnAction:`closeModal();openCreateOffer(${id})`, skip:'Do it later'
+    },
+    'Pending Join': {
+      icon:'🎉', title:'Offer Accepted — Pending Start!',
+      body:`<strong>${escapeHtml(c.name)}</strong> has accepted the offer. Make sure the start date is set in their offer details.`,
+      btnLabel:'📄 View Offer Details', btnAction:`closeModal();openCandProfile(${id})`, skip:'Got it'
+    },
+    'Hired': {
+      icon:'🎊', title:'Welcome to the team!',
+      body:`<strong>${escapeHtml(c.name)}</strong> has officially joined. Start the onboarding process!`,
+      btnLabel:'👤 View Profile', btnAction:`closeModal();openCandProfile(${id})`, skip:'Close'
+    },
+  };
+
+  const cfg = configs[newStage];
+  if(!cfg) return;
+
+  document.getElementById('modal-title').innerHTML = `<span style="color:${stageColor};">${cfg.icon} ${cfg.title}</span>`;
+  document.getElementById('modal-body').innerHTML = `
+    <div style="text-align:center;padding:8px 0 16px;">
+      <div style="font-size:44px;margin-bottom:14px;">${cfg.icon}</div>
+      <div style="font-size:14px;line-height:1.8;color:var(--text2);">${cfg.body}</div>
+      <div style="margin-top:14px;">
+        <span style="display:inline-block;padding:4px 14px;border-radius:20px;background:${stageColor}20;
+          color:${stageColor};border:1px solid ${stageColor}40;font-size:12px;font-weight:700;">
+          ${escapeHtml(c.name)} → ${newStage}
+        </span>
+      </div>
+    </div>`;
+  document.getElementById('modal-footer').innerHTML =
+    `<button class="btn btn-ghost" onclick="closeModal()">${cfg.skip}</button>` +
+    `<button class="btn btn-primary" style="background:${stageColor};border-color:${stageColor};"
+      onclick="${cfg.btnAction}">${cfg.btnLabel}</button>`;
+  document.getElementById('modal-overlay').classList.add('open');
+}
+
+
 function quickMoveStageAndRefresh(id, stage) {
   const c = getCand(id); if(!c) return;
   const prevStage = c.stage;
   c.stage = stage;
-  // Update jobApplications too
+  // Update ALL jobApplications stages
+  (c.jobApplications || []).forEach(app => { app.stage = stage; });
   if(c.jobApplications?.length) c.jobApplications[0].stage = stage;
 
   // If moving to Pending Join, auto-mark pending offer as Accepted
@@ -6702,7 +6806,10 @@ function quickMoveStageAndRefresh(id, stage) {
   activities.unshift({ text:`<strong>${c.name}</strong> moved to <strong>${stage}</strong>`, color:stageColors[stage]||'var(--accent)', ts:Date.now() });
   save();
   showToast(`Moved to ${stage} ✓`);
-  reactiveUpdate(id);
+  setTimeout(() => {
+    reactiveUpdate(id);
+    showStageFollowUp(id, stage, prevStage);
+  }, 80);
 }
 
 
