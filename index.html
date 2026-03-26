@@ -90,7 +90,7 @@
   .search-icon { color: var(--text3); font-size: 13px; flex-shrink: 0; }
 
   /* ── CONTENT & PAGES ── */
-  .content { flex: 1; overflow-y: auto; }
+  .content { flex: 1; overflow-y: auto; min-height: 0; }
 
   /* ALL pages: no padding - each page handles its own spacing consistently */
   .page { display: none; }
@@ -397,7 +397,7 @@
     #global-search-wrap:focus-within { width: 200px !important; }
 
     /* Content padding reduced */
-    .content { padding: 14px; }
+    /* page-inner handles its own padding */
 
     /* Stats: 2 cols on mobile */
     .stats-row { grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 14px; }
@@ -2906,6 +2906,16 @@ function renderAnalytics() {
   const offersTotal = offers.length || 0;
   const offersAccepted = offers.filter(o=>o.status==='Accepted').length;
   const offerAcceptRate = offersTotal > 0 ? Math.round(offersAccepted/offersTotal*100) + '%' : (hired > 0 ? '100%' : '—');
+
+  const statCards = document.querySelectorAll('#page-analytics .stat-card');
+  if(statCards[0]) {
+    statCards[0].querySelector('.stat-val').textContent = avgHireDays;
+    statCards[0].querySelector('.stat-change').textContent = hiredCands.length ? hiredCands.length + ' hire' + (hiredCands.length>1?'s':'') : 'no hires yet';
+  }
+  if(statCards[1]) {
+    statCards[1].querySelector('.stat-val').textContent = offerAcceptRate;
+    statCards[1].querySelector('.stat-change').textContent = offersTotal > 0 ? offersAccepted + '/' + offersTotal + ' accepted' : 'no offers yet';
+  }
 
   if(statCards[2]) {
     const topSrc = sourceEntries[0];
