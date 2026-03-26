@@ -90,7 +90,7 @@
   .search-icon { color: var(--text3); font-size: 13px; flex-shrink: 0; }
 
   /* ── CONTENT & PAGES ── */
-  .content { flex: 1; overflow-y: auto; min-height: 0; }
+  .content { flex: 1; overflow-y: auto; min-height: 0; height: 0; }
 
   /* ALL pages: no padding - each page handles its own spacing consistently */
   .page { display: none; }
@@ -117,12 +117,18 @@
   /* Pages using page-inner — flex column so content fills height */
   #page-dashboard.active, #page-analytics.active, #page-reports.active,
   #page-inbox.active, #page-tasks.active, #page-interviews.active, #page-offers.active {
-    display: flex; flex-direction: column;
+    display: flex; flex-direction: column; height: 100%;
+  }
+  #page-tasks.active .page-inner {
+    flex: 1; min-height: 0; overflow: hidden;
+    display: flex; flex-direction: column; padding: 20px 24px 0;
+  }
+  #page-tasks.active #tasks-content {
+    flex: 1; overflow-y: auto; min-height: 0; padding-bottom: 20px;
   }
   #page-dashboard.active .page-inner, #page-analytics.active .page-inner,
   #page-reports.active .page-inner, #page-inbox.active .page-inner,
-  #page-tasks.active .page-inner, #page-interviews.active .page-inner,
-  #page-offers.active .page-inner {
+  #page-interviews.active .page-inner, #page-offers.active .page-inner {
     flex: 1; overflow-y: auto; min-height: 0;
   }
 
@@ -1399,9 +1405,9 @@
     <div class="page" id="page-tasks">
       <div class="page-inner">
         <!-- Toolbar -->
-        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:20px;flex-wrap:wrap;gap:10px;">
-          <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;">
-            <span style="font-size:18px;font-weight:800;">✅ Tasks</span>
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;flex-wrap:wrap;gap:8px;flex-shrink:0;">
+          <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;">
+            <span style="font-size:17px;font-weight:800;">✅ Tasks</span>
             <div style="display:flex;background:var(--bg3);border:1px solid var(--border);border-radius:8px;overflow:hidden;">
               <button id="tasks-view-board" class="btn btn-ghost btn-sm" style="border-radius:0;border:none;" onclick="switchTaskView('board')">⊞ Board</button>
               <button id="tasks-view-table" class="btn btn-primary btn-sm" style="border-radius:0;border:none;" onclick="switchTaskView('table')">☰ Table</button>
@@ -3195,7 +3201,7 @@ function renderTasksTable(el, filtered) {
   });
 
   if(!groupKeys.length) {
-    el.innerHTML = `<div style="text-align:center;padding:60px 20px;color:var(--text3);">
+    el.innerHTML = `<div style="display:flex;flex-direction:column;align-items:center;justify-content:center;height:100%;min-height:300px;color:var(--text3);">
       <div style="font-size:40px;margin-bottom:12px;">✅</div>
       <div style="font-size:15px;font-weight:700;color:var(--text);margin-bottom:6px;">No tasks yet</div>
       <div style="font-size:13px;margin-bottom:20px;">Create your first task to get started</div>
