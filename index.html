@@ -120,7 +120,7 @@
   /* Full-height detail pages */
   #page-candprofile.active,
   #page-jobdetail.active,
-  #page-projectdetail.active { overflow: hidden; height: calc(100vh - 52px); }
+  #page-projectdetail.active { overflow: hidden; height: calc(100vh - 52px); display: flex; flex-direction: column; }
 
   /* ── STATS ROW ── */
   .stats-row { display: grid; grid-template-columns: repeat(4,1fr); gap: 14px; margin-bottom: 22px; }
@@ -230,8 +230,8 @@
   .cp-tab.active { color: var(--accent); border-bottom-color: var(--accent); }
   .cp-tab:hover { color: var(--text); }
   .cp-tab-content { display: none !important; }
-  .cp-tab-content.active { display: flex !important; flex-direction: column; overflow-y: auto; }
-  #lt-resume.active { overflow: hidden; height: calc(100vh - 230px); }
+  .cp-tab-content.active { display: flex !important; flex-direction: column; flex: 1; min-height: 0; overflow-y: auto; }
+  #lt-resume.active { overflow: hidden; }
   #lt-details.active, #lt-extra.active { overflow-y: auto; padding: 20px 24px; }
   #lt-history.active { overflow-y: auto; }
   .cp-field-label { font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; color: var(--text3); margin-bottom: 3px; }
@@ -320,7 +320,7 @@
   .resume-viewer { width: 100%; height: 580px; border: none; border-radius: 8px; background: var(--bg3); }
   .back-btn { display: inline-flex; align-items: center; gap: 6px; color: var(--text3); font-size: 12.5px; cursor: pointer; padding: 5px 0; margin-bottom: 14px; }
   .back-btn:hover { color: var(--text); }
-  .cp-layout { display: grid; grid-template-columns: 340px 1fr; gap: 0; height: 100%; min-height: calc(100vh - 52px); }
+  .cp-layout { display: grid; gap: 0; flex: 1; overflow: hidden; min-height: 0; }
   .cp-left { border-right: 1px solid var(--border); overflow-y: auto; padding: 22px 18px; display: flex; flex-direction: column; gap: 14px; }
   .cp-right { overflow-y: auto; display: flex; flex-direction: column; }
   .cp-avatar { width: 76px; height: 76px; border-radius: 50%; object-fit: cover; flex-shrink: 0; }
@@ -4434,11 +4434,11 @@ function renderCandProfileContent(id, fromJobId=null) {
     '</div></div>' +
 
     // ── MAIN LAYOUT: resizable left | right panels ──
-    '<div id="cp-layout" style="display:grid;grid-template-columns:1fr 420px;flex:1;overflow:hidden;min-height:0;position:relative;">' +
+    '<div id="cp-layout" class="cp-layout" style="grid-template-columns:1fr 420px;position:relative;">' +
     '<style>#cp-divider{position:absolute;top:0;bottom:0;width:6px;cursor:col-resize;z-index:10;background:transparent;transition:background 0.15s;}#cp-divider:hover,#cp-divider.dragging{background:var(--accent)40;}</style>' +
 
     // ── LEFT: candidate info + resume tabs ──
-    '<div id="cp-left-panel" style="overflow-y:auto;border-right:1px solid var(--border);display:flex;flex-direction:column;">' +
+    '<div id="cp-left-panel" style="height:100%;overflow:hidden;border-right:1px solid var(--border);display:flex;flex-direction:column;">' +
 
     // Candidate header card
     '<div style="padding:20px 24px;border-bottom:1px solid var(--border);flex-shrink:0;">' +
@@ -7299,6 +7299,12 @@ function saveCandidate() {
       }));
       newCand.hasResume = true;
       newCand.resumeFilename = currentResumeFilename;
+      newCand.resumeType = currentResumeType;
+      // Upload to Firebase Storage (non-blocking)
+      if(window.saveResumeToCloud && currentUser) {
+        window.saveResumeToCloud(newId, currentResumeB64, currentResumeType, currentResumeFilename)
+          .catch(e => console.warn('Cloud resume upload failed:', e));
+      }
     } catch(e) { console.warn('Resume too large to store', e); }
     currentResumeB64 = null; currentResumeType = null; currentResumeFilename = null;
   }
@@ -7811,70 +7817,86 @@ let pdfDoc = null, pdfPage = 1, pdfZoom = 1.3, pdfRendering = false, pdfCandId =
 
 async function loadInlinePdf(candId) {
   pdfCandId = candId;
-  const c = getCand(candId);
-  if(!c?.hasResume) return;
+  const cand = getCand(candId);
+  if(!cand?.hasResume) return;
 
   const container = document.getElementById('pdf-container');
   if(!container) return;
+
+  const isDocx = (cand.resumeFilename||'').toLowerCase().endsWith('.docx') ||
+                 (cand.resumeType||'').includes('word');
+
   container.innerHTML = '<div style="text-align:center;color:#ccc;padding:40px;"><div style="font-size:32px;margin-bottom:10px;">⏳</div><div style="font-size:14px;">Loading resume...</div></div>';
 
-  try {
-    if(!window.pdfjsLib) throw new Error('PDF.js not loaded');
-    pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+  // Helper: show fallback with open/upload options
+  const showFallback = (msg) => {
+    container.innerHTML =
+      '<div style="color:var(--text3);padding:32px;text-align:center;">' +
+      '<div style="font-size:36px;margin-bottom:12px;">' + (isDocx?'📝':'📄') + '</div>' +
+      '<div style="font-size:14px;font-weight:600;margin-bottom:6px;color:var(--text);">' + escapeHtml(cand.resumeFilename||'Resume') + '</div>' +
+      '<div style="font-size:12px;color:var(--text3);margin-bottom:20px;">' + msg + '</div>' +
+      '<div style="display:flex;gap:8px;justify-content:center;flex-wrap:wrap;">' +
+      '<button class="btn btn-primary btn-sm" onclick="viewResume('+candId+')">Open in New Tab ↗</button>' +
+      '<button class="btn btn-ghost btn-sm" onclick="downloadResume('+candId+')">⬇ Download</button>' +
+      '<button class="btn btn-ghost btn-sm" onclick="openEditCandidate('+candId+')">↑ Re-upload Resume</button>' +
+      '</div></div>';
+  };
 
+  // DOCX — can't preview inline, show buttons immediately
+  if(isDocx) { showFallback('DOCX files cannot be previewed inline.'); return; }
+
+  try {
     let pdfData = null;
 
-    // 1. Try localStorage first (fastest)
+    // 1. Try localStorage (same device, instant)
     try {
       const stored = JSON.parse(localStorage.getItem('tf_resume_'+candId)||'null');
       if(stored?.b64) {
         const bin = atob(stored.b64);
         pdfData = new Uint8Array(bin.length);
-        for(let i=0;i<bin.length;i++) pdfData[i]=bin.charCodeAt(i);
+        for(let i=0;i<bin.length;i++) pdfData[i] = bin.charCodeAt(i);
       }
     } catch(e) { console.warn('localStorage resume read failed:', e); }
 
-    // 2. Try Firebase Storage URL
-    if(!pdfData && currentUser && c.hasResume) {
+    // 2. Try Firebase Storage (different device / not in localStorage)
+    if(!pdfData && currentUser && window.getResumeData) {
       try {
         const r = await window.getResumeData(candId);
         if(r?.url) {
-          const resp = await fetch(r.url);
-          if(resp.ok) {
-            const buf = await resp.arrayBuffer();
-            pdfData = new Uint8Array(buf);
-            // Cache locally
-            try {
-              const b64 = btoa(String.fromCharCode(...new Uint8Array(buf)));
-              localStorage.setItem('tf_resume_'+candId, JSON.stringify({b64, filename: c.resumeFilename}));
-            } catch(e) {}
-          }
+          // Use iframe for Firebase Storage URL — avoids CORS issues with fetch
+          container.innerHTML =
+            '<iframe src="' + r.url + '" style="width:100%;height:100%;border:none;background:#fff;" ' +
+            'onerror="this.parentElement.innerHTML=\'<div style=padding:32px;text-align:center;color:#ccc>Could not load preview.<br><br><button onclick=viewResume('+candId+') class=btn>Open in New Tab ↗</button></div>\'"></iframe>';
+          // Also cache to localStorage for next time
+          try {
+            const resp = await fetch(r.url);
+            if(resp.ok) {
+              const buf = await resp.arrayBuffer();
+              const b64arr = new Uint8Array(buf);
+              let b64 = '';
+              const chunk = 8192;
+              for(let i=0;i<b64arr.length;i+=chunk) {
+                b64 += btoa(String.fromCharCode(...b64arr.subarray(i,i+chunk)));
+              }
+              localStorage.setItem('tf_resume_'+candId, JSON.stringify({
+                b64, type: r.type||'application/pdf', filename: cand.resumeFilename
+              }));
+            }
+          } catch(e) {} // caching failure is fine, iframe already showing
+          return;
         }
-      } catch(e) { console.warn('Cloud resume load failed:', e); }
+      } catch(e) { console.warn('Cloud resume fetch failed:', e); }
     }
 
+    // 3. No data found anywhere
     if(!pdfData) {
-      // Check if it's a DOCX (can't render inline)
-      const isDocx = (c.resumeFilename||'').endsWith('.docx') || (c.resumeType||'').includes('word');
-      container.innerHTML =
-        '<div style="color:var(--text3);padding:32px;text-align:center;">' +
-        '<div style="font-size:32px;margin-bottom:10px;">' + (isDocx?'📝':'📄') + '</div>' +
-        '<div style="margin-bottom:8px;font-size:14px;font-weight:600;">' + escapeHtml(c.resumeFilename||'Resume') + '</div>' +
-        '<div style="font-size:12px;color:var(--text3);margin-bottom:16px;">' +
-          (isDocx ? 'DOCX files cannot be previewed inline.' : 'Preview not available — file may not be cached locally.') +
-        '</div>' +
-        '<button class="btn btn-primary btn-sm" onclick="viewResume('+candId+')">Open in New Tab ↗</button>&nbsp;' +
-        '<button class="btn btn-ghost btn-sm" onclick="downloadResume('+candId+')">⬇ Download</button>' +
-        '</div>';
+      showFallback('Resume not cached on this device. Re-upload to make it available everywhere.');
       return;
     }
 
-    // Only render PDF (not DOCX)
-    const isDocx = (c.resumeFilename||'').endsWith('.docx') || (c.resumeType||'').includes('word');
-    if(isDocx) {
-      container.innerHTML = '<div style="color:var(--text3);padding:32px;text-align:center;"><div style="font-size:32px;margin-bottom:10px;">📝</div><div style="font-size:14px;font-weight:600;margin-bottom:12px;">' + escapeHtml(c.resumeFilename||'Resume.docx') + '</div><button class="btn btn-primary btn-sm" onclick="viewResume('+candId+')">Open in New Tab ↗</button>&nbsp;<button class="btn btn-ghost btn-sm" onclick="downloadResume('+candId+')">⬇ Download</button></div>';
-      return;
-    }
+    // 4. Render with PDF.js from localStorage data
+    if(!window.pdfjsLib) { showFallback('PDF viewer not loaded. Try opening in a new tab.'); return; }
+    pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
 
     pdfDoc = await pdfjsLib.getDocument({ data: pdfData }).promise;
     pdfPage = 1;
@@ -7885,12 +7907,7 @@ async function loadInlinePdf(candId) {
 
   } catch(err) {
     console.error('PDF load error:', err);
-    container.innerHTML =
-      '<div style="color:var(--text3);padding:32px;text-align:center;">' +
-      '<div style="font-size:32px;margin-bottom:12px;">⚠️</div>' +
-      '<div style="font-size:13px;margin-bottom:16px;">Could not render PDF: ' + err.message + '</div>' +
-      '<button class="btn btn-primary btn-sm" onclick="viewResume('+candId+')">Open in New Tab ↗</button>' +
-      '</div>';
+    showFallback('Could not render PDF: ' + err.message);
   }
 }
 
