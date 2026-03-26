@@ -1501,6 +1501,8 @@ function save() {
     localStorage.setItem('tf_tasks', JSON.stringify(tasks));
   } catch(e) { console.warn('Save failed', e); }
   updateSidebarBadges();
+  // Sync to Firestore
+  if(window._cloudSave) window._cloudSave().catch(e => console.warn('Cloud save error', e));
 }
 function load() {
   try {
@@ -1510,6 +1512,7 @@ function load() {
       interviews: JSON.parse(localStorage.getItem('tf_interviews')) || DEFAULT_INTERVIEWS,
       offers: JSON.parse(localStorage.getItem('tf_offers')) || null,
       activities: JSON.parse(localStorage.getItem('tf_activities')) || null,
+      tasks: JSON.parse(localStorage.getItem('tf_tasks')) || [],
     };
   } catch(e) { return {}; }
 }
@@ -1523,6 +1526,8 @@ let interviews = stored.interviews;
 let offers = stored.offers || [];
 
 let activities = stored.activities || [];
+
+let tasks = stored.tasks || [];
 
 const stages = ['Applied','Screening','Interview','Offer','Pending Join','Hired','Rejected'];
 const stageColors = {
@@ -1795,7 +1800,7 @@ function renderDashboard() {
           const job = t.jobId ? getJob(parseInt(t.jobId)) : null;
           const od = t.dueDate && t.dueDate < todayD;
           return `<div style="display:flex;align-items:center;gap:10px;padding:9px 16px;border-bottom:1px solid var(--border);cursor:pointer;"
-            onclick="showPage('tasks',null);setTimeout(()=>openEditTask('${t.id}'),200)"
+            onclick="showPage('tasks',null);setTimeout(()=>openTaskDetail('${t.id}'),200)"
             onmouseover="this.style.background='var(--bg3)'" onmouseout="this.style.background=''">
             <div style="width:8px;height:8px;border-radius:50%;flex-shrink:0;background:${TASK_STATUS_COLOR[t.status]||'var(--text3)'};"></div>
             <div style="flex:1;min-width:0;">
@@ -3262,7 +3267,7 @@ function taskTableRow(t, overdue) {
     padding:9px 16px;border-bottom:1px solid var(--border);align-items:center;
     transition:background 0.1s;cursor:pointer;"
     onmouseover="this.style.background='var(--bg3)'" onmouseout="this.style.background=''"
-    onclick="openEditTask('${t.id}')">
+    onclick="openTaskDetail('${t.id}')">
     <!-- Task name + attachments -->
     <div style="display:flex;align-items:center;gap:8px;min-width:0;">
       <div onclick="event.stopPropagation();toggleTaskDone('${t.id}')"
@@ -3322,7 +3327,7 @@ function renderTasksBoard(el, filtered) {
     colTasks.forEach(t => {
       const overdue = t.dueDate && t.status!=='Done' && new Date(t.dueDate) < new Date();
       html += `<div style="background:var(--bg3);border:1px solid var(--border);border-radius:8px;padding:10px 12px;cursor:pointer;"
-        onclick="openEditTask('${t.id}')"
+        onclick="openTaskDetail('${t.id}')"
         onmouseover="this.style.borderColor='var(--accent)'" onmouseout="this.style.borderColor='var(--border)'">
         <div style="font-size:12.5px;font-weight:600;margin-bottom:6px;${t.status==='Done'?'text-decoration:line-through;color:var(--text3);':''}">${escapeHtml(t.title)}</div>
         <div style="display:flex;flex-wrap:wrap;gap:4px;align-items:center;">
@@ -3349,6 +3354,103 @@ function openEditTask(taskId) {
   const t = tasks.find(x=>x.id===taskId);
   if(!t) return;
   _openTaskModal(t);
+}
+
+function openTaskDetail(taskId) {
+  const t = tasks.find(x=>x.id===taskId);
+  if(!t) return;
+  const job = t.jobId ? getJob(parseInt(t.jobId)) : null;
+  const cand = t.candidateId ? getCand(parseInt(t.candidateId)) : null;
+  const s = getSettings();
+  const team = s.team || [];
+  const assignee = t.assigneeIdx !== undefined ? team[t.assigneeIdx] : null;
+  const overdue = t.dueDate && t.status !== TASK_STATUSES[TASK_STATUSES.length-1] && new Date(t.dueDate) < new Date();
+  const statusColor = TASK_STATUS_COLOR[t.status] || 'var(--text3)';
+
+  document.getElementById('modal-title').innerHTML =
+    `<span style="display:flex;align-items:center;gap:8px;">
+      <span style="width:10px;height:10px;border-radius:50%;background:${statusColor};flex-shrink:0;"></span>
+      ${escapeHtml(t.title)}
+    </span>`;
+
+  document.getElementById('modal-body').innerHTML = `
+    <!-- Status quick-select -->
+    <div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:16px;">
+      ${TASK_STATUSES.map(s => `
+        <button onclick="quickSetTaskStatus('${t.id}','${s}')"
+          style="padding:5px 12px;border-radius:20px;border:1.5px solid ${s===t.status?statusColor:'var(--border)'};
+            background:${s===t.status?statusColor+'20':'var(--bg3)'};color:${s===t.status?statusColor:'var(--text2)'};
+            font-size:12px;font-weight:${s===t.status?'700':'500'};cursor:pointer;transition:all 0.15s;">
+          ${s===TASK_STATUSES[TASK_STATUSES.length-1]&&s===t.status?'✓ ':''} ${s}
+        </button>`).join('')}
+    </div>
+
+    <!-- Description -->
+    ${t.description ? `<div style="background:var(--bg3);border-radius:8px;padding:12px 14px;margin-bottom:16px;font-size:13px;color:var(--text2);line-height:1.6;">${escapeHtml(t.description)}</div>` : ''}
+
+    <!-- Meta grid -->
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:16px;">
+      <div style="background:var(--bg3);border-radius:8px;padding:10px 12px;">
+        <div style="font-size:10px;font-weight:700;text-transform:uppercase;color:var(--text3);letter-spacing:0.5px;margin-bottom:4px;">Priority</div>
+        <div style="font-size:13px;font-weight:600;color:${TASK_PRIORITY_COLOR[t.priority]||'var(--text)'};">${TASK_PRIORITY_ICON[t.priority]||''} ${t.priority||'–'}</div>
+      </div>
+      <div style="background:var(--bg3);border-radius:8px;padding:10px 12px;">
+        <div style="font-size:10px;font-weight:700;text-transform:uppercase;color:var(--text3);letter-spacing:0.5px;margin-bottom:4px;">Type</div>
+        <div style="font-size:13px;font-weight:600;">${t.type||'–'}</div>
+      </div>
+      <div style="background:var(--bg3);border-radius:8px;padding:10px 12px;">
+        <div style="font-size:10px;font-weight:700;text-transform:uppercase;color:var(--text3);letter-spacing:0.5px;margin-bottom:4px;">Due Date</div>
+        <div style="font-size:13px;font-weight:600;color:${overdue?'var(--red)':'var(--text)'};">
+          ${t.dueDate ? (overdue?'⚠ ':'')+new Date(t.dueDate+'T00:00:00').toLocaleDateString('en-MY',{day:'numeric',month:'short',year:'numeric'}) : '–'}
+        </div>
+      </div>
+      <div style="background:var(--bg3);border-radius:8px;padding:10px 12px;">
+        <div style="font-size:10px;font-weight:700;text-transform:uppercase;color:var(--text3);letter-spacing:0.5px;margin-bottom:4px;">Assigned To</div>
+        <div style="font-size:13px;font-weight:600;">${assignee ? escapeHtml(assignee.name) : '–'}</div>
+      </div>
+      ${job ? `<div style="background:var(--bg3);border-radius:8px;padding:10px 12px;">
+        <div style="font-size:10px;font-weight:700;text-transform:uppercase;color:var(--text3);letter-spacing:0.5px;margin-bottom:4px;">Linked Job</div>
+        <div style="font-size:13px;font-weight:600;color:var(--accent);cursor:pointer;" onclick="closeModal();showPage('jobs',null);setTimeout(()=>openJobDetail(${job.id}),100)">${escapeHtml(job.title)}</div>
+      </div>` : ''}
+      ${cand ? `<div style="background:var(--bg3);border-radius:8px;padding:10px 12px;">
+        <div style="font-size:10px;font-weight:700;text-transform:uppercase;color:var(--text3);letter-spacing:0.5px;margin-bottom:4px;">Candidate</div>
+        <div style="font-size:13px;font-weight:600;color:var(--accent);cursor:pointer;" onclick="closeModal();openCandProfile(${cand.id})">${escapeHtml(cand.name)}</div>
+      </div>` : ''}
+    </div>
+
+    <!-- Attachments -->
+    ${(t.attachments||[]).length ? `
+      <div style="margin-bottom:16px;">
+        <div style="font-size:10px;font-weight:700;text-transform:uppercase;color:var(--text3);letter-spacing:0.5px;margin-bottom:8px;">Attachments (${t.attachments.length})</div>
+        ${t.attachments.map((a,i)=>`
+          <div style="display:flex;align-items:center;gap:8px;padding:7px 10px;background:var(--bg3);border-radius:7px;margin-bottom:5px;">
+            <span>📎</span>
+            <span style="flex:1;font-size:12px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${escapeHtml(a.name)}</span>
+            <button class="btn btn-ghost btn-sm" style="padding:2px 8px;font-size:11px;" onclick="downloadTaskAttachment('${t.id}',${i})">⬇</button>
+          </div>`).join('')}
+      </div>` : ''}`;
+
+  document.getElementById('modal-footer').innerHTML = `
+    <button class="btn btn-ghost" style="color:var(--red);margin-right:auto;" onclick="if(confirm('Delete this task?')){deleteTask('${t.id}')}">🗑 Delete</button>
+    <button class="btn btn-ghost" onclick="closeModal()">Close</button>
+    <button class="btn btn-primary" onclick="closeModal();openEditTask('${t.id}')">✏️ Edit</button>`;
+
+  document.getElementById('modal-overlay').classList.add('open');
+}
+
+function quickSetTaskStatus(taskId, status) {
+  const t = tasks.find(x=>x.id===taskId);
+  if(!t) return;
+  t.status = status;
+  t.updatedAt = Date.now();
+  save();
+  // Refresh the modal to show new status
+  openTaskDetail(taskId);
+  // Refresh background
+  const activePage = document.querySelector('.page.active')?.id;
+  if(activePage === 'page-tasks') renderTasks();
+  updateSidebarBadges();
+  showToast(`Marked as ${status} ✓`);
 }
 
 function _openTaskModal(t, defaultJobId='', defaultStatus='', defaultCandId='') {
@@ -3774,7 +3876,7 @@ function handleNotifAction(i) {
   if(n.actionType==='feedback'&&n.candId) openAddFeedback(n.candId);
   else if(n.actionType==='profile'&&n.candId) openCandProfile(n.candId);
   else if(n.actionType==='offer'&&n.candId) { showPage('offers',null); }
-  else if(n.actionType==='task'&&n.taskId) { showPage('tasks',null); setTimeout(()=>openEditTask(n.taskId),200); }
+  else if(n.actionType==='task'&&n.taskId) { showPage('tasks',null); setTimeout(()=>openTaskDetail(n.taskId),200); }
 }
 
 function markAllRead() {
@@ -5341,6 +5443,13 @@ function renderCandProfileContent(id, fromJobId=null) {
   const el = document.getElementById('candprofile-content');
   el.style.cssText = 'flex:1;display:flex;flex-direction:column;overflow:hidden;min-height:0;';
 
+  const c = getCand(id);
+  if(!c) return;
+  const job = getJob(c.jobId);
+  const allFeedback = (c.feedback||[]).slice().sort((a,b)=>new Date(b.createdAt||b.date||0)-new Date(a.createdAt||a.date||0));
+  const allInterviews = (c.interviews||[]).slice().sort((a,b)=>new Date(b.date||0)-new Date(a.date||0));
+  const stars = Array(5).fill(0).map((_,i)=>'<span style="color:' + (i<(c.rating||0)?'var(--amber)':'var(--border2)') + ';cursor:pointer;font-size:18px;" onclick="rateCand(' + id + ',' + (i+1) + ')">' + (i<(c.rating||0)?'★':'☆') + '</span>').join('');
+
   // Prev/Next navigation
   // Priority: fromJobId (came from job detail) > _candActiveJobId (came from candidates page) > all
   const navJobId = fromJobId || _candActiveJobId;
@@ -5713,7 +5822,7 @@ function buildCandTasksHTML(c) {
     const overdue = t.dueDate && !done && new Date(t.dueDate) < new Date();
     const job = t.jobId ? getJob(parseInt(t.jobId)) : null;
     html += `<div style="display:flex;align-items:center;gap:10px;padding:9px 16px;border-bottom:1px solid var(--border);cursor:pointer;"
-      onclick="openEditTask('${t.id}')"
+      onclick="openTaskDetail('${t.id}')"
       onmouseover="this.style.background='var(--bg3)'" onmouseout="this.style.background=''">
       <div onclick="event.stopPropagation();toggleTaskDone('${t.id}')"
         style="width:15px;height:15px;border-radius:3px;flex-shrink:0;cursor:pointer;border:2px solid ${done?'var(--green)':'var(--border2)'};background:${done?'var(--green)':'transparent'};display:flex;align-items:center;justify-content:center;font-size:9px;color:#fff;">
@@ -6656,7 +6765,7 @@ function renderJobDetailPage(id, sortBy='date', selectedIds=[]) {
         const overdue = t.dueDate && t.status!==TASK_STATUSES[TASK_STATUSES.length-1] && new Date(t.dueDate) < new Date();
         const cand = t.candidateId ? getCand(parseInt(t.candidateId)) : null;
         return `<div style="display:flex;align-items:center;gap:10px;padding:9px 14px;border-bottom:1px solid var(--border);cursor:pointer;"
-          onclick="openEditTask('${t.id}')"
+          onclick="openTaskDetail('${t.id}')"
           onmouseover="this.style.background='var(--bg3)'" onmouseout="this.style.background=''">
           <div onclick="event.stopPropagation();toggleTaskDone('${t.id}')"
             style="width:15px;height:15px;border-radius:3px;flex-shrink:0;cursor:pointer;border:2px solid ${t.status===TASK_STATUSES[TASK_STATUSES.length-1]?'var(--green)':'var(--border2)'};background:${t.status===TASK_STATUSES[TASK_STATUSES.length-1]?'var(--green)':'transparent'};display:flex;align-items:center;justify-content:center;font-size:9px;color:#fff;">
@@ -8981,7 +9090,6 @@ function pdfZoomFit() { pdfZoom = 1.0; renderPdfPage(); }
 
 // ===================== PROJECTS =====================
 let projects = [];
-let tasks = [];
 
 const PROJECT_COLORS = ['#4f8ef7','#a78bfa','#34d399','#fbbf24','#f472b6','#fb7185','#06b6d4','#c084fc','#ff8c42','#a3e635'];
 
@@ -9759,7 +9867,7 @@ async function seedDefaults(uid) {
 }
 
 // ===================== OVERRIDE SAVE() =====================
-window.save = async () => {
+window._cloudSave = async () => {
   if(!currentUser) return;
   const uid = currentUser.uid;
   showSyncing(true);
