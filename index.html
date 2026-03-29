@@ -988,7 +988,7 @@
         </div>
       </div>
 
-      <div class="two-col">
+      <div class="two-col" style="align-items:start;">
         <div style="display:flex;flex-direction:column;gap:20px;">
           <!-- Active Jobs -->
           <div class="panel">
@@ -1003,6 +1003,15 @@
           <div class="panel">
             <div class="panel-header"><span class="panel-title">Hiring Funnel</span></div>
             <div class="funnel" id="funnel-chart"></div>
+          </div>
+
+          <!-- Onboarding / Joining Soon -->
+          <div class="panel" id="dash-onboarding-panel">
+            <div class="panel-header">
+              <span class="panel-title">🚀 Joining Soon</span>
+              <button class="btn btn-ghost btn-sm" onclick="showPage('onboarding',null)" style="font-size:12px">View All →</button>
+            </div>
+            <div id="dash-onboarding-list" class="panel-body"></div>
           </div>
         </div>
 
@@ -1052,21 +1061,21 @@
         <!-- Job search -->
         <div style="display:flex;align-items:center;background:var(--bg3);border:1px solid var(--border);border-radius:7px;overflow:hidden;min-width:160px;flex:1;max-width:260px;flex-shrink:0;">
           <span style="padding:0 8px;color:var(--text3);font-size:13px;">🔍</span>
-          <input type="text" id="job-search" placeholder="Search jobs..." oninput="renderJobs()"
+          <input type="text" id="job-search" placeholder="Search jobs..." oninput="dRenderJobs()"
             style="flex:1;background:transparent;border:none;outline:none;padding:7px 6px;font-size:12.5px;color:var(--text);font-family:inherit;min-width:80px;">
         </div>
-        <select class="filter-select" id="job-dept-filter" onchange="renderJobs()" style="flex-shrink:0;">
+        <select class="filter-select" id="job-dept-filter" onchange="dRenderJobs()" style="flex-shrink:0;">
           <option value="">All Depts</option>
         </select>
-        <select class="filter-select" id="job-status-filter" onchange="renderJobs()" style="flex-shrink:0;">
+        <select class="filter-select" id="job-status-filter" onchange="dRenderJobs()" style="flex-shrink:0;">
           <option value="">All Status</option>
           <option>Active</option><option>Paused</option><option>Closed</option>
         </select>
-        <select class="filter-select" id="job-type-filter" onchange="renderJobs()" style="flex-shrink:0;">
+        <select class="filter-select" id="job-type-filter" onchange="dRenderJobs()" style="flex-shrink:0;">
           <option value="">All Types</option>
           <option>Full-time</option><option>Part-time</option><option>Contract</option><option>Internship</option>
         </select>
-        <select class="filter-select" id="job-sort" onchange="renderJobs()" style="flex-shrink:0;">
+        <select class="filter-select" id="job-sort" onchange="dRenderJobs()" style="flex-shrink:0;">
           <option value="date">Newest</option>
           <option value="applicants">Most Applicants</option>
           <option value="title">Title A–Z</option>
@@ -1089,8 +1098,8 @@
     <div class="page" id="page-projects">
       <div class="filters-bar" style="justify-content:space-between;padding:12px 24px;">
         <div style="display:flex;gap:8px;align-items:center;">
-          <input class="search-bar" id="projects-search" placeholder="🔍 Search projects..." oninput="renderProjects()" style="width:220px;">
-          <select class="filter-select" id="projects-status-filter" onchange="renderProjects()">
+          <input class="search-bar" id="projects-search" placeholder="🔍 Search projects..." oninput="dRenderProjects()" style="width:220px;">
+          <select class="filter-select" id="projects-status-filter" onchange="dRenderProjects()">
             <option value="">All Status</option>
             <option value="Active">Active</option>
             <option value="On Hold">On Hold</option>
@@ -1117,7 +1126,7 @@
           <div style="padding:12px 14px;border-bottom:1px solid var(--border);">
             <div style="position:relative;">
               <span style="position:absolute;left:9px;top:50%;transform:translateY(-50%);color:var(--text3);font-size:12px;">🔍</span>
-              <input type="text" id="cand-job-sidebar-search" placeholder="Job name..." oninput="renderCandJobSidebar()"
+              <input type="text" id="cand-job-sidebar-search" placeholder="Job name..." oninput="dRenderCandJobSidebar()"
                 style="width:100%;background:var(--bg3);border:1px solid var(--border);border-radius:7px;padding:6px 10px 6px 28px;font-size:12px;color:var(--text);outline:none;font-family:inherit;">
             </div>
           </div>
@@ -1136,13 +1145,13 @@
           <div style="display:flex;align-items:center;gap:8px;padding:10px 18px;border-bottom:1px solid var(--border);background:var(--bg2);flex-shrink:0;flex-wrap:nowrap;overflow-x:auto;">
             <div style="display:flex;align-items:center;background:var(--bg3);border:1px solid var(--border);border-radius:7px;overflow:hidden;flex:1;max-width:360px;min-width:140px;">
               <span style="padding:0 8px;color:var(--text3);font-size:12px;flex-shrink:0;">🔍</span>
-              <input type="text" id="cand-search" placeholder="Search by name, phone, email..." oninput="renderCandidates()"
+              <input type="text" id="cand-search" placeholder="Search by name, phone, email..." oninput="dRenderCandidates()"
                 style="flex:1;background:transparent;border:none;outline:none;padding:7px 8px;font-size:12.5px;color:var(--text);font-family:inherit;min-width:80px;">
               <button onclick="document.getElementById('cand-search').value='';renderCandidates()"
                 style="background:none;border:none;color:var(--text3);cursor:pointer;padding:0 8px;font-size:12px;flex-shrink:0;">✕</button>
             </div>
             <!-- Hidden field selector (still functional, just minimal) -->
-            <select id="cand-search-field" onchange="renderCandidates()"
+            <select id="cand-search-field" onchange="dRenderCandidates()"
               style="background:var(--bg3);border:1px solid var(--border);border-radius:7px;padding:6px 8px;font-size:11.5px;color:var(--text2);cursor:pointer;outline:none;flex-shrink:0;">
               <option value="all">All Fields</option>
               <option value="name">Name</option>
@@ -1153,7 +1162,7 @@
               <option value="source">Source</option>
               <option value="resume">Resume Text</option>
             </select>
-            <select class="filter-select" id="cand-sort" onchange="renderCandidates()" style="flex-shrink:0;">
+            <select class="filter-select" id="cand-sort" onchange="dRenderCandidates()" style="flex-shrink:0;">
               <option value="date">Latest</option>
               <option value="name">Name A–Z</option>
               <option value="stage">Stage</option>
@@ -1220,7 +1229,7 @@
     <!-- PIPELINE PAGE -->
     <div class="page" id="page-pipeline">
       <div class="filters-bar">
-        <select class="filter-select" id="pipe-job-filter" onchange="renderPipeline()">
+        <select class="filter-select" id="pipe-job-filter" onchange="dRenderPipeline()">
           <option value="">All Jobs</option>
         </select>
       </div>
@@ -1271,13 +1280,13 @@
             <div style="font-size:12px;color:var(--text3);">Candidates in Pending Join — track tasks, docs, equipment and emails</div>
           </div>
           <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;">
-            <select id="onboarding-filter-status" onchange="renderOnboarding()" class="filter-select">
+            <select id="onboarding-filter-status" onchange="dRenderOnboarding()" class="filter-select">
               <option value="">All Statuses</option>
               <option value="not_started">Not Started</option>
               <option value="in_progress">In Progress</option>
               <option value="overdue">Has Overdue</option>
             </select>
-            <select id="onboarding-filter-job" onchange="renderOnboarding()" class="filter-select">
+            <select id="onboarding-filter-job" onchange="dRenderOnboarding()" class="filter-select">
               <option value="">All Jobs</option>
             </select>
             <button class="btn btn-ghost btn-sm" onclick="showPage('settings',null);setTimeout(()=>switchSettingsTab('s-onboarding'),80)">⚙️ Configure Templates</button>
@@ -1390,10 +1399,10 @@
         <div class="panel-header">
           <span class="panel-title">All Candidates — Full Report</span>
           <div style="display:flex;gap:8px;">
-            <select class="filter-select" id="report-job-filter" onchange="renderReports()">
+            <select class="filter-select" id="report-job-filter" onchange="dRenderReports()">
               <option value="">All Jobs</option>
             </select>
-            <select class="filter-select" id="report-stage-filter" onchange="renderReports()">
+            <select class="filter-select" id="report-stage-filter" onchange="dRenderReports()">
               <option value="">All Stages</option>
               <option>Applied</option><option>Screening</option><option>Interview</option><option>Offer</option><option>Hired</option><option>Rejected</option>
             </select>
@@ -1430,7 +1439,7 @@
         <div class="panel-header">
           <span class="panel-title">📬 Inbox</span>
           <div style="display:flex;gap:8px;">
-            <select class="filter-select" id="inbox-filter" onchange="renderInbox()">
+            <select class="filter-select" id="inbox-filter" onchange="dRenderInbox()">
               <option value="">All Notifications</option>
               <option value="unread">Unread Only</option>
               <option value="interviews">Interviews</option>
@@ -1455,10 +1464,10 @@
               <button id="tasks-view-board" class="btn btn-ghost btn-sm" style="border-radius:0;border:none;" onclick="switchTaskView('board')">⊞ Board</button>
               <button id="tasks-view-table" class="btn btn-primary btn-sm" style="border-radius:0;border:none;" onclick="switchTaskView('table')">☰ Table</button>
             </div>
-            <select id="tasks-job-filter" onchange="renderTasks()" style="background:var(--bg3);border:1px solid var(--border);border-radius:8px;padding:5px 10px;font-size:12.5px;color:var(--text);outline:none;">
+            <select id="tasks-job-filter" onchange="dRenderTasks()" style="background:var(--bg3);border:1px solid var(--border);border-radius:8px;padding:5px 10px;font-size:12.5px;color:var(--text);outline:none;">
               <option value="">All Jobs</option>
             </select>
-            <select id="tasks-status-filter" onchange="renderTasks()" style="background:var(--bg3);border:1px solid var(--border);border-radius:8px;padding:5px 10px;font-size:12.5px;color:var(--text);outline:none;">
+            <select id="tasks-status-filter" onchange="dRenderTasks()" style="background:var(--bg3);border:1px solid var(--border);border-radius:8px;padding:5px 10px;font-size:12.5px;color:var(--text);outline:none;">
               <option value="">All Statuses</option>
               <option value="New">New</option>
               <option value="In Progress">In Progress</option>
@@ -1857,6 +1866,43 @@ function renderDashboard() {
           </div>`;
         }).join('')+
         `<div style="padding:8px 16px;font-size:11px;color:var(--text3);">${tasks.filter(t=>t.status!==TASK_STATUSES[TASK_STATUSES.length-1]).length} open · ${tasks.filter(t=>t.status===TASK_STATUSES[TASK_STATUSES.length-1]).length} done</div>`;
+    }
+  }
+
+  // Joining Soon widget
+  const obEl = document.getElementById('dash-onboarding-list');
+  if(obEl) {
+    const today = new Date().toISOString().split('T')[0];
+    const pendingJoin = candidates.filter(c => c.stage === 'Pending Join');
+    if(!pendingJoin.length) {
+      obEl.innerHTML = '<div style="padding:16px;text-align:center;color:var(--text3);font-size:12px;">No candidates pending onboarding</div>';
+    } else {
+      obEl.innerHTML = pendingJoin.slice(0,5).map(c => {
+        const accepted = offers.find(o => o.candidateId === c.id && o.status === 'Accepted');
+        const startDate = accepted?.startDate || '';
+        const job = getJob(c.jobId);
+        const daysUntil = startDate ? Math.round((new Date(startDate) - new Date(today)) / 86400000) : null;
+        const countColor = daysUntil === null ? 'var(--text3)' : daysUntil < 0 ? 'var(--red)' : daysUntil <= 3 ? 'var(--amber)' : 'var(--green)';
+        const countText = daysUntil === null ? 'No start date' : daysUntil === 0 ? '🎉 Today!' : daysUntil < 0 ? Math.abs(daysUntil) + 'd overdue' : daysUntil + 'd to go';
+        const onb = getCandOnboarding(c);
+        const obTasks = tasks.filter(t => t._onboarding && String(t.candidateId) === String(c.id));
+        const doneTasks = obTasks.filter(t => t.status === 'Done').length;
+        const progress = obTasks.length ? Math.round(doneTasks / obTasks.length * 100) : 0;
+        return `<div style="display:flex;align-items:center;gap:10px;padding:10px 16px;border-bottom:1px solid var(--border);cursor:pointer;transition:background 0.1s;"
+          onclick="openCandProfile(${c.id})"
+          onmouseover="this.style.background='var(--bg3)'" onmouseout="this.style.background=''">
+          <div style="width:30px;height:30px;border-radius:50%;background:${c.color}33;color:${c.color};display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;flex-shrink:0;">${c.initials}</div>
+          <div style="flex:1;min-width:0;">
+            <div style="font-size:13px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${escapeHtml(c.name)}</div>
+            <div style="font-size:11px;color:var(--text3);">${job ? escapeHtml(job.title) : '–'}</div>
+          </div>
+          <div style="text-align:right;flex-shrink:0;">
+            <div style="font-size:12px;font-weight:700;color:${countColor};">${countText}</div>
+            ${obTasks.length ? `<div style="font-size:10px;color:var(--text3);">${doneTasks}/${obTasks.length} tasks</div>` : '<div style="font-size:10px;color:var(--text3);">Not started</div>'}
+          </div>
+        </div>`;
+      }).join('') +
+      (pendingJoin.length > 5 ? `<div style="padding:8px 16px;font-size:11px;color:var(--text3);">+${pendingJoin.length - 5} more</div>` : '');
     }
   }
 }
@@ -7000,21 +7046,74 @@ function renderJobDetailPage(id, sortBy='date', selectedIds=[]) {
       '<div style="display:flex;align-items:center;gap:8px;padding:8px 16px;background:var(--bg3);border-bottom:1px solid var(--border);font-size:12px;color:var(--text3);">' +
       '<input type="checkbox" ' + (allSelected?'checked':'') + ' onchange="toggleSelectAllJobCands(' + id + ',this.checked,\'' + sortBy + '\')" style="cursor:pointer;">' +
       '<span>' + (allSelected?'Deselect all':'Select all ' + sortedCands.length) + '</span></div>' : '') +
-    // Candidate rows
+    // Candidate rows — Feishu style with inline work/education
     sortedCands.map(c => {
       const stage = getCandStageForJob(c, id);
       const isSelected = selectedIds.includes(c.id);
-      return '<div style="display:flex;align-items:center;gap:10px;padding:10px 16px;border-bottom:1px solid var(--border);cursor:pointer;transition:background 0.1s;' + (isSelected?'background:var(--accent-dim);':'') + '"' +
+      const stageColor = stageColors[stage] || 'var(--text3)';
+      const candNotes = (c.notesList||[]).slice(-1)[0]?.text || '';
+      const latestFeedback = (c.feedback||[]).slice(-1)[0];
+      const feedbackLabel = latestFeedback
+        ? (latestFeedback.recommendation === 'Strong Yes' || latestFeedback.recommendation === 'Yes' ? '✅ Approved' :
+           latestFeedback.recommendation === 'No' || latestFeedback.recommendation === 'Strong No' ? '❌ Rejected' : '🤔 Maybe')
+        : null;
+      const feedbackColor = latestFeedback
+        ? (latestFeedback.recommendation === 'Strong Yes' || latestFeedback.recommendation === 'Yes' ? 'var(--green)' :
+           latestFeedback.recommendation === 'No' || latestFeedback.recommendation === 'Strong No' ? 'var(--red)' : 'var(--amber)')
+        : null;
+
+      return '<div style="display:flex;align-items:flex-start;gap:12px;padding:14px 16px;border-bottom:1px solid var(--border);transition:background 0.1s;' + (isSelected?'background:var(--accent-dim);':'') + '"' +
         ' onmouseover="if(!this.style.background.includes(\'accent\'))this.style.background=\'var(--bg3)\'"' +
         ' onmouseout="if(!this.style.background.includes(\'accent\'))this.style.background=\'\'">' +
-        '<input type="checkbox" ' + (isSelected?'checked':'') + ' onclick="event.stopPropagation();toggleCandSelectPage(' + id + ',' + c.id + ',\'' + sortBy + '\')" style="cursor:pointer;flex-shrink:0;">' +
-        '<div style="width:30px;height:30px;border-radius:50%;background:' + c.color + '33;color:' + c.color + ';display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;flex-shrink:0;cursor:pointer;" onclick="openCandProfile(' + c.id + ',true,' + id + ')">' + c.initials + '</div>' +
+
+        // Checkbox
+        '<input type="checkbox" ' + (isSelected?'checked':'') + ' onclick="event.stopPropagation();toggleCandSelectPage(' + id + ',' + c.id + ',\'' + sortBy + '\')" style="cursor:pointer;flex-shrink:0;margin-top:3px;">' +
+
+        // Avatar
+        '<div style="width:34px;height:34px;border-radius:50%;background:' + c.color + '33;color:' + c.color + ';display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;flex-shrink:0;cursor:pointer;" onclick="openCandProfile(' + c.id + ',true,' + id + ')">' + c.initials + '</div>' +
+
+        // Main info — left block (like Feishu)
         '<div style="flex:1;min-width:0;cursor:pointer;" onclick="openCandProfile(' + c.id + ',true,' + id + ')">' +
-        '<div style="font-size:13px;font-weight:600;">' + escapeHtml(c.name) + '</div>' +
-        '<div style="font-size:11px;color:var(--text3);">' + (c.currentTitle||c.email||'') + '</div></div>' +
-        '<div style="display:flex;flex-direction:column;align-items:flex-end;gap:3px;flex-shrink:0;">' +
-        '<span class="badge ' + (stageBadge[stage]||'badge-gray') + '">' + stage + '</span>' +
-        '<button class="btn btn-ghost btn-sm" style="flex-shrink:0;padding:4px 8px;" onclick="openCandProfile(' + c.id + ',true,' + id + ')">→</button>' +
+
+        // Name row
+        '<div style="display:flex;align-items:center;gap:8px;margin-bottom:5px;flex-wrap:wrap;">' +
+        '<span style="font-size:13.5px;font-weight:700;">' + escapeHtml(c.name) + '</span>' +
+        (c.exp ? '<span style="font-size:12px;color:var(--text3);">' + escapeHtml(c.exp) + ' experience</span>' : '') +
+        (c.source ? '<span style="font-size:10px;background:var(--amber-dim);color:var(--amber);border-radius:3px;padding:1px 6px;font-weight:600;">' + escapeHtml(c.source) + '</span>' : '') +
+        '</div>' +
+
+        // Work history line (current title + location)
+        (c.currentTitle || c.location ?
+          '<div style="display:flex;align-items:center;gap:6px;font-size:12px;color:var(--text2);margin-bottom:3px;">' +
+          '<span style="font-size:13px;">🏢</span>' +
+          (c.currentTitle ? '<span>' + escapeHtml(c.currentTitle) + '</span>' : '') +
+          (c.currentTitle && c.location ? '<span style="color:var(--border2);">·</span>' : '') +
+          (c.location ? '<span>' + escapeHtml(c.location) + '</span>' : '') +
+          '</div>' : '') +
+
+        // Skills (top 4)
+        ((c.skills||[]).length ?
+          '<div style="display:flex;flex-wrap:wrap;gap:4px;margin-top:5px;">' +
+          (c.skills||[]).slice(0,4).map(s => '<span style="font-size:10px;background:var(--bg4);border:1px solid var(--border);border-radius:3px;padding:1px 6px;color:var(--text2);">' + escapeHtml(s) + '</span>').join('') +
+          ((c.skills||[]).length > 4 ? '<span style="font-size:10px;color:var(--text3);">+' + ((c.skills||[]).length - 4) + '</span>' : '') +
+          '</div>' : '') +
+
+        // Latest note preview
+        (candNotes ?
+          '<div style="font-size:11.5px;color:var(--text3);margin-top:5px;font-style:italic;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:480px;">' +
+          '📝 ' + escapeHtml(candNotes.slice(0,120)) + (candNotes.length>120?'…':'') +
+          '</div>' : '') +
+
+        '</div>' +
+
+        // Right block — stage + feedback + applied date + action
+        '<div style="display:flex;flex-direction:column;align-items:flex-end;gap:5px;flex-shrink:0;min-width:140px;">' +
+        '<span style="padding:3px 10px;border-radius:20px;font-size:11px;font-weight:700;background:' + stageColor + '18;color:' + stageColor + ';border:1px solid ' + stageColor + '40;">' + stage + '</span>' +
+        (feedbackLabel ? '<span style="font-size:11px;font-weight:600;color:' + feedbackColor + ';">' + feedbackLabel + '</span>' : '<span style="font-size:11px;color:var(--text3);">No evaluation</span>') +
+        '<span style="font-size:10.5px;color:var(--text3);">Applied ' + (c.applied||'–') + '</span>' +
+        '<button class="btn btn-ghost btn-sm" style="padding:3px 10px;font-size:11px;" onclick="event.stopPropagation();openCandProfile(' + c.id + ',true,' + id + ')">View →</button>' +
+        '</div>' +
+
         '</div>';
     }).join('') +
     (sortedCands.length===0?'<div style="text-align:center;padding:32px;color:var(--text3);font-size:13px;">No candidates yet — <button class="btn btn-primary btn-sm" onclick="openModal(\'addCandidate\')">Add one</button></div>':'') +
@@ -7136,119 +7235,6 @@ function renderJobDetailPanel(id, sortBy='date', selectedIds=[]) {
   renderJobDetailPage(id, sortBy, selectedIds);
 }
 
-function renderJobDetailPanel(id, sortBy='date', selectedIds=[]) {
-  const j = getJob(id); if(!j) return;
-  const jobCands = candidates.filter(c=>getCandJobIds(c).includes(id));
-
-  // Sort candidates
-  let sortedCands = [...jobCands];
-  if(sortBy==='name')   sortedCands.sort((a,b)=>a.name.localeCompare(b.name));
-  else if(sortBy==='score')  sortedCands.sort((a,b)=>b.score-a.score);
-  else if(sortBy==='stage')  sortedCands.sort((a,b)=>stages.indexOf(getCandStageForJob(a,id))-stages.indexOf(getCandStageForJob(b,id)));
-  else if(sortBy==='title')  sortedCands.sort((a,b)=>(a.currentTitle||'').localeCompare(b.currentTitle||''));
-  else sortedCands.sort((a,b)=>new Date(b.applied||0)-new Date(a.applied||0));
-
-  const stageCounts = stages.map(s=>({ s, n: jobCands.filter(c=>getCandStageForJob(c,id)===s).length }));
-  const allSelected = selectedIds.length===sortedCands.length && sortedCands.length>0;
-
-  document.getElementById('dp-body').innerHTML = `
-    <!-- Badges + Actions -->
-    <div class="detail-section">
-      <div style="display:flex;gap:6px;flex-wrap:wrap">
-        <span class="badge ${j.status==='Active'?'badge-green':j.status==='Paused'?'badge-amber':'badge-gray'}">${j.status}</span>
-        <span class="badge badge-gray">${j.type}</span>
-        <span class="badge ${j.priority==='High'?'badge-red':j.priority==='Medium'?'badge-amber':'badge-gray'}">${j.priority} Priority</span>
-      </div>
-    </div>
-    <div class="detail-section">
-      <div style="display:flex;gap:6px;flex-wrap:wrap">
-        <button class="btn btn-primary btn-sm" onclick="openEditJob(${j.id})">✏️ Edit</button>
-        <button class="btn btn-ghost btn-sm" style="color:var(--amber)" onclick="toggleJobStatus(${j.id},'${j.status==='Active'?'Paused':'Active'}')">${j.status==='Active'?'⏸ Pause':'▶ Activate'}</button>
-        <button class="btn btn-ghost btn-sm" onclick="copyJobLink(${j.id})">🔗 Copy</button>
-        <button class="btn btn-ghost btn-sm" style="color:var(--red)" onclick="deleteJob(${j.id})">🗑 Delete</button>
-      </div>
-    </div>
-
-    <!-- Details -->
-    <div class="detail-section">
-      <div class="detail-section-title">Details</div>
-      <div class="detail-row"><span class="detail-row-label">Department</span><span class="detail-row-val">${j.dept}</span></div>
-      <div class="detail-row"><span class="detail-row-label">Location</span><span class="detail-row-val">${j.location}</span></div>
-      <div class="detail-row"><span class="detail-row-label">Salary</span><span class="detail-row-val" style="font-family:'JetBrains Mono'">${j.salary}</span></div>
-      <div class="detail-row"><span class="detail-row-label">Posted</span><span class="detail-row-val" style="font-family:'JetBrains Mono';font-size:12px">${j.posted}</span></div>
-      <div class="detail-row">
-        <span class="detail-row-label">Projects</span>
-        <span class="detail-row-val">${projects.filter(p=>(p.jobIds||[]).includes(j.id)).map(p=>
-          `<span onclick="openProjectDetail(${p.id})" style="background:${p.color}22;color:${p.color};border-radius:4px;padding:2px 7px;font-size:11px;font-weight:600;cursor:pointer;">${p.icon||'📁'} ${p.name}</span>`
-        ).join(' ')||'<span style="color:var(--text3);font-size:12px">None</span>'}</span>
-      </div>
-    </div>
-
-    <!-- Pipeline summary -->
-    <div class="detail-section">
-      <div class="detail-section-title">Pipeline</div>
-      <div style="display:flex;gap:2px;height:8px;border-radius:4px;overflow:hidden;margin-bottom:8px;">
-        ${stageCounts.filter(x=>x.n>0).map(x=>`<div title="${x.s}: ${x.n}" style="flex:${x.n};background:${stageColors[x.s]};opacity:0.85;"></div>`).join('')||'<div style="flex:1;background:var(--border);border-radius:4px;"></div>'}
-      </div>
-      ${stageCounts.map(x=>`<div class="detail-row" style="cursor:pointer" onclick="filterCandsByJob(${j.id},'${x.s}')">
-        <span class="detail-row-label" style="color:${stageColors[x.s]||'var(--text2)'}">${x.s}</span>
-        <span class="detail-row-val">${x.n}</span>
-      </div>`).join('')}
-    </div>
-
-    <!-- Candidates section with sort + multi-select -->
-    <div class="detail-section" style="gap:0;">
-      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;">
-        <div class="detail-section-title" style="margin:0;">Candidates (${jobCands.length})</div>
-        <div style="display:flex;gap:6px;align-items:center;">
-          <select onchange="renderJobDetailPanel(${id},this.value,[])" style="font-size:11px;padding:3px 6px;background:var(--bg3);border:1px solid var(--border);border-radius:6px;color:var(--text2);cursor:pointer;">
-            <option value="date" ${sortBy==='date'?'selected':''}>Latest</option>
-            <option value="name" ${sortBy==='name'?'selected':''}>Name A–Z</option>
-            
-            <option value="stage" ${sortBy==='stage'?'selected':''}>Stage</option>
-            <option value="title" ${sortBy==='title'?'selected':''}>Job Title</option>
-          </select>
-          <button class="btn btn-primary btn-sm" onclick="openModal('addCandidate')" style="font-size:11px;">+ Add</button>
-        </div>
-      </div>
-
-      <!-- Select all row -->
-      ${sortedCands.length>0?`<div style="display:flex;align-items:center;gap:8px;padding:6px 8px;background:var(--bg3);border-radius:6px;margin-bottom:6px;font-size:12px;color:var(--text3);">
-        <input type="checkbox" id="select-all-cands-${id}" ${allSelected?'checked':''} onchange="toggleSelectAllCands(${id},'${sortBy}')" style="cursor:pointer;">
-        <label for="select-all-cands-${id}" style="cursor:pointer;">${allSelected?'Deselect all':'Select all ' + sortedCands.length}</label>
-        ${selectedIds.length>0?`<span style="color:var(--accent);font-weight:700;margin-left:auto;">${selectedIds.length} selected</span>`:''}
-      </div>`:''}
-
-      <!-- Candidate rows -->
-      <div id="job-cand-list-${id}">
-        ${sortedCands.length ? sortedCands.map(c=>{
-          const stage = getCandStageForJob(c,id);
-          const isSelected = selectedIds.includes(c.id);
-          return `<div class="detail-row ${isSelected?'cand-row-selected':''}" style="cursor:pointer;border-radius:6px;padding:8px;margin-bottom:4px;transition:background 0.1s;" onmouseover="if(!this.classList.contains('cand-row-selected'))this.style.background='var(--bg3)'" onmouseout="if(!this.classList.contains('cand-row-selected'))this.style.background=''">
-            <input type="checkbox" ${isSelected?'checked':''} onclick="event.stopPropagation();toggleCandSelect(${id},${c.id},'${sortBy}')" style="cursor:pointer;margin-right:6px;">
-            <div class="cand-avatar" style="width:28px;height:28px;font-size:11px;background:${c.color}33;color:${c.color};flex-shrink:0;" onclick="openCandProfile(${c.id})">${c.initials}</div>
-            <div style="flex:1;min-width:0;" onclick="openCandProfile(${c.id})">
-              <div style="font-size:12px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${escapeHtml(c.name)}</div>
-              <div style="font-size:10px;color:var(--text3);">${c.currentTitle||c.exp||''}</div>
-            </div>
-            <div style="display:flex;flex-direction:column;align-items:flex-end;gap:3px;flex-shrink:0;">
-              <span class="badge ${stageBadge[stage]||'badge-gray'}" style="font-size:10px;">${stage}</span>
-              
-            </div>
-          </div>`;
-        }).join('') : '<div style="color:var(--text3);font-size:12px;padding:12px 0;text-align:center;">No candidates yet</div>'}
-      </div>
-
-      <!-- Bulk action bar -->
-      ${selectedIds.length>0?`<div class="bulk-action-bar">
-        <span style="font-size:12px;font-weight:700;color:var(--accent);">${selectedIds.length} selected</span>
-        <button class="btn btn-ghost btn-sm" onclick="bulkMoveStage(${id},[${selectedIds}],'${sortBy}')">↕ Move Stage</button>
-        <button class="btn btn-ghost btn-sm" onclick="bulkAddToJob(${id},[${selectedIds}],'${sortBy}')">+ Add to Job</button>
-        <button class="btn btn-ghost btn-sm" style="color:var(--red);" onclick="bulkDelete(${id},[${selectedIds}],'${sortBy}')">🗑 Delete</button>
-        <button class="btn btn-ghost btn-sm" onclick="renderJobDetailPanel(${id},'${sortBy}',[])" style="margin-left:auto;">✕ Clear</button>
-      </div>`:''}
-    </div>`;
-}
 
 function toggleSidebar() {
   document.body.classList.toggle('sidebar-collapsed');
@@ -8440,6 +8426,24 @@ function closeModalOuter(e) { if(e.target===document.getElementById('modal-overl
 // ===================== SEARCH =====================
 // ===================== GLOBAL SEARCH =====================
 let searchDebounceTimer = null;
+
+// ── Shared debounce utility ──
+const _debounceTimers = {};
+function debounced(key, fn, delay=220) {
+  clearTimeout(_debounceTimers[key]);
+  _debounceTimers[key] = setTimeout(fn, delay);
+}
+
+// Debounced wrappers for all search/filter inputs
+function dRenderJobs()          { debounced('jobs',          renderJobs); }
+function dRenderCandidates()    { debounced('candidates',    renderCandidates); }
+function dRenderCandJobSidebar(){ debounced('candSidebar',   renderCandJobSidebar); }
+function dRenderProjects()      { debounced('projects',      renderProjects); }
+function dRenderPipeline()      { debounced('pipeline',      renderPipeline); }
+function dRenderTasks()         { debounced('tasks',         renderTasks); }
+function dRenderReports()       { debounced('reports',       renderReports); }
+function dRenderInbox()         { debounced('inbox',         renderInbox); }
+function dRenderOnboarding()    { debounced('onboarding',    renderOnboarding); }
 
 function handleGlobalSearch(val) {
   const clearBtn = document.getElementById('global-search-clear');
