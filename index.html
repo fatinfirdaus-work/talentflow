@@ -5308,14 +5308,12 @@ function resetEmailTemplateOverride(tplId) {
 }
 
 // Apply saved overrides when using templates — patch fillEmailTemplate to use overrides
-const _origFillEmailTemplate = window.fillEmailTemplate;
 window.fillEmailTemplate = function(text, vars) {
-  return typeof _origFillEmailTemplate === 'function' ? _origFillEmailTemplate(text, vars) :
-    text.replace(/\{([\w_]+)\}/g, (_, k) => vars[k] !== undefined ? vars[k] : '{' + k + '}');
+  if(typeof text !== 'string') return text;
+  return text.replace(/\{([\w_]+)\}/g, (_, k) => vars[k] !== undefined ? vars[k] : '{' + k + '}');
 };
 
 // Patch EMAIL_TEMPLATES to apply saved overrides at runtime
-const _origGetEmailVariables = window.getEmailVariables;
 function getEffectiveTpl(tplId) {
   const tpl = EMAIL_TEMPLATES.find(t => t.id === tplId);
   if(!tpl) return tpl;
