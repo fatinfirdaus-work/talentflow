@@ -816,7 +816,14 @@
   [onclick] { cursor:pointer; }
   a { transition:color 0.15s; }
   a:hover { opacity:0.8; }
+  /* Material Icons Outlined — nav sidebar */
+  .nav-icon { font-family: 'Material Icons Outlined'; font-weight: normal; font-style: normal;
+    font-size: 20px; line-height: 1; letter-spacing: normal; text-transform: none;
+    display: inline-block; white-space: nowrap; word-wrap: normal; direction: ltr;
+    -webkit-font-smoothing: antialiased; width: 20px; text-align: center; flex-shrink: 0; }
+  body.sidebar-collapsed .sidebar .nav-icon { font-size: 20px; margin: 0; }
 </style>
+<link href="https://fonts.googleapis.com/icon?family=Material+Icons+Outlined" rel="stylesheet">
 </head>
 <body>
 
@@ -871,56 +878,56 @@
     <div class="nav-section">
       <div class="nav-label">Overview</div>
       <div class="nav-item active" data-label="Dashboard" onclick="showPage('dashboard', this)">
-        <span class="icon">📊</span><span class="nav-text">Dashboard</span>
+        <span class="nav-icon material-icons-outlined">dashboard</span><span class="nav-text">Dashboard</span>
       </div>
       <div class="nav-item" data-label="Analytics" onclick="showPage('analytics', this)">
-        <span class="icon">📈</span><span class="nav-text">Analytics</span>
+        <span class="nav-icon material-icons-outlined">bar_chart</span><span class="nav-text">Analytics</span>
       </div>
     </div>
     <div class="nav-section">
       <div class="nav-label">Recruiting</div>
       <div class="nav-item" data-label="Projects" onclick="showPage('projects', this)">
-        <span class="icon">📁</span><span class="nav-text">Projects</span>
+        <span class="nav-icon material-icons-outlined">folder</span><span class="nav-text">Projects</span>
       </div>
       <div class="nav-item" data-label="Jobs" onclick="showPage('jobs', this)">
-        <span class="icon">💼</span><span class="nav-text">Jobs</span>
+        <span class="nav-icon material-icons-outlined">work</span><span class="nav-text">Jobs</span>
         <span class="nav-badge" id="badge-jobs"></span>
       </div>
       <div class="nav-item" data-label="Candidates" onclick="showPage('candidates', this)">
-        <span class="icon">👥</span><span class="nav-text">Candidates</span>
+        <span class="nav-icon material-icons-outlined">people</span><span class="nav-text">Candidates</span>
         <span class="nav-badge" id="badge-candidates"></span>
       </div>
       <div class="nav-item" data-label="Pipeline" onclick="showPage('pipeline', this)">
-        <span class="icon">🔀</span><span class="nav-text">Pipeline</span>
+        <span class="nav-icon material-icons-outlined">account_tree</span><span class="nav-text">Pipeline</span>
       </div>
       <div class="nav-item" data-label="Interviews" onclick="showPage('interviews', this)">
-        <span class="icon">📅</span><span class="nav-text">Interviews</span>
+        <span class="nav-icon material-icons-outlined">event</span><span class="nav-text">Interviews</span>
         <span class="nav-badge" id="badge-interviews"></span>
       </div>
       <div class="nav-item" data-label="Offers" onclick="showPage('offers', this)">
-        <span class="icon">📄</span><span class="nav-text">Offers</span>
+        <span class="nav-icon material-icons-outlined">description</span><span class="nav-text">Offers</span>
         <span class="nav-badge" id="badge-offers"></span>
       </div>
       <div class="nav-item" data-label="Onboarding" onclick="showPage('onboarding', this)">
-        <span class="icon">🚀</span><span class="nav-text">Onboarding</span>
+        <span class="nav-icon material-icons-outlined">rocket_launch</span><span class="nav-text">Onboarding</span>
         <span class="nav-badge" id="badge-onboarding" style="background:var(--purple)"></span>
       </div>
     </div>
     <div class="nav-section">
       <div class="nav-label">Workspace</div>
       <div class="nav-item" data-label="Reports" onclick="showPage('reports', this)">
-        <span class="icon">📋</span><span class="nav-text">Reports</span>
+        <span class="nav-icon material-icons-outlined">summarize</span><span class="nav-text">Reports</span>
       </div>
       <div class="nav-item" data-label="Inbox" onclick="showPage('inbox', this)">
-        <span class="icon">📬</span><span class="nav-text">Inbox</span>
+        <span class="nav-icon material-icons-outlined">inbox</span><span class="nav-text">Inbox</span>
         <span class="nav-badge" id="badge-inbox" style="background:var(--red)"></span>
       </div>
       <div class="nav-item" data-label="Tasks" onclick="showPage('tasks', this)">
-        <span class="icon">✅</span><span class="nav-text">Tasks</span>
+        <span class="nav-icon material-icons-outlined">check_circle</span><span class="nav-text">Tasks</span>
         <span class="nav-badge" id="badge-tasks"></span>
       </div>
       <div class="nav-item" data-label="Settings" onclick="showPage('settings', this)">
-        <span class="icon">⚙️</span><span class="nav-text">Settings</span>
+        <span class="nav-icon material-icons-outlined">settings</span><span class="nav-text">Settings</span>
       </div>
     </div>
   </nav>
@@ -4500,37 +4507,74 @@ function switchSettingsTab(tabId) {
       </div>`;
 
   } else if(tabId==='s-templates') {
-    const templates = s.emailTemplates || {
-      invite: 'Dear {candidate_name},\n\nWe are pleased to invite you for an interview for the {job_title} position at {company_name}.\n\nInterview Details:\n📅 Date: {interview_date}\n⏰ Time: {interview_time}\n📍 Location: {interview_location}\n👤 Interviewer: {interviewer_name}\n\nPlease confirm your availability by replying to this email.\n\nBest regards,\n{sender_name}',
-      reject: 'Dear {candidate_name},\n\nThank you for your interest in the {job_title} position at {company_name} and for the time you invested in the interview process.\n\nAfter careful consideration, we have decided to move forward with another candidate whose experience more closely matches our current needs.\n\nWe appreciate your time and wish you the best in your job search.\n\nBest regards,\n{sender_name}',
-      offer: 'Dear {candidate_name},\n\nCongratulations! We are delighted to offer you the position of {job_title} at {company_name}.\n\nOffer Details:\n💰 Salary: {salary}\n📅 Start Date: {start_date}\n\nPlease review and confirm your acceptance within 5 business days.\n\nWe look forward to welcoming you to the team!\n\nBest regards,\n{sender_name}',
-    };
+    const savedOverrides = JSON.parse(localStorage.getItem('tf_email_template_overrides')||'{}');
+    const categories = [
+      { id:'interview',  label:'📅 Interview Invites',  color:'var(--accent)' },
+      { id:'rejection',  label:'🙏 Rejection Emails',   color:'var(--red)' },
+      { id:'offer',      label:'🎉 Offer',               color:'var(--green)' },
+      { id:'onboarding', label:'🚀 Onboarding Workflow', color:'var(--purple)' },
+    ];
+    const ALL_VARS = [
+      ['candidate_name','Candidate full name'],
+      ['candidate_email','Candidate email'],
+      ['job_title','Job title'],
+      ['company_name','Company name'],
+      ['sender_name','Your name (from Settings)'],
+      ['interviewer_name','Interviewer name'],
+      ['interview_date','Interview date'],
+      ['interview_time','Interview time'],
+      ['interview_duration','Interview duration'],
+      ['interview_type','Interview type (e.g. Video Call)'],
+      ['salary','Offer salary'],
+      ['start_date','Candidate start date'],
+      ['offer_expiry','Offer expiry date'],
+      ['location','Job location'],
+    ];
+    const firstTpl = EMAIL_TEMPLATES[0];
+    const firstOverride = savedOverrides[firstTpl.id] || {};
+
     el.innerHTML = `
-      <div style="font-size:18px;font-weight:800;margin-bottom:20px;">✉️ Email Templates</div>
-      <div style="font-size:13px;color:var(--text3);margin-bottom:6px;">Available variables: <code style="background:var(--bg3);padding:2px 6px;border-radius:4px;font-size:11px;">{candidate_name} {job_title} {company_name} {interview_date} {interview_time} {interview_location} {interviewer_name} {salary} {start_date} {sender_name}</code></div>
-      <div style="margin-bottom:16px;display:flex;gap:8px;">
-        <button class="btn ${s.activeTemplate!=='reject'&&s.activeTemplate!=='offer'?'btn-primary':'btn-ghost'} btn-sm" onclick="switchEmailTemplate('invite')">📅 Interview Invite</button>
-        <button class="btn ${s.activeTemplate==='reject'?'btn-primary':'btn-ghost'} btn-sm" onclick="switchEmailTemplate('reject')">❌ Rejection</button>
-        <button class="btn ${s.activeTemplate==='offer'?'btn-primary':'btn-ghost'} btn-sm" onclick="switchEmailTemplate('offer')">🎉 Offer Letter</button>
-      </div>
-      <div class="panel">
-        <div class="panel-header">
-          <span class="panel-title" id="template-title">📅 Interview Invitation Template</span>
-          <button class="btn btn-primary btn-sm" onclick="saveEmailTemplate()">Save Template</button>
+      <div style="font-size:18px;font-weight:800;margin-bottom:4px;">✉️ Email Templates</div>
+      <div style="font-size:13px;color:var(--text3);margin-bottom:20px;">Edit any template — changes are saved locally and applied when you use them in candidate profiles.</div>
+
+      <div style="display:grid;grid-template-columns:220px 1fr;gap:0;border:1px solid var(--border);border-radius:12px;overflow:hidden;min-height:600px;">
+
+        <!-- LEFT: template list -->
+        <div style="background:var(--bg3);border-right:1px solid var(--border);overflow-y:auto;">
+          ${categories.map(cat => {
+            const catTpls = EMAIL_TEMPLATES.filter(t => t.category === cat.id);
+            return `<div>
+              <div style="padding:10px 14px 6px;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:0.5px;color:${cat.color};">${cat.label}</div>
+              ${catTpls.map(t => {
+                const hasOverride = !!savedOverrides[t.id];
+                return `<div id="stpl-item-${t.id}" onclick="openEmailTemplateEditor('${t.id}')"
+                  style="padding:9px 14px;cursor:pointer;display:flex;align-items:center;gap:8px;border-bottom:1px solid var(--border);transition:background 0.1s;"
+                  onmouseover="if(this.id!==window._activeStplId)this.style.background='var(--bg4)'"
+                  onmouseout="if(this.id!==window._activeStplId)this.style.background=''">
+                  <span style="font-size:14px;">${t.icon}</span>
+                  <div style="flex:1;min-width:0;">
+                    <div style="font-size:12px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${t.title}</div>
+                    <div style="font-size:10px;color:var(--text3);">${t.audience==='internal'?'Internal':'To Candidate'}${hasOverride?' · <span style="color:var(--amber);">edited</span>':''}</div>
+                  </div>
+                </div>`;
+              }).join('')}
+            </div>`;
+          }).join('')}
         </div>
-        <div style="padding:20px;">
-          <div class="form-group" style="margin-bottom:12px;"><label>Subject Line</label>
-            <input type="text" id="email-subject" value="${s.emailSubjectInvite||'Interview Invitation — {job_title} at {company_name}'}">
-          </div>
-          <div class="form-group"><label>Email Body</label>
-            <textarea id="email-body" style="min-height:220px;font-family:'JetBrains Mono';font-size:12px;">${templates.invite}</textarea>
-          </div>
-          <div style="margin-top:10px;background:var(--bg3);border-radius:8px;padding:10px 14px;">
-            <div style="font-size:11px;font-weight:700;color:var(--text3);margin-bottom:6px;">PREVIEW</div>
-            <div id="email-preview" style="font-size:12px;color:var(--text2);line-height:1.7;white-space:pre-wrap;">${templates.invite.replace(/{[\w_]+}/g, m=>`<span style="color:var(--accent);">${m}</span>`)}</div>
+
+        <!-- RIGHT: editor -->
+        <div id="stpl-editor-panel" style="display:flex;flex-direction:column;background:var(--bg2);">
+          <div style="padding:20px 22px;text-align:center;color:var(--text3);margin:auto;">
+            <div style="font-size:32px;margin-bottom:10px;">✉️</div>
+            <div style="font-size:14px;font-weight:600;color:var(--text);">Select a template to edit</div>
+            <div style="font-size:12px;margin-top:6px;">Click any template on the left</div>
           </div>
         </div>
       </div>`;
+
+    // Open first template by default
+    setTimeout(() => openEmailTemplateEditor(firstTpl.id), 50);
+  
 
   } else if(tabId==='s-apikey') {
     const key = localStorage.getItem('tf_apikey')||'';
@@ -5078,29 +5122,211 @@ function clearCandidates() {
 }
 
 function switchEmailTemplate(type) {
-  const s = getSettings();
-  const templates = s.emailTemplates||{};
-  const labels = { invite:'📅 Interview Invitation Template', reject:'❌ Rejection Email Template', offer:'🎉 Offer Letter Template' };
-  const subjects = { invite:'Interview Invitation — {job_title} at {company_name}', reject:'Update on your {job_title} application', offer:'Job Offer — {job_title} at {company_name}' };
-  document.getElementById('template-title').textContent = labels[type]||'';
-  document.getElementById('email-subject').value = s[`emailSubject_${type}`]||subjects[type]||'';
-  const body = templates[type]||'';
-  document.getElementById('email-body').value = body;
-  document.getElementById('email-preview').innerHTML = body.replace(/{[\w_]+}/g, m=>`<span style="color:var(--accent);">${m}</span>`);
-  saveSettings({ activeTemplate: type });
+  // Legacy - redirect to new system
+  switchSettingsTab('s-templates');
 }
 
 function saveEmailTemplate() {
-  const s = getSettings();
-  const type = s.activeTemplate||'invite';
-  const templates = s.emailTemplates||{};
-  templates[type] = document.getElementById('email-body')?.value||'';
-  saveSettings({ emailTemplates: templates, [`emailSubject_${type}`]: document.getElementById('email-subject')?.value||'' });
-  // Update preview
-  const body = templates[type];
-  const preview = document.getElementById('email-preview');
-  if(preview) preview.innerHTML = body.replace(/{[\w_]+}/g, m=>`<span style="color:var(--accent);">${m}</span>`);
+  // Legacy - no-op, replaced by saveEmailTemplateOverride
 }
+
+// ── New per-template editor ──
+window._activeStplId = null;
+
+function openEmailTemplateEditor(tplId) {
+  const tpl = EMAIL_TEMPLATES.find(t => t.id === tplId);
+  if(!tpl) return;
+
+  // Highlight active in sidebar
+  if(window._activeStplId) {
+    const prev = document.getElementById(window._activeStplId);
+    if(prev) prev.style.background = '';
+  }
+  window._activeStplId = 'stpl-item-' + tplId;
+  const active = document.getElementById('stpl-item-' + tplId);
+  if(active) active.style.background = 'var(--accent-dim)';
+
+  const savedOverrides = JSON.parse(localStorage.getItem('tf_email_template_overrides')||'{}');
+  const override = savedOverrides[tplId] || {};
+  const currentSubject = override.subject !== undefined ? override.subject : tpl.subject;
+  const currentBody    = override.body    !== undefined ? override.body    : tpl.body;
+  const hasOverride    = !!savedOverrides[tplId];
+
+  const ALL_VARS = [
+    'candidate_name','candidate_email','job_title','company_name','sender_name',
+    'interviewer_name','interview_date','interview_time','interview_duration',
+    'interview_type','salary','start_date','offer_expiry','location',
+  ];
+
+  const s = getSettings();
+  const SAMPLE = {
+    candidate_name: 'Ahmad Razif', candidate_email: 'ahmad@email.com',
+    job_title: 'Senior HR Specialist', company_name: s.companyName || 'Your Company',
+    sender_name: s.yourName || 'HR Team',
+    interviewer_name: 'Dave Chik', interview_date: '2026-04-10',
+    interview_time: '10:00 AM', interview_duration: '30 minutes',
+    interview_type: 'Video Call', salary: '6,500',
+    start_date: '2026-05-01', offer_expiry: '2026-04-15',
+    location: 'Petaling Jaya, Malaysia',
+  };
+
+  const panel = document.getElementById('stpl-editor-panel');
+  if(!panel) return;
+
+  const varChips = ALL_VARS.map(v =>
+    `<span onclick="insertVarAtCursor('${v}')"
+      style="cursor:pointer;background:var(--bg2);border:1px solid var(--border);border-radius:4px;
+      padding:2px 7px;font-size:10px;font-family:'JetBrains Mono',monospace;color:var(--accent);transition:background 0.1s;"
+      onmouseover="this.style.background='var(--accent-dim)'"
+      onmouseout="this.style.background='var(--bg2)'"
+      title="Insert {${v}}">{${v}}</span>`
+  ).join('');
+
+  panel.style.cssText = 'display:flex;flex-direction:column;background:var(--bg2);overflow:hidden;';
+
+  panel.innerHTML =
+    // Header bar
+    `<div style="padding:13px 18px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:10px;flex-shrink:0;">
+      <span style="font-size:18px;">${tpl.icon}</span>
+      <div style="flex:1;min-width:0;">
+        <div style="font-size:13.5px;font-weight:700;">${tpl.title}</div>
+        <div style="display:flex;gap:5px;margin-top:2px;flex-wrap:wrap;">
+          <span style="font-size:10px;color:${tpl.color};font-weight:700;text-transform:uppercase;">${tpl.categoryLabel}</span>
+          <span style="font-size:10px;background:${tpl.audience==='internal'?'var(--amber-dim)':'var(--accent-dim)'};color:${tpl.audience==='internal'?'var(--amber)':'var(--accent)'};border-radius:3px;padding:1px 5px;font-weight:700;">${tpl.audience==='internal'?'INTERNAL':'TO CANDIDATE'}</span>
+          ${hasOverride?'<span style="font-size:10px;background:var(--amber-dim);color:var(--amber);border-radius:3px;padding:1px 5px;">✏️ Edited</span>':''}
+        </div>
+      </div>
+      <div style="display:flex;gap:6px;flex-shrink:0;">
+        ${hasOverride?`<button class="btn btn-ghost btn-sm" style="color:var(--text3);" onclick="resetEmailTemplateOverride('${tplId}')">↺ Reset</button>`:''}
+        <button class="btn btn-primary btn-sm" onclick="saveEmailTemplateOverride('${tplId}')">💾 Save</button>
+      </div>
+    </div>` +
+
+    // Variable chips row
+    `<div style="padding:8px 18px;border-bottom:1px solid var(--border);background:var(--bg3);flex-shrink:0;">
+      <div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:0.5px;color:var(--text3);margin-bottom:5px;">Click to insert at cursor →</div>
+      <div style="display:flex;flex-wrap:wrap;gap:4px;">${varChips}</div>
+    </div>` +
+
+    // Side-by-side body
+    `<div style="display:grid;grid-template-columns:55% 45%;flex:1;min-height:0;overflow:hidden;">
+
+      <!-- LEFT: editor -->
+      <div style="display:flex;flex-direction:column;border-right:1px solid var(--border);overflow:hidden;">
+        <div style="padding:10px 14px;border-bottom:1px solid var(--border);flex-shrink:0;">
+          <div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:0.5px;color:var(--text3);margin-bottom:5px;">Subject</div>
+          <input id="stpl-subject" type="text" value="${escapeHtml(currentSubject)}"
+            style="width:100%;background:var(--bg3);border:1px solid var(--border);border-radius:7px;
+            padding:7px 10px;font-size:12.5px;color:var(--text);outline:none;box-sizing:border-box;"
+            onfocus="window._lastFocusedStplField='stpl-subject'"
+            oninput="updateStplPreview()">
+        </div>
+        <div style="padding:10px 14px;flex:1;display:flex;flex-direction:column;gap:5px;overflow:hidden;">
+          <div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:0.5px;color:var(--text3);">Body</div>
+          <textarea id="stpl-body"
+            onfocus="window._lastFocusedStplField='stpl-body'"
+            oninput="updateStplPreview()"
+            style="flex:1;background:var(--bg3);border:1px solid var(--border);border-radius:7px;
+            padding:10px;font-size:12px;font-family:'JetBrains Mono',monospace;color:var(--text);
+            outline:none;resize:none;line-height:1.75;overflow-y:auto;">${escapeHtml(currentBody)}</textarea>
+        </div>
+      </div>
+
+      <!-- RIGHT: live preview -->
+      <div style="display:flex;flex-direction:column;overflow:hidden;background:var(--bg2);">
+        <div style="padding:10px 14px;border-bottom:1px solid var(--border);flex-shrink:0;">
+          <div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:0.5px;color:var(--text3);margin-bottom:5px;">Preview (sample values)</div>
+          <div id="stpl-preview-subject"
+            style="font-size:12px;font-weight:600;color:var(--text);background:var(--bg3);
+            border:1px solid var(--border);border-radius:7px;padding:7px 10px;min-height:34px;line-height:1.5;word-break:break-word;"></div>
+        </div>
+        <div style="padding:10px 14px;flex:1;display:flex;flex-direction:column;gap:4px;overflow:hidden;">
+          <div style="font-size:10px;color:var(--text3);flex-shrink:0;"><span style="color:var(--green);font-weight:600;">Green</span> = filled · <span style="color:var(--amber);font-weight:600;">Amber</span> = needs value</div>
+          <div id="stpl-preview-body"
+            style="flex:1;background:var(--bg3);border:1px solid var(--border);border-radius:7px;
+            padding:10px;font-size:11.5px;color:var(--text2);line-height:1.8;white-space:pre-wrap;
+            overflow-y:auto;word-break:break-word;"></div>
+        </div>
+      </div>
+    </div>`;
+
+  window._lastFocusedStplField = 'stpl-body';
+  window._stplSample = SAMPLE;
+  setTimeout(() => updateStplPreview(), 30);
+}
+
+function insertVarAtCursor(varName) {
+  const fieldId = window._lastFocusedStplField || 'stpl-body';
+  const el = document.getElementById(fieldId);
+  if(!el) return;
+  el.focus();
+  const start = el.selectionStart;
+  const end = el.selectionEnd;
+  const insert = '{' + varName + '}';
+  el.value = el.value.slice(0, start) + insert + el.value.slice(end);
+  el.selectionStart = el.selectionEnd = start + insert.length;
+  updateStplPreview();
+}
+
+function updateStplPreview() {
+  const subjectEl = document.getElementById('stpl-preview-subject');
+  const bodyEl    = document.getElementById('stpl-preview-body');
+  if(!subjectEl || !bodyEl) return;
+  const sample = window._stplSample || {};
+  const fill = (text) => escapeHtml(text).replace(/\{([\w_]+)\}/g, (_, k) => {
+    if(sample[k] !== undefined)
+      return `<span style="color:var(--green);font-weight:600;">${escapeHtml(String(sample[k]))}</span>`;
+    return `<span style="background:var(--amber-dim);color:var(--amber);border-radius:2px;padding:0 3px;">{${k}}</span>`;
+  });
+  subjectEl.innerHTML = fill(document.getElementById('stpl-subject')?.value || '') || '<span style="color:var(--text3);">—</span>';
+  bodyEl.innerHTML    = fill(document.getElementById('stpl-body')?.value    || '') || '<span style="color:var(--text3);">—</span>';
+}
+
+function toggleStplPreview() { /* preview always visible */ }
+
+
+function saveEmailTemplateOverride(tplId) {
+  const subject = document.getElementById('stpl-subject')?.value;
+  const body = document.getElementById('stpl-body')?.value;
+  if(subject === undefined || body === undefined) return;
+  const overrides = JSON.parse(localStorage.getItem('tf_email_template_overrides')||'{}');
+  overrides[tplId] = { subject, body };
+  localStorage.setItem('tf_email_template_overrides', JSON.stringify(overrides));
+  showToast('Template saved ✓');
+  // Re-open to refresh "Edited" badge
+  openEmailTemplateEditor(tplId);
+}
+
+function resetEmailTemplateOverride(tplId) {
+  if(!confirm('Reset this template to its original content?')) return;
+  const overrides = JSON.parse(localStorage.getItem('tf_email_template_overrides')||'{}');
+  delete overrides[tplId];
+  localStorage.setItem('tf_email_template_overrides', JSON.stringify(overrides));
+  showToast('Template reset to default ✓');
+  openEmailTemplateEditor(tplId);
+  // Refresh the sidebar list item
+  switchSettingsTab('s-templates');
+}
+
+// Apply saved overrides when using templates — patch fillEmailTemplate to use overrides
+const _origFillEmailTemplate = window.fillEmailTemplate;
+window.fillEmailTemplate = function(text, vars) {
+  return typeof _origFillEmailTemplate === 'function' ? _origFillEmailTemplate(text, vars) :
+    text.replace(/\{([\w_]+)\}/g, (_, k) => vars[k] !== undefined ? vars[k] : '{' + k + '}');
+};
+
+// Patch EMAIL_TEMPLATES to apply saved overrides at runtime
+const _origGetEmailVariables = window.getEmailVariables;
+function getEffectiveTpl(tplId) {
+  const tpl = EMAIL_TEMPLATES.find(t => t.id === tplId);
+  if(!tpl) return tpl;
+  const overrides = JSON.parse(localStorage.getItem('tf_email_template_overrides')||'{}');
+  const ov = overrides[tplId];
+  if(!ov) return tpl;
+  return { ...tpl, subject: ov.subject, body: ov.body };
+}
+
+
 
 // Apply saved settings on load
 function applySavedSettings() {
@@ -10032,17 +10258,12 @@ function selectEmailTemplate(tplId, candId) {
   _currentEmailTplId = tplId;
   _currentEmailCandId = candId;
 
-  const tpl = EMAIL_TEMPLATES.find(t => t.id === tplId);
+  // Apply any saved overrides for this template
+  const tpl = getEffectiveTpl(tplId);
   if(!tpl) return;
   const vars = getEmailVariables(candId);
   const filledSubject = fillEmailTemplate(tpl.subject, vars);
-  const filledBody = fillEmailTemplate(tpl.body, vars);
-
-  // Highlight un-filled variables
-  const highlightVars = (text) => escapeHtml(text).replace(
-    /\[([^\]]+)\]/g,
-    '<span style="background:var(--amber-dim);color:var(--amber);border-radius:3px;padding:0 4px;font-weight:700;">[$1]</span>'
-  );
+  const filledBody    = fillEmailTemplate(tpl.body, vars);
 
   // Update card selection
   document.querySelectorAll('.email-tpl-card').forEach(c => {
@@ -10052,71 +10273,98 @@ function selectEmailTemplate(tplId, candId) {
   const previewEl = document.getElementById('email-tpl-preview');
   if(!previewEl) return;
 
-  const c = getCand(candId);
-
   previewEl.innerHTML = `
-    <!-- Subject -->
+    <!-- Subject — editable -->
     <div>
       <div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:0.5px;color:var(--text3);margin-bottom:5px;">Subject Line</div>
-      <div style="background:var(--bg3);border:1px solid var(--border);border-radius:8px;padding:10px 14px;
-        font-size:13px;font-weight:600;display:flex;align-items:center;justify-content:space-between;gap:10px;">
-        <span id="email-subject-text">${highlightVars(filledSubject)}</span>
-        <button onclick="copySubjectLine()" class="btn btn-ghost btn-sm" style="flex-shrink:0;font-size:11px;">Copy</button>
+      <div style="display:flex;gap:8px;align-items:center;">
+        <input id="email-subject-edit" type="text" value="${escapeHtml(filledSubject)}"
+          style="flex:1;background:var(--bg3);border:1px solid var(--border);border-radius:8px;
+          padding:9px 12px;font-size:13px;font-weight:600;color:var(--text);outline:none;">
+        <button onclick="copySubjectLine()" class="btn btn-ghost btn-sm" style="flex-shrink:0;font-size:11px;">📋 Copy</button>
       </div>
     </div>
 
-    <!-- Body preview -->
+    <!-- Body — editable textarea -->
     <div style="flex:1;display:flex;flex-direction:column;gap:6px;">
       <div style="display:flex;align-items:center;justify-content:space-between;">
         <div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:0.5px;color:var(--text3);">Email Body</div>
-        <div style="display:flex;gap:6px;align-items:center;">
-          <span style="font-size:11px;color:var(--amber);">⚠ Yellow = needs manual editing</span>
-        </div>
+        <span style="font-size:11px;color:var(--text3);">Edit freely before copying</span>
       </div>
-      <div id="email-body-preview" class="email-preview-box">${highlightVars(filledBody)}</div>
+      <textarea id="email-body-edit"
+        style="flex:1;min-height:260px;background:var(--bg3);border:1px solid var(--border);border-radius:8px;
+        padding:12px;font-size:12.5px;font-family:'JetBrains Mono',monospace;color:var(--text);
+        outline:none;resize:vertical;line-height:1.7;">${escapeHtml(filledBody)}</textarea>
     </div>
 
-    <!-- Quick variable chips -->
-    <div style="display:flex;flex-wrap:wrap;gap:5px;padding:8px 0 0;">
-      ${Object.entries(vars).map(([k,v]) =>
-        `<span title="Will be replaced with: ${escapeHtml(v)}" style="background:var(--bg3);border:1px solid var(--border);
-          border-radius:4px;padding:2px 7px;font-size:10px;color:var(--text3);font-family:'JetBrains Mono',monospace;">
-          {${k}} → <span style="color:var(--text);">${escapeHtml(String(v).slice(0,20))}${v.length>20?'…':''}</span>
-        </span>`
+    <!-- Variable chips for quick re-insert -->
+    <div style="display:flex;flex-wrap:wrap;gap:4px;">
+      <span style="font-size:10px;font-weight:700;color:var(--text3);align-self:center;margin-right:2px;">Insert:</span>
+      ${Object.entries(vars).slice(0,8).map(([k,v]) =>
+        `<span onclick="insertVarIntoEmailBody('{${k}}')"
+          title="Insert {${k}} (= ${escapeHtml(String(v).slice(0,30))})"
+          style="cursor:pointer;background:var(--bg3);border:1px solid var(--border);
+          border-radius:4px;padding:2px 7px;font-size:10px;color:var(--accent);font-family:'JetBrains Mono',monospace;
+          transition:background 0.1s;"
+          onmouseover="this.style.background='var(--accent-dim)'"
+          onmouseout="this.style.background='var(--bg3)'">{${k}}</span>`
       ).join('')}
     </div>`;
 
-  // Show action buttons
+  // Show copy button
   const copyBtn = document.getElementById('email-copy-btn');
   const editBtn = document.getElementById('email-edit-vars-btn');
   if(copyBtn) copyBtn.style.display = '';
   if(editBtn) editBtn.style.display = '';
 }
 
+function insertVarIntoEmailBody(varStr) {
+  const ta = document.getElementById('email-body-edit');
+  if(!ta) return;
+  ta.focus();
+  const start = ta.selectionStart;
+  const end = ta.selectionEnd;
+  ta.value = ta.value.slice(0, start) + varStr + ta.value.slice(end);
+  ta.selectionStart = ta.selectionEnd = start + varStr.length;
+}
+
 function copySubjectLine() {
-  const tpl = EMAIL_TEMPLATES.find(t => t.id === _currentEmailTplId);
-  if(!tpl) return;
-  const vars = getEmailVariables(_currentEmailCandId);
-  const subject = fillEmailTemplate(tpl.subject, vars);
+  // Read from editable field if present, else fall back to template
+  const editEl = document.getElementById('email-subject-edit');
+  let subject;
+  if(editEl) {
+    subject = editEl.value;
+  } else {
+    const tpl = getEffectiveTpl(_currentEmailTplId);
+    if(!tpl) return;
+    const vars = getEmailVariables(_currentEmailCandId);
+    subject = fillEmailTemplate(tpl.subject, vars);
+  }
   navigator.clipboard.writeText(subject).then(() => {
-    showToast('Subject line copied! 📋');
+    showToast('Subject copied! 📋');
   }).catch(() => {
-    // Fallback
     const ta = document.createElement('textarea');
     ta.value = subject;
     document.body.appendChild(ta);
     ta.select();
     document.execCommand('copy');
     ta.remove();
-    showToast('Subject line copied! 📋');
+    showToast('Subject copied! 📋');
   });
 }
 
 function copyEmailToClipboard(candId) {
-  const tpl = EMAIL_TEMPLATES.find(t => t.id === _currentEmailTplId);
-  if(!tpl) return;
-  const vars = getEmailVariables(candId || _currentEmailCandId);
-  const body = fillEmailTemplate(tpl.body, vars);
+  // Read from editable textarea if present, else fall back to template
+  const editEl = document.getElementById('email-body-edit');
+  let body;
+  if(editEl) {
+    body = editEl.value;
+  } else {
+    const tpl = getEffectiveTpl(_currentEmailTplId);
+    if(!tpl) return;
+    const vars = getEmailVariables(candId || _currentEmailCandId);
+    body = fillEmailTemplate(tpl.body, vars);
+  }
 
   navigator.clipboard.writeText(body).then(() => {
     const btn = document.getElementById('email-copy-btn');
@@ -10126,9 +10374,8 @@ function copyEmailToClipboard(candId) {
       btn.style.background = 'var(--green)';
       setTimeout(() => { btn.innerHTML = orig; btn.style.background = ''; }, 2000);
     }
-    showToast('Email body copied to clipboard! Now paste into your email app ✉️');
+    showToast('Email copied! Paste into your email app ✉️');
   }).catch(() => {
-    // Fallback for older browsers
     const ta = document.createElement('textarea');
     ta.value = body;
     ta.style.position = 'fixed';
@@ -10137,7 +10384,7 @@ function copyEmailToClipboard(candId) {
     ta.focus();
     ta.select();
     try { document.execCommand('copy'); showToast('Email copied! ✉️'); }
-    catch(e) { showToast('Could not copy — try selecting and copying manually'); }
+    catch(e) { showToast('Could not copy — try selecting manually'); }
     ta.remove();
   });
 }
