@@ -2155,7 +2155,7 @@ async function loadGalleryThumb(cand) {
 function openManageDocs(candId) {
   const cand = getCand(candId); if(!cand) return;
   const docs = cand.documents || [];
-  document.getElementById('modal-title').textContent = '<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:-2px;flex-shrink:0;"><path d="M21.44 11.05l-9.19 9.19a6 6 0 01-8.49-8.49l9.19-9.19a4 4 0 015.66 5.66l-9.2 9.19a2 2 0 01-2.83-2.83l8.49-8.48"/></svg> Documents — ' + cand.name;
+  document.getElementById('modal-title').textContent = ' Documents — ' + cand.name;
   document.getElementById('modal-body').innerHTML = `
     <div style="font-size:12.5px;color:var(--text3);margin-bottom:14px;">
       Upload multiple file versions. The latest resume is used for preview and parsing. All files are stored in your cloud.
@@ -2621,7 +2621,7 @@ function dropOnStage(event, targetStage) {
   if(!apps.length) { showToast('No job applications found'); return; }
 
   // Always show job picker — even for one job, so it's clear what's happening
-  document.getElementById('modal-title').textContent = '<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:-2px;flex-shrink:0;"><line x1="12" y1="2" x2="12" y2="22"/><polyline points="17 7 12 2 7 7"/><polyline points="17 17 12 22 7 17"/></svg> Move ' + c.name + ' to ' + targetStage;
+  document.getElementById('modal-title').innerHTML = '<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:-2px;flex-shrink:0;"><line x1="12" y1="2" x2="12" y2="22"/><polyline points="17 7 12 2 7 7"/><polyline points="17 17 12 22 7 17"/></svg> Move ' + c.name + ' to ' + targetStage;
   document.getElementById('modal-body').innerHTML =
     '<div style="display:flex;align-items:center;gap:10px;background:var(--bg3);border-radius:8px;padding:12px 14px;margin-bottom:14px;">' +
     '<div style="width:36px;height:36px;border-radius:50%;background:' + c.color + '33;color:' + c.color + ';display:flex;align-items:center;justify-content:center;font-size:14px;font-weight:700;">' + c.initials + '</div>' +
@@ -2881,7 +2881,7 @@ function renderInterviews() {
 function openEditInterview(candId, ivIdx) {
   const c = getCand(candId); if(!c) return;
   const iv = (c.interviews||[])[ivIdx]; if(!iv) return;
-  document.getElementById('modal-title').textContent = '<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:-2px;flex-shrink:0;"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/></svg> Edit Interview — ' + c.name;
+  document.getElementById('modal-title').innerHTML = '<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:-2px;flex-shrink:0;"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/></svg> Edit Interview — ' + c.name;
   document.getElementById('modal-body').innerHTML = `
     <div class="form-group"><label>Interview Round</label>
       <select id="eiv-round">
@@ -3608,7 +3608,7 @@ function _openTaskModal(t, defaultJobId='', defaultStatus='', defaultCandId='') 
   const isEdit = !!t;
   const s = getSettings();
   const team = s.team || [];
-  document.getElementById('modal-title').textContent = isEdit ? '<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:-2px;flex-shrink:0;"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/></svg> Edit Task' : '<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:-2px;flex-shrink:0;"><path d="M22 11.08V12a10 10 0 11-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg> New Task';
+  document.getElementById('modal-title').innerHTML = isEdit ? '<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:-2px;flex-shrink:0;"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/></svg> Edit Task' : '<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:-2px;flex-shrink:0;"><path d="M22 11.08V12a10 10 0 11-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg> New Task';
   document.getElementById('modal-body').innerHTML = `
     <div class="form-group"><label>Task Name *</label>
       <input type="text" id="tk-title" placeholder="e.g. Follow up with interviewer" value="${isEdit?escapeHtml(t.title):''}">
@@ -4465,7 +4465,7 @@ function switchSettingsTab(tabId) {
         <div id="rounds-list">
           ${rounds.map((r,i) => `
             <div style="display:flex;align-items:center;gap:10px;padding:11px 16px;border-bottom:1px solid var(--border);">
-              <input value="${r.icon||'<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:-2px;flex-shrink:0;"><path d="M16 4h2a2 2 0 012 2v14a2 2 0 01-2 2H6a2 2 0 01-2-2V6a2 2 0 012-2h2"/><rect x="8" y="2" width="8" height="4" rx="1" ry="1"/></svg>'}" onchange="updateHiringRound(${i},'icon',this.value)"
+              <input value="${r.icon||'📋'}" onchange="updateHiringRound(${i},'icon',this.value)"
                 style="width:44px;text-align:center;background:var(--bg3);border:1px solid var(--border);border-radius:6px;padding:5px;font-size:16px;outline:none;">
               <div style="flex:1;display:flex;flex-direction:column;gap:4px;">
                 <input value="${escapeHtml(r.label)}" onchange="updateHiringRound(${i},'label',this.value)"
@@ -4713,7 +4713,7 @@ function switchSettingsTab(tabId) {
           ${ob.categories.map((cat,ci) => `
             <div style="background:var(--bg3);border:1px solid var(--border);border-radius:10px;overflow:hidden;">
               <div style="display:flex;align-items:center;gap:10px;padding:10px 14px;background:var(--bg4);border-bottom:1px solid var(--border);">
-                <input value="${escapeHtml(cat.icon||'<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:-2px;flex-shrink:0;"><path d="M16 4h2a2 2 0 012 2v14a2 2 0 01-2 2H6a2 2 0 01-2-2V6a2 2 0 012-2h2"/><rect x="8" y="2" width="8" height="4" rx="1" ry="1"/></svg>')}" onchange="updateObCat(${ci},'icon',this.value)" style="width:40px;text-align:center;background:var(--bg3);border:1px solid var(--border);border-radius:6px;padding:4px;font-size:15px;outline:none;">
+                <input value="${escapeHtml(cat.icon||'📋')}" onchange="updateObCat(${ci},'icon',this.value)" style="width:40px;text-align:center;background:var(--bg3);border:1px solid var(--border);border-radius:6px;padding:4px;font-size:15px;outline:none;">
                 <input value="${escapeHtml(cat.name)}" onchange="updateObCat(${ci},'name',this.value)" style="flex:1;background:var(--bg3);border:1px solid var(--border);border-radius:6px;padding:6px 10px;font-size:13px;font-weight:700;color:var(--text);outline:none;">
                 <button class="btn btn-ghost btn-sm" onclick="addObTask(${ci})">+ Task</button>
                 <button class="btn btn-ghost btn-sm" style="color:var(--red);" onclick="deleteObCat(${ci})">✕</button>
@@ -4988,7 +4988,7 @@ function clearApiKeySettings() {
 }
 
 function openAddTeamMember() {
-  document.getElementById('modal-title').textContent = '<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:-2px;flex-shrink:0;"><path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/><circle cx="12" cy="7" r="4"/></svg> Invite Team Member';
+  document.getElementById('modal-title').innerHTML = '<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:-2px;flex-shrink:0;"><path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/><circle cx="12" cy="7" r="4"/></svg> Invite Team Member';
   document.getElementById('modal-body').innerHTML = `
     <div class="form-row">
       <div class="form-group"><label>Full Name *</label><input type="text" id="tm-name" placeholder="e.g. Sarah Kaur"></div>
@@ -5061,7 +5061,7 @@ function editMemberJobAccess(i) {
   const team = s.team||[];
   const m = team[i]; if(!m) return;
   const allAccess = !m.jobIds || m.jobIds.length === 0;
-  document.getElementById('modal-title').textContent = '<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:-2px;flex-shrink:0;"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0110 0v4"/></svg> Job Access — ' + m.name;
+  document.getElementById('modal-title').innerHTML = '<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:-2px;flex-shrink:0;"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0110 0v4"/></svg> Job Access — ' + m.name;
   document.getElementById('modal-body').innerHTML = `
     <div style="font-size:13px;color:var(--text3);margin-bottom:14px;">Control which jobs ${m.name} can see and work on.</div>
     <div style="margin-bottom:14px;">
@@ -5210,7 +5210,7 @@ function openEmailTemplateEditor(tplId) {
     // Side-by-side body
     `<div style="display:grid;grid-template-columns:55% 45%;flex:1;min-height:0;overflow:hidden;">
 
-      <!-- LEFT: editor -->
+      <!-- LEFT: rich text editor -->
       <div style="display:flex;flex-direction:column;border-right:1px solid var(--border);overflow:hidden;">
         <div style="padding:10px 14px;border-bottom:1px solid var(--border);flex-shrink:0;">
           <div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:0.5px;color:var(--text3);margin-bottom:5px;">Subject</div>
@@ -5220,14 +5220,89 @@ function openEmailTemplateEditor(tplId) {
             onfocus="window._lastFocusedStplField='stpl-subject'"
             oninput="updateStplPreview()">
         </div>
+
+        <!-- Rich text toolbar -->
+        <div id="stpl-toolbar" style="display:flex;align-items:center;gap:2px;padding:5px 10px;border-bottom:1px solid var(--border);background:var(--bg3);flex-shrink:0;flex-wrap:wrap;">
+          <!-- Font size -->
+          <select onchange="stplExec('fontSize',this.value);this.blur()"
+            style="background:var(--bg2);border:1px solid var(--border);border-radius:5px;padding:3px 6px;font-size:11px;color:var(--text);outline:none;cursor:pointer;margin-right:4px;">
+            <option value="1">10</option>
+            <option value="2">12</option>
+            <option value="3" selected>14</option>
+            <option value="4">16</option>
+            <option value="5">18</option>
+            <option value="6">24</option>
+          </select>
+          <!-- Divider -->
+          <div style="width:1px;height:18px;background:var(--border);margin:0 3px;"></div>
+          <!-- Bold -->
+          <button onclick="stplExec('bold')" title="Bold (Ctrl+B)"
+            style="width:28px;height:28px;border-radius:5px;border:1px solid transparent;background:transparent;cursor:pointer;color:var(--text);font-weight:700;font-size:13px;display:flex;align-items:center;justify-content:center;"
+            onmouseover="this.style.background='var(--bg4)'" onmouseout="this.style.background='transparent'">B</button>
+          <!-- Italic -->
+          <button onclick="stplExec('italic')" title="Italic (Ctrl+I)"
+            style="width:28px;height:28px;border-radius:5px;border:1px solid transparent;background:transparent;cursor:pointer;color:var(--text);font-style:italic;font-size:13px;display:flex;align-items:center;justify-content:center;"
+            onmouseover="this.style.background='var(--bg4)'" onmouseout="this.style.background='transparent'">I</button>
+          <!-- Underline -->
+          <button onclick="stplExec('underline')" title="Underline (Ctrl+U)"
+            style="width:28px;height:28px;border-radius:5px;border:1px solid transparent;background:transparent;cursor:pointer;color:var(--text);text-decoration:underline;font-size:13px;display:flex;align-items:center;justify-content:center;"
+            onmouseover="this.style.background='var(--bg4)'" onmouseout="this.style.background='transparent'">U</button>
+          <!-- Divider -->
+          <div style="width:1px;height:18px;background:var(--border);margin:0 3px;"></div>
+          <!-- Align Left -->
+          <button onclick="stplExec('justifyLeft')" title="Align left"
+            style="width:28px;height:28px;border-radius:5px;border:1px solid transparent;background:transparent;cursor:pointer;color:var(--text);font-size:11px;display:flex;align-items:center;justify-content:center;"
+            onmouseover="this.style.background='var(--bg4)'" onmouseout="this.style.background='transparent'">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="15" y2="12"/><line x1="3" y1="18" x2="18" y2="18"/></svg>
+          </button>
+          <!-- Align Center -->
+          <button onclick="stplExec('justifyCenter')" title="Center"
+            style="width:28px;height:28px;border-radius:5px;border:1px solid transparent;background:transparent;cursor:pointer;color:var(--text);font-size:11px;display:flex;align-items:center;justify-content:center;"
+            onmouseover="this.style.background='var(--bg4)'" onmouseout="this.style.background='transparent'">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="3" y1="6" x2="21" y2="6"/><line x1="6" y1="12" x2="18" y2="12"/><line x1="4" y1="18" x2="20" y2="18"/></svg>
+          </button>
+          <!-- Align Right -->
+          <button onclick="stplExec('justifyRight')" title="Align right"
+            style="width:28px;height:28px;border-radius:5px;border:1px solid transparent;background:transparent;cursor:pointer;color:var(--text);font-size:11px;display:flex;align-items:center;justify-content:center;"
+            onmouseover="this.style.background='var(--bg4)'" onmouseout="this.style.background='transparent'">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="3" y1="6" x2="21" y2="6"/><line x1="9" y1="12" x2="21" y2="12"/><line x1="6" y1="18" x2="21" y2="18"/></svg>
+          </button>
+          <!-- Divider -->
+          <div style="width:1px;height:18px;background:var(--border);margin:0 3px;"></div>
+          <!-- Bullet list -->
+          <button onclick="stplExec('insertUnorderedList')" title="Bullet list"
+            style="width:28px;height:28px;border-radius:5px;border:1px solid transparent;background:transparent;cursor:pointer;color:var(--text);display:flex;align-items:center;justify-content:center;"
+            onmouseover="this.style.background='var(--bg4)'" onmouseout="this.style.background='transparent'">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="9" y1="6" x2="20" y2="6"/><line x1="9" y1="12" x2="20" y2="12"/><line x1="9" y1="18" x2="20" y2="18"/><circle cx="4" cy="6" r="1" fill="currentColor"/><circle cx="4" cy="12" r="1" fill="currentColor"/><circle cx="4" cy="18" r="1" fill="currentColor"/></svg>
+          </button>
+          <!-- Numbered list -->
+          <button onclick="stplExec('insertOrderedList')" title="Numbered list"
+            style="width:28px;height:28px;border-radius:5px;border:1px solid transparent;background:transparent;cursor:pointer;color:var(--text);display:flex;align-items:center;justify-content:center;"
+            onmouseover="this.style.background='var(--bg4)'" onmouseout="this.style.background='transparent'">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="10" y1="6" x2="21" y2="6"/><line x1="10" y1="12" x2="21" y2="12"/><line x1="10" y1="18" x2="21" y2="18"/><path d="M4 6h1v4"/><path d="M4 10h2"/><path d="M6 18H4c0-1 2-2 2-3s-1-1.5-2-1"/></svg>
+          </button>
+          <!-- Divider -->
+          <div style="width:1px;height:18px;background:var(--border);margin:0 3px;"></div>
+          <!-- Clear formatting -->
+          <button onclick="stplExec('removeFormat')" title="Clear formatting"
+            style="width:28px;height:28px;border-radius:5px;border:1px solid transparent;background:transparent;cursor:pointer;color:var(--text3);display:flex;align-items:center;justify-content:center;font-size:11px;"
+            onmouseover="this.style.background='var(--bg4)'" onmouseout="this.style.background='transparent'">T<sub style="font-size:8px;">x</sub></button>
+        </div>
+
+        <!-- Contenteditable body -->
         <div style="padding:10px 14px;flex:1;display:flex;flex-direction:column;gap:5px;overflow:hidden;">
           <div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:0.5px;color:var(--text3);">Body</div>
-          <textarea id="stpl-body"
-            onfocus="window._lastFocusedStplField='stpl-body'"
-            oninput="updateStplPreview()"
+          <div id="stpl-body-editor"
+            contenteditable="true"
+            spellcheck="true"
+            oninput="syncStplBodyAndPreview()"
+            onfocus="window._lastFocusedStplField='stpl-body-editor'"
             style="flex:1;background:var(--bg3);border:1px solid var(--border);border-radius:7px;
-            padding:10px;font-size:12px;font-family:'JetBrains Mono',monospace;color:var(--text);
-            outline:none;resize:none;line-height:1.75;overflow-y:auto;">${escapeHtml(currentBody)}</textarea>
+            padding:12px;font-size:12.5px;font-family:'Sora',sans-serif;color:var(--text);
+            outline:none;overflow-y:auto;line-height:1.8;word-break:break-word;
+            white-space:pre-wrap;"></div>
+          <!-- Hidden textarea keeps plain-text value for save -->
+          <textarea id="stpl-body" style="display:none;">${escapeHtml(currentBody)}</textarea>
         </div>
       </div>
 
@@ -5243,28 +5318,95 @@ function openEmailTemplateEditor(tplId) {
           <div style="font-size:10px;color:var(--text3);flex-shrink:0;"><span style="color:var(--green);font-weight:600;">Green</span> = filled · <span style="color:var(--amber);font-weight:600;">Amber</span> = needs value</div>
           <div id="stpl-preview-body"
             style="flex:1;background:var(--bg3);border:1px solid var(--border);border-radius:7px;
-            padding:10px;font-size:11.5px;color:var(--text2);line-height:1.8;white-space:pre-wrap;
+            padding:10px;font-size:11.5px;color:var(--text2);line-height:1.8;
             overflow-y:auto;word-break:break-word;"></div>
         </div>
       </div>
     </div>`;
 
-  window._lastFocusedStplField = 'stpl-body';
+  window._lastFocusedStplField = 'stpl-body-editor';
   window._stplSample = SAMPLE;
-  setTimeout(() => updateStplPreview(), 30);
+
+  // Init the contenteditable with the current body content
+  setTimeout(() => {
+    const editor = document.getElementById('stpl-body-editor');
+    if(editor) {
+      // Convert plain text to HTML preserving line breaks
+      editor.innerHTML = escapeHtml(currentBody)
+        .replace(/\n/g, '<br>')
+        .replace(/\{([\w_]+)\}/g, '<span style="color:var(--accent);font-weight:600;background:var(--accent-dim);border-radius:3px;padding:0 2px;">{$1}</span>');
+    }
+    updateStplPreview();
+  }, 30);
+}
+
+function stplExec(cmd, val) {
+  const editor = document.getElementById('stpl-body-editor');
+  if(!editor) return;
+  editor.focus();
+  document.execCommand(cmd, false, val || null);
+  syncStplBodyAndPreview();
+}
+
+function syncStplBodyAndPreview() {
+  const editor = document.getElementById('stpl-body-editor');
+  const hidden = document.getElementById('stpl-body');
+  if(!editor || !hidden) return;
+  // Extract plain text for saving (strip HTML tags, convert <br> to \n)
+  const html = editor.innerHTML;
+  const plain = html
+    .replace(/<br\s*\/?>/gi, '\n')
+    .replace(/<\/p>/gi, '\n')
+    .replace(/<\/div>/gi, '\n')
+    .replace(/<[^>]+>/g, '')
+    .replace(/&amp;/g, '&')
+    .replace(/&lt;/g, '<')
+    .replace(/&gt;/g, '>')
+    .replace(/&nbsp;/g, ' ')
+    .replace(/\n{3,}/g, '\n\n')
+    .trim();
+  hidden.value = plain;
+  updateStplPreview();
 }
 
 function insertVarAtCursor(varName) {
-  const fieldId = window._lastFocusedStplField || 'stpl-body';
-  const el = document.getElementById(fieldId);
-  if(!el) return;
-  el.focus();
-  const start = el.selectionStart;
-  const end = el.selectionEnd;
   const insert = '{' + varName + '}';
-  el.value = el.value.slice(0, start) + insert + el.value.slice(end);
-  el.selectionStart = el.selectionEnd = start + insert.length;
-  updateStplPreview();
+  const focusedField = window._lastFocusedStplField || 'stpl-body-editor';
+
+  if(focusedField === 'stpl-subject') {
+    const el = document.getElementById('stpl-subject');
+    if(!el) return;
+    el.focus();
+    const start = el.selectionStart;
+    const end = el.selectionEnd;
+    el.value = el.value.slice(0, start) + insert + el.value.slice(end);
+    el.selectionStart = el.selectionEnd = start + insert.length;
+    updateStplPreview();
+    return;
+  }
+
+  // Insert into contenteditable body editor
+  const editor = document.getElementById('stpl-body-editor');
+  if(!editor) return;
+  editor.focus();
+  const sel = window.getSelection();
+  if(sel && sel.rangeCount > 0) {
+    const range = sel.getRangeAt(0);
+    range.deleteContents();
+    // Insert as styled span
+    const span = document.createElement('span');
+    span.style.cssText = 'color:var(--accent);font-weight:600;background:var(--accent-dim);border-radius:3px;padding:0 2px;';
+    span.textContent = insert;
+    range.insertNode(span);
+    // Move cursor after the span
+    range.setStartAfter(span);
+    range.setEndAfter(span);
+    sel.removeAllRanges();
+    sel.addRange(range);
+  } else {
+    editor.innerHTML += `<span style="color:var(--accent);font-weight:600;background:var(--accent-dim);border-radius:3px;padding:0 2px;">${insert}</span>`;
+  }
+  syncStplBodyAndPreview();
 }
 
 function updateStplPreview() {
@@ -5277,8 +5419,12 @@ function updateStplPreview() {
       return `<span style="color:var(--green);font-weight:600;">${escapeHtml(String(sample[k]))}</span>`;
     return `<span style="background:var(--amber-dim);color:var(--amber);border-radius:2px;padding:0 3px;">{${k}}</span>`;
   });
-  subjectEl.innerHTML = fill(document.getElementById('stpl-subject')?.value || '') || '<span style="color:var(--text3);">—</span>';
-  bodyEl.innerHTML    = fill(document.getElementById('stpl-body')?.value    || '') || '<span style="color:var(--text3);">—</span>';
+  // Read subject from input, body from hidden textarea (plain text)
+  const subjectRaw = document.getElementById('stpl-subject')?.value || '';
+  const bodyRaw    = document.getElementById('stpl-body')?.value    || '';
+  subjectEl.innerHTML = fill(subjectRaw) || '<span style="color:var(--text3);">—</span>';
+  // Preview body with line breaks preserved
+  bodyEl.innerHTML = fill(bodyRaw).replace(/\n/g, '<br>') || '<span style="color:var(--text3);">—</span>';
 }
 
 function toggleStplPreview() { /* preview always visible */ }
@@ -6312,7 +6458,7 @@ function restoreFromURL() {
 // ===================== NOTES SYSTEM =====================
 function openAddNote(id) {
   const c = getCand(id); if(!c) return;
-  document.getElementById('modal-title').textContent = '<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:-2px;flex-shrink:0;"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg> Add Note — ' + c.name;
+  document.getElementById('modal-title').innerHTML = '<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:-2px;flex-shrink:0;"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg> Add Note — ' + c.name;
   document.getElementById('modal-body').innerHTML = `
     <div class="form-group">
       <label>Note</label>
@@ -6551,7 +6697,7 @@ function rejectCandidate(id) {
   const c = getCand(id); if(!c) return;
   const reasons = getRejectionReasons();
 
-  document.getElementById('modal-title').textContent = '<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:-2px;flex-shrink:0;"><circle cx="12" cy="12" r="10"/><line x1="4.93" y1="4.93" x2="19.07" y2="19.07"/></svg> Reject — ' + c.name;
+  document.getElementById('modal-title').innerHTML = '<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:-2px;flex-shrink:0;"><circle cx="12" cy="12" r="10"/><line x1="4.93" y1="4.93" x2="19.07" y2="19.07"/></svg> Reject — ' + c.name;
   document.getElementById('modal-body').innerHTML = `
     <div style="font-size:13px;color:var(--text3);margin-bottom:16px;">
       Select a rejection reason. This will be saved to the candidate's profile and tracked in analytics.
@@ -6708,7 +6854,7 @@ function openScheduleInterview(id) {
   const c = getCand(id); if(!c) return;
   const completedRounds = (c.interviews||[]).map(iv=>iv.round);
   const nextRound = HIRING_ROUNDS.find(r=>!completedRounds.includes(r.label)) || HIRING_ROUNDS[0];
-  document.getElementById('modal-title').textContent = '<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:-2px;flex-shrink:0;"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg> Schedule Interview — ' + c.name;
+  document.getElementById('modal-title').innerHTML = '<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:-2px;flex-shrink:0;"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg> Schedule Interview — ' + c.name;
   document.getElementById('modal-body').innerHTML = `
     <!-- Round selector cards -->
     <div class="form-group">
@@ -6854,7 +7000,7 @@ function openAddFeedback(id) {
 
 function openAddFeedbackRound(id, preRound, preInterviewer) {
   const c = getCand(id); if(!c) return;
-  document.getElementById('modal-title').textContent = '<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:-2px;flex-shrink:0;"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg> Interview Feedback — ' + c.name;
+  document.getElementById('modal-title').innerHTML = '<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:-2px;flex-shrink:0;"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg> Interview Feedback — ' + c.name;
   document.getElementById('modal-body').innerHTML = `
     <div class="form-row">
       <div class="form-group"><label>Your Name</label>
@@ -6872,11 +7018,11 @@ function openAddFeedbackRound(id, preRound, preInterviewer) {
       </div>
       <div class="form-group"><label>Overall Rating</label>
         <select id="fb-rating">
-          <option value="5"><svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:-2px;flex-shrink:0;"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2" fill="currentColor" stroke="none"/></svg><svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:-2px;flex-shrink:0;"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2" fill="currentColor" stroke="none"/></svg><svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:-2px;flex-shrink:0;"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2" fill="currentColor" stroke="none"/></svg><svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:-2px;flex-shrink:0;"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2" fill="currentColor" stroke="none"/></svg><svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:-2px;flex-shrink:0;"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2" fill="currentColor" stroke="none"/></svg> Exceptional</option>
-          <option value="4"><svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:-2px;flex-shrink:0;"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2" fill="currentColor" stroke="none"/></svg><svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:-2px;flex-shrink:0;"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2" fill="currentColor" stroke="none"/></svg><svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:-2px;flex-shrink:0;"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2" fill="currentColor" stroke="none"/></svg><svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:-2px;flex-shrink:0;"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2" fill="currentColor" stroke="none"/></svg> Good</option>
-          <option value="3" selected><svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:-2px;flex-shrink:0;"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2" fill="currentColor" stroke="none"/></svg><svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:-2px;flex-shrink:0;"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2" fill="currentColor" stroke="none"/></svg><svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:-2px;flex-shrink:0;"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2" fill="currentColor" stroke="none"/></svg> Average</option>
-          <option value="2"><svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:-2px;flex-shrink:0;"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2" fill="currentColor" stroke="none"/></svg><svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:-2px;flex-shrink:0;"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2" fill="currentColor" stroke="none"/></svg> Below Average</option>
-          <option value="1"><svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:-2px;flex-shrink:0;"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2" fill="currentColor" stroke="none"/></svg> Poor</option>
+          <option value="5">★★★★★ Exceptional</option>
+          <option value="4">★★★★ Good</option>
+          <option value="3" selected>★★★ Average</option>
+          <option value="2">★★ Below Average</option>
+          <option value="1">★ Poor</option>
         </select>
       </div>
     </div>
@@ -7124,7 +7270,7 @@ function saveEditCandidate(id) {
 
 function openCreateOffer(id) {
   const c = getCand(id); if(!c) return;
-  document.getElementById('modal-title').textContent = '<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:-2px;flex-shrink:0;"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/></svg> Create Offer — ' + c.name;
+  document.getElementById('modal-title').innerHTML = '<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:-2px;flex-shrink:0;"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/></svg> Create Offer — ' + c.name;
   document.getElementById('modal-body').innerHTML = buildOfferFormHTML();
   document.getElementById('modal-footer').innerHTML = `
     <button class="btn btn-ghost" onclick="closeModal()">Cancel</button>
@@ -7496,7 +7642,7 @@ function toggleSelectAllCands(jobId, sortBy) {
 }
 
 function bulkMoveStage(jobId, candIds, sortBy) {
-  document.getElementById('modal-title').textContent = '<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:-2px;flex-shrink:0;"><line x1="12" y1="2" x2="12" y2="22"/><polyline points="17 7 12 2 7 7"/><polyline points="17 17 12 22 7 17"/></svg> Move ' + candIds.length + ' Candidates';
+  document.getElementById('modal-title').innerHTML = '<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:-2px;flex-shrink:0;"><line x1="12" y1="2" x2="12" y2="22"/><polyline points="17 7 12 2 7 7"/><polyline points="17 17 12 22 7 17"/></svg> Move ' + candIds.length + ' Candidates';
   document.getElementById('modal-body').innerHTML =
     '<div class="form-group"><label>Move all selected to stage</label>' +
     '<select id="bulk-stage">' + stages.map(s=>'<option>'+s+'</option>').join('') + '</select></div>' +
@@ -7966,7 +8112,7 @@ function openApplyToJobModal(candId) {
   const alreadyApplied = getCandJobIds(c);
   const available = jobs.filter(j => j.status !== 'Closed' && !alreadyApplied.includes(j.id));
 
-  document.getElementById('modal-title').textContent = '<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:-2px;flex-shrink:0;"><rect x="2" y="7" width="20" height="14" rx="2" ry="2"/><path d="M16 21V5a2 2 0 00-2-2h-4a2 2 0 00-2 2v16"/></svg> Apply to Another Job — ' + c.name;
+  document.getElementById('modal-title').innerHTML = '<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:-2px;flex-shrink:0;"><rect x="2" y="7" width="20" height="14" rx="2" ry="2"/><path d="M16 21V5a2 2 0 00-2-2h-4a2 2 0 00-2 2v16"/></svg> Apply to Another Job — ' + c.name;
   if(!available.length) {
     document.getElementById('modal-body').innerHTML =
       '<div style="text-align:center;padding:24px;color:var(--text3);">' +
@@ -9401,9 +9547,9 @@ Thank you for your interest in the {job_title} position at {company_name}.
 
 We were impressed by your profile and would like to invite you for a brief HR screening call to learn more about your background and share more details about the role.
 
-<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:-2px;flex-shrink:0;"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg> Proposed Date: {interview_date}
-<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:-2px;flex-shrink:0;"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg> Time: {interview_time}
-<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:-2px;flex-shrink:0;"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0118 0z"/><circle cx="12" cy="10" r="3"/></svg> Format: {interview_type}
+ Proposed Date: {interview_date}
+ Time: {interview_time}
+ Format: {interview_type}
 ⏱ Duration: approximately 30 minutes
 
 Please reply to confirm your availability or suggest an alternative time that works for you.
@@ -9428,10 +9574,10 @@ Congratulations on progressing to the next stage of our hiring process for the {
 
 We would like to invite you for a technical interview to assess your skills and experience.
 
-<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:-2px;flex-shrink:0;"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg> Date: {interview_date}
-<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:-2px;flex-shrink:0;"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg> Time: {interview_time}
-<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:-2px;flex-shrink:0;"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0118 0z"/><circle cx="12" cy="10" r="3"/></svg> Format: {interview_type}
-<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:-2px;flex-shrink:0;"><path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/><circle cx="12" cy="7" r="4"/></svg> Interviewer(s): {interviewer_name}
+ Date: {interview_date}
+ Time: {interview_time}
+ Format: {interview_type}
+ Interviewer(s): {interviewer_name}
 ⏱ Duration: {interview_duration}
 
 What to expect:
@@ -9459,10 +9605,10 @@ We are pleased to move you forward in the selection process for the {job_title} 
 
 You are invited to meet with our hiring manager for an in-depth interview.
 
-<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:-2px;flex-shrink:0;"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg> Date: {interview_date}
-<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:-2px;flex-shrink:0;"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg> Time: {interview_time}
-<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:-2px;flex-shrink:0;"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0118 0z"/><circle cx="12" cy="10" r="3"/></svg> Location/Format: {interview_type}
-<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:-2px;flex-shrink:0;"><path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/><circle cx="12" cy="7" r="4"/></svg> Interviewer: {interviewer_name}
+ Date: {interview_date}
+ Time: {interview_time}
+ Location/Format: {interview_type}
+ Interviewer: {interviewer_name}
 ⏱ Duration: {interview_duration}
 
 This session will focus on your experience, leadership approach, and alignment with our team's goals. You are also welcome to come prepared with any questions about the role.
@@ -9485,10 +9631,10 @@ Best regards,
 
 We are very excited to let you know that you have advanced to the final round of our selection process for the {job_title} position at {company_name}. This is a great achievement and reflects the strong impression you have made so far.
 
-<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:-2px;flex-shrink:0;"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg> Date: {interview_date}
-<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:-2px;flex-shrink:0;"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg> Time: {interview_time}
-<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:-2px;flex-shrink:0;"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0118 0z"/><circle cx="12" cy="10" r="3"/></svg> Format: {interview_type}
-<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:-2px;flex-shrink:0;"><path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/><circle cx="12" cy="7" r="4"/></svg> Panel: {interviewer_name}
+ Date: {interview_date}
+ Time: {interview_time}
+ Format: {interview_type}
+ Panel: {interviewer_name}
 ⏱ Duration: {interview_duration}
 
 The final round will include a senior leadership discussion and may involve a brief presentation. Full details will be shared upon confirmation.
@@ -9582,10 +9728,10 @@ On behalf of the entire team at {company_name}, it is my pleasure to offer you t
 We were thoroughly impressed throughout the selection process and are confident you will be a valuable addition to our team.
 
 Offer Details:
-<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:-2px;flex-shrink:0;"><rect x="2" y="7" width="20" height="14" rx="2" ry="2"/><path d="M16 21V5a2 2 0 00-2-2h-4a2 2 0 00-2 2v16"/></svg> Position: {job_title}
-<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:-2px;flex-shrink:0;"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 000 7h5a3.5 3.5 0 010 7H6"/></svg> Base Salary: {salary}
-<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:-2px;flex-shrink:0;"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg> Start Date: {start_date}
-<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:-2px;flex-shrink:0;"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0118 0z"/><circle cx="12" cy="10" r="3"/></svg> Location: {location}
+ Position: {job_title}
+ Base Salary: {salary}
+ Start Date: {start_date}
+ Location: {location}
 
 Please find the formal offer letter attached. We kindly request that you confirm your acceptance by {offer_expiry}.
 
@@ -9608,15 +9754,15 @@ Warm regards,
     subject: 'Welcome to {company_name}, {candidate_name}! <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:-2px;flex-shrink:0;"><circle cx="12" cy="12" r="10"/><path d="M8 14s1.5 2 4 2 4-2 4-2"/><line x1="9" y1="9" x2="9.01" y2="9"/><line x1="15" y1="9" x2="15.01" y2="9"/></svg>',
     body: `Dear {candidate_name},
 
-We are absolutely thrilled to officially welcome you to the {company_name} family! <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:-2px;flex-shrink:0;"><circle cx="12" cy="12" r="10"/><path d="M8 14s1.5 2 4 2 4-2 4-2"/><line x1="9" y1="9" x2="9.01" y2="9"/><line x1="15" y1="9" x2="15.01" y2="9"/></svg>
+We are absolutely thrilled to officially welcome you to the {company_name} family! 
 
 Your first day is {start_date} and we have been busy getting everything ready for your arrival.
 
 Here is a quick summary of what to expect:
 
-<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:-2px;flex-shrink:0;"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0118 0z"/><circle cx="12" cy="10" r="3"/></svg> Report to: {location}
-<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:-2px;flex-shrink:0;"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg> Arrival time: {interview_time}
-<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:-2px;flex-shrink:0;"><path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/><circle cx="12" cy="7" r="4"/></svg> Your buddy/point of contact: {interviewer_name}
+ Report to: {location}
+ Arrival time: {interview_time}
+ Your buddy/point of contact: {interviewer_name}
 
 On your first day you will:
 • Complete onboarding paperwork
@@ -9646,22 +9792,22 @@ Your start date of {start_date} is just around the corner and we want to make su
 
 Before you arrive, here is a checklist to help you prepare:
 
-<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:-2px;flex-shrink:0;"><path d="M22 11.08V12a10 10 0 11-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg> Documents to bring:
+ Documents to bring:
    - National ID / Passport (original)
    - Bank account details for payroll setup
    - Any certificates or qualifications mentioned in your offer
 
-<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:-2px;flex-shrink:0;"><path d="M22 11.08V12a10 10 0 11-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg> Tech & access:
+ Tech & access:
    - You will receive your laptop/equipment on Day 1
    - IT will contact you at this email address to set up your accounts
    - Our primary tools include: [list your tools, e.g. Slack, Notion, etc.]
 
-<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:-2px;flex-shrink:0;"><path d="M22 11.08V12a10 10 0 11-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg> Practical info:
+ Practical info:
    - Office address: {location}
    - Parking / transport: [add details]
    - Dress code: [smart casual / formal / casual]
 
-<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:-2px;flex-shrink:0;"><path d="M22 11.08V12a10 10 0 11-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg> Good to know:
+ Good to know:
    - Working hours: [e.g. 9am – 6pm]
    - Lunch break: [e.g. 1pm – 2pm]
 
@@ -9683,13 +9829,13 @@ Warmly,
 
 We have put together your first week schedule to help you settle in and hit the ground running. Welcome again!
 
-<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:-2px;flex-shrink:0;"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg> Week 1 Overview:
+ Week 1 Overview:
 
 Day 1 – Orientation & Setup
 • Onboarding paperwork & HR induction
 • IT setup: laptop, email, tools access
 • Office tour and introductions
-• Lunch with your team <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:-2px;flex-shrink:0;"><path d="M18 8h1a4 4 0 010 8h-1"/><path d="M2 8h16v9a4 4 0 01-4 4H6a4 4 0 01-4-4V8z"/><line x1="6" y1="1" x2="6" y2="4"/><line x1="10" y1="1" x2="10" y2="4"/><line x1="14" y1="1" x2="14" y2="4"/></svg>️
+• Lunch with your team ️
 
 Day 2 – Team & Role Deep Dive
 • 1:1 with your manager: {interviewer_name}
@@ -9722,7 +9868,7 @@ Looking forward to an amazing first week,
     subject: '30 Days at {company_name} – How Are You Settling In?',
     body: `Dear {candidate_name},
 
-Can you believe it has already been 30 days since you joined {company_name} as our {job_title}? Time flies when the team is great! <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:-2px;flex-shrink:0;"><circle cx="12" cy="12" r="10"/><path d="M8 14s1.5 2 4 2 4-2 4-2"/><line x1="9" y1="9" x2="9.01" y2="9"/><line x1="15" y1="9" x2="15.01" y2="9"/></svg>
+Can you believe it has already been 30 days since you joined {company_name} as our {job_title}? Time flies when the team is great! 
 
 We wanted to take a moment to check in and see how you are feeling about your role, the team, and the company so far.
 
@@ -9758,7 +9904,7 @@ We are pleased to inform you that we would like to extend an offer for the {job_
 
 Before we proceed, we kindly request the following documents:
 
-<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:-2px;flex-shrink:0;"><path d="M16 4h2a2 2 0 012 2v14a2 2 0 01-2 2H6a2 2 0 01-2-2V6a2 2 0 012-2h2"/><rect x="8" y="2" width="8" height="4" rx="1" ry="1"/></svg> Required Documents:
+ Required Documents:
 • National IC / Passport (both sides)
 • Latest payslip (last 3 months)
 • Bank account details
@@ -9787,10 +9933,10 @@ Best regards,
 Further to our recent discussions, we are delighted to share the indicative offer for the {job_title} position at {company_name}.
 
 Indicative Offer Summary:
-<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:-2px;flex-shrink:0;"><rect x="2" y="7" width="20" height="14" rx="2" ry="2"/><path d="M16 21V5a2 2 0 00-2-2h-4a2 2 0 00-2 2v16"/></svg> Position: {job_title}
-<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:-2px;flex-shrink:0;"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 000 7h5a3.5 3.5 0 010 7H6"/></svg> Base Salary: {salary}
-<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:-2px;flex-shrink:0;"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg> Proposed Start Date: {start_date}
-<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:-2px;flex-shrink:0;"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0118 0z"/><circle cx="12" cy="10" r="3"/></svg> Work Location: {location}
+ Position: {job_title}
+ Base Salary: {salary}
+ Proposed Start Date: {start_date}
+ Work Location: {location}
 
 Please note that this is an indicative offer pending final approvals. The formal offer letter will follow once we have received and verified your documents.
 
@@ -9813,13 +9959,13 @@ Warm regards,
     subject: 'Welcome Aboard! Next Steps – {company_name}',
     body: `Dear {candidate_name},
 
-Congratulations and a very warm welcome to {company_name}! <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:-2px;flex-shrink:0;"><circle cx="12" cy="12" r="10"/><path d="M8 14s1.5 2 4 2 4-2 4-2"/><line x1="9" y1="9" x2="9.01" y2="9"/><line x1="15" y1="9" x2="15.01" y2="9"/></svg> We are absolutely thrilled that you have accepted our offer for the {job_title} role.
+Congratulations and a very warm welcome to {company_name}!  We are absolutely thrilled that you have accepted our offer for the {job_title} role.
 
 Please find attached:
-<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:-2px;flex-shrink:0;"><path d="M21.44 11.05l-9.19 9.19a6 6 0 01-8.49-8.49l9.19-9.19a4 4 0 015.66 5.66l-9.2 9.19a2 2 0 01-2.83-2.83l8.49-8.48"/></svg> Employee Handbook
-<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:-2px;flex-shrink:0;"><path d="M21.44 11.05l-9.19 9.19a6 6 0 01-8.49-8.49l9.19-9.19a4 4 0 015.66 5.66l-9.2 9.19a2 2 0 01-2.83-2.83l8.49-8.48"/></svg> Code of Conduct & Policies
-<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:-2px;flex-shrink:0;"><path d="M21.44 11.05l-9.19 9.19a6 6 0 01-8.49-8.49l9.19-9.19a4 4 0 015.66 5.66l-9.2 9.19a2 2 0 01-2.83-2.83l8.49-8.48"/></svg> IT & Security Guidelines
-<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:-2px;flex-shrink:0;"><path d="M21.44 11.05l-9.19 9.19a6 6 0 01-8.49-8.49l9.19-9.19a4 4 0 015.66 5.66l-9.2 9.19a2 2 0 01-2.83-2.83l8.49-8.48"/></svg> Benefits Summary
+ Employee Handbook
+ Code of Conduct & Policies
+ IT & Security Guidelines
+ Benefits Summary
 
 Please review these documents before your start date of {start_date}.
 
@@ -9848,12 +9994,12 @@ Warmest regards,
 Please be informed that we have a new hire joining {company_name} and kindly request the creation of an Employee ID.
 
 New Hire Details:
-<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:-2px;flex-shrink:0;"><path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/><circle cx="12" cy="7" r="4"/></svg> Full Name: {candidate_name}
-<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:-2px;flex-shrink:0;"><rect x="2" y="7" width="20" height="14" rx="2" ry="2"/><path d="M16 21V5a2 2 0 00-2-2h-4a2 2 0 00-2 2v16"/></svg> Position: {job_title}
-<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:-2px;flex-shrink:0;"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg> Start Date: {start_date}
-<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:-2px;flex-shrink:0;"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0118 0z"/><circle cx="12" cy="10" r="3"/></svg> Location: {location}
-<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:-2px;flex-shrink:0;"><path d="M20.59 13.41l-7.17 7.17a2 2 0 01-2.83 0L2 12V2h10l8.59 8.59a2 2 0 010 2.82z"/><line x1="7" y1="7" x2="7.01" y2="7"/></svg> Department: [Department Name]
-<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:-2px;flex-shrink:0;"><path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/><circle cx="12" cy="7" r="4"/></svg> Reporting To: {interviewer_name}
+ Full Name: {candidate_name}
+ Position: {job_title}
+ Start Date: {start_date}
+ Location: {location}
+ Department: [Department Name]
+ Reporting To: {interviewer_name}
 
 Please proceed with creating the Employee ID and notify us once done so we can proceed with SAP account creation.
 
@@ -9880,11 +10026,11 @@ HR / Talent Acquisition
 Following the Employee ID creation for our new hire below, please proceed with the following setup:
 
 New Hire Details:
-<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:-2px;flex-shrink:0;"><path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/><circle cx="12" cy="7" r="4"/></svg> Name: {candidate_name}
-<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:-2px;flex-shrink:0;"><rect x="2" y="5" width="20" height="14" rx="2"/><circle cx="8" cy="12" r="2"/><path d="M14 9h4M14 12h4M14 15h2"/></svg> Employee ID: [Employee ID — please fill once received]
-<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:-2px;flex-shrink:0;"><rect x="2" y="7" width="20" height="14" rx="2" ry="2"/><path d="M16 21V5a2 2 0 00-2-2h-4a2 2 0 00-2 2v16"/></svg> Position: {job_title}
-<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:-2px;flex-shrink:0;"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg> Start Date: {start_date}
-<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:-2px;flex-shrink:0;"><path d="M20.59 13.41l-7.17 7.17a2 2 0 01-2.83 0L2 12V2h10l8.59 8.59a2 2 0 010 2.82z"/><line x1="7" y1="7" x2="7.01" y2="7"/></svg> Department: [Department Name]
+ Name: {candidate_name}
+ Employee ID: [Employee ID — please fill once received]
+ Position: {job_title}
+ Start Date: {start_date}
+ Department: [Department Name]
 
 For People Services:
 • Please create SAP account with the Employee ID above
@@ -9919,7 +10065,7 @@ HR / Talent Acquisition
 
 As your start date of {start_date} approaches, we need to complete your payroll setup. Kindly submit the following documents as soon as possible:
 
-<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:-2px;flex-shrink:0;"><path d="M16 4h2a2 2 0 012 2v14a2 2 0 01-2 2H6a2 2 0 01-2-2V6a2 2 0 012-2h2"/><rect x="8" y="2" width="8" height="4" rx="1" ry="1"/></svg> Payroll Documents Required:
+ Payroll Documents Required:
 • Bank account details (bank name, account number, account holder name)
 • EPF (KWSP) number
 • SOCSO (PERKESO) number
@@ -9951,17 +10097,17 @@ Best regards,
 Please be informed that your new team member will be joining shortly.
 
 New Joiner Details:
-<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:-2px;flex-shrink:0;"><path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/><circle cx="12" cy="7" r="4"/></svg> Name: {candidate_name}
-<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:-2px;flex-shrink:0;"><rect x="2" y="7" width="20" height="14" rx="2" ry="2"/><path d="M16 21V5a2 2 0 00-2-2h-4a2 2 0 00-2 2v16"/></svg> Role: {job_title}
-<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:-2px;flex-shrink:0;"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg> Start Date: {start_date}
-<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:-2px;flex-shrink:0;"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0118 0z"/><circle cx="12" cy="10" r="3"/></svg> Location: {location}
+ Name: {candidate_name}
+ Role: {job_title}
+ Start Date: {start_date}
+ Location: {location}
 
 Please ensure the following are in place before their first day:
-<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:-2px;flex-shrink:0;"><path d="M22 11.08V12a10 10 0 11-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg> Desk / workstation allocated
-<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:-2px;flex-shrink:0;"><path d="M22 11.08V12a10 10 0 11-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg> Team introduction planned
-<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:-2px;flex-shrink:0;"><path d="M22 11.08V12a10 10 0 11-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg> First week schedule / induction plan prepared
-<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:-2px;flex-shrink:0;"><path d="M22 11.08V12a10 10 0 11-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg> Buddy / mentor assigned
-<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:-2px;flex-shrink:0;"><path d="M22 11.08V12a10 10 0 11-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg> Access to relevant team channels, folders and tools
+ Desk / workstation allocated
+ Team introduction planned
+ First week schedule / induction plan prepared
+ Buddy / mentor assigned
+ Access to relevant team channels, folders and tools
 
 Their IT equipment and system accesses are being arranged. You will be notified once SAP and laptop are ready.
 
@@ -9985,18 +10131,18 @@ HR / Talent Acquisition
 
 We are so excited to have you joining us on {start_date}! Please find below your onboarding schedule for your first week.
 
-<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:-2px;flex-shrink:0;"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg> Onboarding Schedule:
+ Onboarding Schedule:
 
 Day 1 – {start_date}
-<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:-2px;flex-shrink:0;"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg> 9:00 AM — Arrival & Welcome
+ 9:00 AM — Arrival & Welcome
    Report to: {location}
    Meet: {interviewer_name}
 
-<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:-2px;flex-shrink:0;"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg> 9:30 AM — HR Induction & Paperwork
-<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:-2px;flex-shrink:0;"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg> 11:00 AM — IT Setup & Equipment Collection
-<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:-2px;flex-shrink:0;"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg> 12:30 PM — Welcome Lunch with Team <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:-2px;flex-shrink:0;"><path d="M18 8h1a4 4 0 010 8h-1"/><path d="M2 8h16v9a4 4 0 01-4 4H6a4 4 0 01-4-4V8z"/><line x1="6" y1="1" x2="6" y2="4"/><line x1="10" y1="1" x2="10" y2="4"/><line x1="14" y1="1" x2="14" y2="4"/></svg>️
-<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:-2px;flex-shrink:0;"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg> 2:00 PM — Office Tour & Team Introductions
-<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:-2px;flex-shrink:0;"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg> 4:00 PM — 1:1 with your Manager
+ 9:30 AM — HR Induction & Paperwork
+ 11:00 AM — IT Setup & Equipment Collection
+ 12:30 PM — Welcome Lunch with Team ️
+ 2:00 PM — Office Tour & Team Introductions
+ 4:00 PM — 1:1 with your Manager
 
 Day 2–3 — Team Deep Dive & Role Orientation
 Day 4–5 — Shadowing & First Tasks
@@ -10008,7 +10154,7 @@ What to bring on Day 1:
 • All signed documents
 • Bank details (if not yet submitted)
 
-Any questions? Reply to this email anytime. See you soon! <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:-2px;flex-shrink:0;"><circle cx="12" cy="12" r="10"/><path d="M8 14s1.5 2 4 2 4-2 4-2"/><line x1="9" y1="9" x2="9.01" y2="9"/><line x1="15" y1="9" x2="15.01" y2="9"/></svg>
+Any questions? Reply to this email anytime. See you soon! 
 
 Warm regards,
 {sender_name}
@@ -10025,24 +10171,24 @@ Warm regards,
     subject: '<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:-2px;flex-shrink:0;"><circle cx="12" cy="12" r="5"/><path d="M2 12h1M21 12h1M12 2v1M12 21v1M4.22 4.22l.707.707M19.07 19.07l.707.707M4.22 19.78l.707-.707M19.07 4.93l.707-.707"/></svg> Welcome to Day 1 at {company_name}, {candidate_name}!',
     body: `Dear {candidate_name},
 
-Today is the day! Welcome to {company_name} — we are so glad you are here! <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:-2px;flex-shrink:0;"><circle cx="12" cy="12" r="10"/><path d="M8 14s1.5 2 4 2 4-2 4-2"/><line x1="9" y1="9" x2="9.01" y2="9"/><line x1="15" y1="9" x2="15.01" y2="9"/></svg>
+Today is the day! Welcome to {company_name} — we are so glad you are here! 
 
 Here is everything you need for today:
 
-<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:-2px;flex-shrink:0;"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0118 0z"/><circle cx="12" cy="10" r="3"/></svg> Where to go:
+ Where to go:
 {location}
 Please arrive by 9:00 AM and ask for {interviewer_name} at reception.
 
-<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:-2px;flex-shrink:0;"><path d="M21 2l-2 2m-7.61 7.61a5.5 5.5 0 11-7.778 7.778 5.5 5.5 0 017.777-7.777zm0 0L15.5 7.5m0 0l3 3L22 7l-3-3m-3.5 3.5L19 4"/></svg> What you'll receive today:
+ What you'll receive today:
 • Your employee ID card
 • Laptop and equipment
 • System access credentials
 • Employee handbook & key documents
 
-<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:-2px;flex-shrink:0;"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87"/><path d="M16 3.13a4 4 0 010 7.75"/></svg> Who you'll meet:
+ Who you'll meet:
 Your buddy for the day is {interviewer_name}, who will guide you through orientation and introduce you to the team.
 
-<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:-2px;flex-shrink:0;"><path d="M18 8h1a4 4 0 010 8h-1"/><path d="M2 8h16v9a4 4 0 01-4 4H6a4 4 0 01-4-4V8z"/><line x1="6" y1="1" x2="6" y2="4"/><line x1="10" y1="1" x2="10" y2="4"/><line x1="14" y1="1" x2="14" y2="4"/></svg>️ Lunch:
+️ Lunch:
 We have arranged a welcome lunch at 12:30 PM. Looking forward to celebrating with you!
 
 If you have any last-minute questions or are running late, please call or message {sender_name} directly.
@@ -10067,22 +10213,22 @@ With excitement,
 Please find attached the payroll documents for our new joiner who has officially joined us.
 
 New Joiner Details:
-<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:-2px;flex-shrink:0;"><path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/><circle cx="12" cy="7" r="4"/></svg> Full Name: {candidate_name}
-<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:-2px;flex-shrink:0;"><rect x="2" y="5" width="20" height="14" rx="2"/><circle cx="8" cy="12" r="2"/><path d="M14 9h4M14 12h4M14 15h2"/></svg> Employee ID: [Employee ID]
-<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:-2px;flex-shrink:0;"><rect x="2" y="7" width="20" height="14" rx="2" ry="2"/><path d="M16 21V5a2 2 0 00-2-2h-4a2 2 0 00-2 2v16"/></svg> Position: {job_title}
-<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:-2px;flex-shrink:0;"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg> Date Joined: {start_date}
-<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:-2px;flex-shrink:0;"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 000 7h5a3.5 3.5 0 010 7H6"/></svg> Agreed Salary: {salary}
-<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:-2px;flex-shrink:0;"><path d="M20.59 13.41l-7.17 7.17a2 2 0 01-2.83 0L2 12V2h10l8.59 8.59a2 2 0 010 2.82z"/><line x1="7" y1="7" x2="7.01" y2="7"/></svg> Department: [Department Name]
-<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:-2px;flex-shrink:0;"><rect x="1" y="4" width="22" height="16" rx="2" ry="2"/><line x1="1" y1="10" x2="23" y2="10"/></svg> Bank: [Bank Name]
-<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:-2px;flex-shrink:0;"><path d="M3 22h18"/><path d="M6 18V9"/><path d="M10 18V9"/><path d="M14 18V9"/><path d="M18 18V9"/><path d="M3 9l9-7 9 7"/></svg> Account No: [Account Number]
+ Full Name: {candidate_name}
+ Employee ID: [Employee ID]
+ Position: {job_title}
+ Date Joined: {start_date}
+ Agreed Salary: {salary}
+ Department: [Department Name]
+ Bank: [Bank Name]
+ Account No: [Account Number]
 
 Attached Documents:
-<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:-2px;flex-shrink:0;"><path d="M21.44 11.05l-9.19 9.19a6 6 0 01-8.49-8.49l9.19-9.19a4 4 0 015.66 5.66l-9.2 9.19a2 2 0 01-2.83-2.83l8.49-8.48"/></svg> Signed Employment Contract
-<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:-2px;flex-shrink:0;"><path d="M21.44 11.05l-9.19 9.19a6 6 0 01-8.49-8.49l9.19-9.19a4 4 0 015.66 5.66l-9.2 9.19a2 2 0 01-2.83-2.83l8.49-8.48"/></svg> IC / Passport copy
-<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:-2px;flex-shrink:0;"><path d="M21.44 11.05l-9.19 9.19a6 6 0 01-8.49-8.49l9.19-9.19a4 4 0 015.66 5.66l-9.2 9.19a2 2 0 01-2.83-2.83l8.49-8.48"/></svg> Bank account details
-<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:-2px;flex-shrink:0;"><path d="M21.44 11.05l-9.19 9.19a6 6 0 01-8.49-8.49l9.19-9.19a4 4 0 015.66 5.66l-9.2 9.19a2 2 0 01-2.83-2.83l8.49-8.48"/></svg> EPF / SOCSO details
-<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:-2px;flex-shrink:0;"><path d="M21.44 11.05l-9.19 9.19a6 6 0 01-8.49-8.49l9.19-9.19a4 4 0 015.66 5.66l-9.2 9.19a2 2 0 01-2.83-2.83l8.49-8.48"/></svg> Completed PCB / CP22 form
-<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:-2px;flex-shrink:0;"><path d="M21.44 11.05l-9.19 9.19a6 6 0 01-8.49-8.49l9.19-9.19a4 4 0 015.66 5.66l-9.2 9.19a2 2 0 01-2.83-2.83l8.49-8.48"/></svg> Signed offer letter
+ Signed Employment Contract
+ IC / Passport copy
+ Bank account details
+ EPF / SOCSO details
+ Completed PCB / CP22 form
+ Signed offer letter
 
 Kindly process the above for the upcoming payroll cycle. Please acknowledge receipt and advise if any documents are outstanding.
 
@@ -10392,7 +10538,7 @@ function openEmailVarEditor(candId) {
   const s = getSettings();
   const job = getJob(c.jobId);
 
-  document.getElementById('modal-title').textContent = '<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:-2px;flex-shrink:0;"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/></svg> Edit Email Variables';
+  document.getElementById('modal-title').innerHTML = '<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:-2px;flex-shrink:0;"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/></svg> Edit Email Variables';
   document.getElementById('modal-overlay').style.setProperty('--modal-w','540px');
   document.getElementById('modal-body').innerHTML = `
     <div style="font-size:12.5px;color:var(--text3);margin-bottom:4px;">
@@ -11612,15 +11758,15 @@ function renderProjectDetail(id) {
 function openNewProject() {
   const s = getSettings();
   const teamOptions = (s.team||[]).map(m=>'<option value="' + m.name + '">' + m.name + '</option>').join('');
-  document.getElementById('modal-title').textContent = '<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:-2px;flex-shrink:0;"><path d="M22 19a2 2 0 01-2 2H4a2 2 0 01-2-2V5a2 2 0 012-2h5l2 3h9a2 2 0 012 2z"/></svg> New Project';
+  document.getElementById('modal-title').innerHTML = '<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:-2px;flex-shrink:0;"><path d="M22 19a2 2 0 01-2 2H4a2 2 0 01-2-2V5a2 2 0 012-2h5l2 3h9a2 2 0 012 2z"/></svg> New Project';
   document.getElementById('modal-body').innerHTML = `
     <div class="form-row">
       <div class="form-group"><label>Project Name</label><input type="text" id="np-name" placeholder="e.g. Q1 2026 Engineering Hiring"></div>
       <div class="form-group"><label>Icon</label>
         <div style="display:flex;flex-wrap:wrap;gap:6px;margin-top:4px;" id="np-icon-picker">
-          ${['<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:-2px;flex-shrink:0;"><path d="M22 19a2 2 0 01-2 2H4a2 2 0 01-2-2V5a2 2 0 012-2h5l2 3h9a2 2 0 012 2z"/></svg>','<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:-2px;flex-shrink:0;"><path d="M12 2c0 0-6 4-6 12l6 4 6-4c0-8-6-12-6-12z"/><circle cx="12" cy="10" r="2"/></svg>','<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:-2px;flex-shrink:0;"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="6"/><circle cx="12" cy="12" r="2"/></svg>','<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:-2px;flex-shrink:0;"><line x1="12" y1="2" x2="12" y2="3"/><path d="M12 6a6 6 0 110 12 6 6 0 010-12z"/><path d="M10 18a2 2 0 104 0"/><line x1="12" y1="22" x2="12" y2="21"/></svg>','<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:-2px;flex-shrink:0;"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>','<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:-2px;flex-shrink:0;"><path d="M8.5 14.5A2.5 2.5 0 0011 12c0-1.38-.5-2-1-3-1.072-2.143-.224-4.054 2-6 .5 2.5 2 4.9 4 6.5 2 1.6 3 3.5 3 5.5a7 7 0 01-14 0c0-1.153.433-2.294 1-3a2.5 2.5 0 002.5 2.5z"/></svg>','<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:-2px;flex-shrink:0;"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>','<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:-2px;flex-shrink:0;"><path d="M6 9H4.5a2.5 2.5 0 010-5H6"/><path d="M18 9h1.5a2.5 2.5 0 000-5H18"/><path d="M4 22h16"/><path d="M10 14.66V17c0 .55-.47.98-.97 1.21C7.85 18.75 7 20.24 7 22"/><path d="M14 14.66V17c0 .55.47.98.97 1.21C16.15 18.75 17 20.24 17 22"/><path d="M18 2H6v7a6 6 0 0012 0V2z"/></svg>','<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:-2px;flex-shrink:0;"><circle cx="12" cy="12" r="10"/><path d="M12 8v8M8 12h8"/></svg>','<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:-2px;flex-shrink:0;"><path d="M14.7 6.3a1 1 0 000 1.4l1.6 1.6a1 1 0 001.4 0l3.77-3.77a6 6 0 01-7.94 7.94l-6.91 6.91a2.12 2.12 0 01-3-3l6.91-6.91a6 6 0 017.94-7.94l-3.76 3.76z"/></svg>','<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:-2px;flex-shrink:0;"><path d="M12.89 1.45l8 4A2 2 0 0122 7.24v9.53a2 2 0 01-1.11 1.79l-8 4a2 2 0 01-1.79 0l-8-4A2 2 0 012 16.76V7.24a2 2 0 011.11-1.79l8-4a2 2 0 011.78 0z"/><polyline points="2.32 6.16 12 11 21.68 6.16"/><line x1="12" y1="22.76" x2="12" y2="11"/></svg>','<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:-2px;flex-shrink:0;"><circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/><path d="M12 2a15.3 15.3 0 014 10 15.3 15.3 0 01-4 10 15.3 15.3 0 01-4-10 15.3 15.3 0 014-10z"/></svg>'].map(ic=>`<div onclick="selectProjectIcon('${ic}',this)" data-icon="${ic}" style="width:36px;height:36px;border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:18px;background:var(--bg3);border:2px solid var(--border);cursor:pointer;transition:all 0.15s;">${ic}</div>`).join('')}
+          ${['📁','🚀','🎯','⚡','🌟','🏆','📦','🔧','🌐','💡','🎨','💼','📊','🔔','📅','📝'].map(ic=>`<div onclick="selectProjectIcon('${ic}',this)" data-icon="${ic}" style="width:36px;height:36px;border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:18px;background:var(--bg3);border:2px solid var(--border);cursor:pointer;transition:all 0.15s;">${ic}</div>`).join('')}
         </div>
-        <input type="hidden" id="np-icon" value="<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:-2px;flex-shrink:0;"><path d="M22 19a2 2 0 01-2 2H4a2 2 0 01-2-2V5a2 2 0 012-2h5l2 3h9a2 2 0 012 2z"/></svg>">
+        <input type="hidden" id="np-icon" value="📋">
       </div>
     </div>
     <div class="form-group"><label>Description</label><textarea id="np-desc" placeholder="What is this project about?" style="min-height:70px;"></textarea></div>
@@ -11686,7 +11832,7 @@ function saveNewProject() {
 function openEditProject(id) {
   const p = getProject(id); if(!p) return;
   const s = getSettings();
-  document.getElementById('modal-title').textContent = '<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:-2px;flex-shrink:0;"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/></svg> Edit Project — ' + p.name;
+  document.getElementById('modal-title').innerHTML = '<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:-2px;flex-shrink:0;"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/></svg> Edit Project — ' + p.name;
   document.getElementById('modal-body').innerHTML = `
     <div class="form-row">
       <div class="form-group"><label>Project Name</label><input type="text" id="ep-name" value="${p.name}"></div>
@@ -11694,7 +11840,7 @@ function openEditProject(id) {
         <div style="display:flex;flex-wrap:wrap;gap:6px;margin-top:4px;" id="ep-icon-picker">
           ${['<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:-2px;flex-shrink:0;"><path d="M22 19a2 2 0 01-2 2H4a2 2 0 01-2-2V5a2 2 0 012-2h5l2 3h9a2 2 0 012 2z"/></svg>','<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:-2px;flex-shrink:0;"><path d="M12 2c0 0-6 4-6 12l6 4 6-4c0-8-6-12-6-12z"/><circle cx="12" cy="10" r="2"/></svg>','<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:-2px;flex-shrink:0;"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="6"/><circle cx="12" cy="12" r="2"/></svg>','<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:-2px;flex-shrink:0;"><line x1="12" y1="2" x2="12" y2="3"/><path d="M12 6a6 6 0 110 12 6 6 0 010-12z"/><path d="M10 18a2 2 0 104 0"/><line x1="12" y1="22" x2="12" y2="21"/></svg>','<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:-2px;flex-shrink:0;"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>','<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:-2px;flex-shrink:0;"><path d="M8.5 14.5A2.5 2.5 0 0011 12c0-1.38-.5-2-1-3-1.072-2.143-.224-4.054 2-6 .5 2.5 2 4.9 4 6.5 2 1.6 3 3.5 3 5.5a7 7 0 01-14 0c0-1.153.433-2.294 1-3a2.5 2.5 0 002.5 2.5z"/></svg>','<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:-2px;flex-shrink:0;"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>','<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:-2px;flex-shrink:0;"><path d="M6 9H4.5a2.5 2.5 0 010-5H6"/><path d="M18 9h1.5a2.5 2.5 0 000-5H18"/><path d="M4 22h16"/><path d="M10 14.66V17c0 .55-.47.98-.97 1.21C7.85 18.75 7 20.24 7 22"/><path d="M14 14.66V17c0 .55.47.98.97 1.21C16.15 18.75 17 20.24 17 22"/><path d="M18 2H6v7a6 6 0 0012 0V2z"/></svg>','<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:-2px;flex-shrink:0;"><circle cx="12" cy="12" r="10"/><path d="M12 8v8M8 12h8"/></svg>','<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:-2px;flex-shrink:0;"><path d="M14.7 6.3a1 1 0 000 1.4l1.6 1.6a1 1 0 001.4 0l3.77-3.77a6 6 0 01-7.94 7.94l-6.91 6.91a2.12 2.12 0 01-3-3l6.91-6.91a6 6 0 017.94-7.94l-3.76 3.76z"/></svg>','<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:-2px;flex-shrink:0;"><path d="M12.89 1.45l8 4A2 2 0 0122 7.24v9.53a2 2 0 01-1.11 1.79l-8 4a2 2 0 01-1.79 0l-8-4A2 2 0 012 16.76V7.24a2 2 0 011.11-1.79l8-4a2 2 0 011.78 0z"/><polyline points="2.32 6.16 12 11 21.68 6.16"/><line x1="12" y1="22.76" x2="12" y2="11"/></svg>','<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:-2px;flex-shrink:0;"><circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/><path d="M12 2a15.3 15.3 0 014 10 15.3 15.3 0 01-4 10 15.3 15.3 0 01-4-10 15.3 15.3 0 014-10z"/></svg>'].map(ic=>`<div onclick="document.getElementById('ep-icon').value='${ic}';this.closest('#ep-icon-picker').querySelectorAll('div').forEach(d=>{d.style.borderColor='var(--border)';d.style.background='var(--bg3)'});this.style.borderColor='var(--accent)';this.style.background='var(--accent-dim)'" style="width:36px;height:36px;border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:18px;background:${p.icon===ic?'var(--accent-dim)':'var(--bg3)'};border:2px solid ${p.icon===ic?'var(--accent)':'var(--border)'};cursor:pointer;">${ic}</div>`).join('')}
         </div>
-        <input type="hidden" id="ep-icon" value="${p.icon||'<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:-2px;flex-shrink:0;"><path d="M22 19a2 2 0 01-2 2H4a2 2 0 01-2-2V5a2 2 0 012-2h5l2 3h9a2 2 0 012 2z"/></svg>'}">
+        <input type="hidden" id="ep-icon" value="${p.icon||'📁'}">
       </div>
     </div>
     <div class="form-group"><label>Description</label><textarea id="ep-desc" style="min-height:70px;">${p.description||''}</textarea></div>
@@ -11754,7 +11900,7 @@ function deleteProject(id) {
 function openLinkJobsModal(id) {
   const p = getProject(id); if(!p) return;
   const availableJobs = jobs.filter(j=>j.status!=='Closed');
-  document.getElementById('modal-title').textContent = '<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:-2px;flex-shrink:0;"><rect x="2" y="7" width="20" height="14" rx="2" ry="2"/><path d="M16 21V5a2 2 0 00-2-2h-4a2 2 0 00-2 2v16"/></svg> Link Jobs to ' + p.name;
+  document.getElementById('modal-title').innerHTML = '<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:-2px;flex-shrink:0;"><rect x="2" y="7" width="20" height="14" rx="2" ry="2"/><path d="M16 21V5a2 2 0 00-2-2h-4a2 2 0 00-2 2v16"/></svg> Link Jobs to ' + p.name;
   document.getElementById('modal-body').innerHTML =
     '<div style="font-size:12px;color:var(--text3);margin-bottom:12px;">Select jobs to include in this project. Already linked jobs are pre-checked.</div>' +
     '<div style="display:flex;flex-direction:column;gap:8px;max-height:400px;overflow-y:auto;">' +
