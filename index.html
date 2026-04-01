@@ -11421,90 +11421,41 @@ async function loadInlinePdf(candId) {
   const isDocx = (cand.resumeFilename||'').toLowerCase().endsWith('.docx') ||
                  (cand.resumeType||'').includes('word');
 
-  container.innerHTML = '<div style="text-align:center;color:#ccc;padding:40px;"><div style="font-size:32px;margin-bottom:10px;"><svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:-2px;flex-shrink:0;"><path d="M5 22h14"/><path d="M5 2h14"/><path d="M17 22v-4.172a2 2 0 00-.586-1.414L12 12l-4.414 4.414A2 2 0 007 17.828V22"/><path d="M7 2v4.172a2 2 0 00.586 1.414L12 12l4.414-4.414A2 2 0 0017 6.172V2"/></svg></div><div style="font-size:14px;">Loading resume...</div></div>';
+  container.innerHTML = '<div style="text-align:center;color:#ccc;padding:40px;"><div style="font-size:14px;margin-top:16px;">Loading resume...</div></div>';
 
-  // Helper: show fallback with open/upload options
   const showFallback = (msg) => {
     container.innerHTML =
       '<div style="color:var(--text3);padding:32px;text-align:center;">' +
-      '<div style="font-size:36px;margin-bottom:12px;">' + (isDocx?'<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:-2px;flex-shrink:0;"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg>':'<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:-2px;flex-shrink:0;"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>') + '</div>' +
       '<div style="font-size:14px;font-weight:600;margin-bottom:6px;color:var(--text);">' + escapeHtml(cand.resumeFilename||'Resume') + '</div>' +
       '<div style="font-size:12px;color:var(--text3);margin-bottom:20px;">' + msg + '</div>' +
       '<div style="display:flex;gap:8px;justify-content:center;flex-wrap:wrap;">' +
-      '<button class="btn btn-primary btn-sm" onclick="viewResume('+candId+')">Open in New Tab <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:-2px;flex-shrink:0;"><line x1="7" y1="17" x2="17" y2="7"/><polyline points="7 7 17 7 17 17"/></svg></button>' +
-      '<button class="btn btn-ghost btn-sm" onclick="downloadResume('+candId+')"><svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:-2px;flex-shrink:0;"><line x1="12" y1="5" x2="12" y2="19"/><polyline points="19 12 12 19 5 12"/></svg> Download</button>' +
-      '<button class="btn btn-ghost btn-sm" onclick="openEditCandidate('+candId+')">↑ Re-upload Resume</button>' +
+      '<button class="btn btn-primary btn-sm" onclick="viewResume('+candId+')">Open in New Tab</button>' +
+      '<button class="btn btn-ghost btn-sm" onclick="downloadResume('+candId+')">Download</button>' +
+      '<button class="btn btn-ghost btn-sm" onclick="openEditCandidate('+candId+')">Re-upload</button>' +
       '</div></div>';
   };
 
-  // DOCX — can't preview inline, show buttons immediately
-  if(isDocx) { showFallback('DOCX files cannot be previewed inline.'); return; }
+  if(isDocx) { showFallback('DOCX files cannot be previewed inline. Use Open or Download.'); return; }
 
   try {
-    let pdfData = null;
-
-    // 1. Try localStorage (same device, instant)
-    try {
-      const stored = JSON.parse(localStorage.getItem('tf_resume_'+candId)||'null');
-      if(stored?.b64) {
-        const bin = atob(stored.b64);
-        pdfData = new Uint8Array(bin.length);
-        for(let i=0;i<bin.length;i++) pdfData[i] = bin.charCodeAt(i);
-      }
-    } catch(e) { console.warn('localStorage resume read failed:', e); }
-
-    // 1b. Try documents array (b64 stored inline)
-    if(!pdfData && (cand.documents||[]).length) {
-      const pdfDoc2 = cand.documents.find(d => (d.type?.includes('pdf') || d.name?.endsWith('.pdf')) && d.b64);
-      if(pdfDoc2?.b64) {
-        try {
-          const bin = atob(pdfDoc2.b64);
-          pdfData = new Uint8Array(bin.length);
-          for(let i=0;i<bin.length;i++) pdfData[i] = bin.charCodeAt(i);
-        } catch(e) {}
-      }
-    }
-
-    // 2. Try Firebase Storage (works across devices — fetch PDF bytes then render with PDF.js)
-    if(!pdfData && currentUser && window.getResumeData) {
-      try {
-        const r = await window.getResumeData(candId);
-        if(r?.url) {
-          container.innerHTML = '<div style="text-align:center;color:#ccc;padding:40px;"><div style="font-size:14px;">Loading from cloud...</div></div>';
-          try {
-            const resp = await fetch(r.url);
-            if(resp.ok) {
-              const buf = await resp.arrayBuffer();
-              pdfData = new Uint8Array(buf);
-              // Cache for next time (best effort)
-              try {
-                let b64 = '';
-                const chunk = 8192;
-                for(let i = 0; i < pdfData.length; i += chunk) {
-                  b64 += btoa(String.fromCharCode(...pdfData.subarray(i, i + chunk)));
-                }
-                localStorage.setItem('tf_resume_' + candId, JSON.stringify({
-                  b64, type: r.type || 'application/pdf', filename: cand.resumeFilename
-                }));
-              } catch(cacheErr) { /* quota exceeded — fine */ }
-            }
-          } catch(fetchErr) {
-            console.warn('Fetch from cloud failed, falling back to iframe:', fetchErr);
-            // Last resort iframe fallback
-            container.innerHTML = '<iframe src="' + r.url + '" style="width:100%;height:100%;border:none;background:#fff;"></iframe>';
-            return;
-          }
-        }
-      } catch(e) { console.warn('Cloud resume fetch failed:', e); }
-    }
-
-    // 3. No data found anywhere
-    if(!pdfData) {
-      showFallback('Resume not available. It may not have uploaded correctly — try re-uploading.');
+    // Always fetch straight from Firebase Storage
+    if(!currentUser || !window.getResumeData) {
+      showFallback('Not signed in — please refresh and try again.');
       return;
     }
 
-    // 4. Render with PDF.js from localStorage data
+    const r = await window.getResumeData(candId);
+    if(!r?.url) {
+      showFallback('Resume not found in cloud storage. Try re-uploading.');
+      return;
+    }
+
+    const resp = await fetch(r.url);
+    if(!resp.ok) throw new Error('HTTP ' + resp.status);
+
+    const buf = await resp.arrayBuffer();
+    const pdfData = new Uint8Array(buf);
+
     if(!window.pdfjsLib) { showFallback('PDF viewer not loaded. Try opening in a new tab.'); return; }
     pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
 
@@ -11517,7 +11468,7 @@ async function loadInlinePdf(candId) {
 
   } catch(err) {
     console.error('PDF load error:', err);
-    showFallback('Could not render PDF: ' + err.message);
+    showFallback('Could not load resume: ' + err.message + '. Try opening in a new tab.');
   }
 }
 
