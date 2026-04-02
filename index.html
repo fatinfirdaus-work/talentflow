@@ -3844,7 +3844,7 @@ function buildNotifications() {
     const hasFeedback = (c.feedback||[]).length > 0;
     const job = getJob(c.jobId);
     if(!hasFeedback) notifs.push({
-      icon:'<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:-2px;flex-shrink:0;"><path d="M16 4h2a2 2 0 012 2v14a2 2 0 01-2 2H6a2 2 0 01-2-2V6a2 2 0 012-2h2"/><rect x="8" y="2" width="8" height="4" rx="1" ry="1"/></svg>', iconBg:'var(--accent-dim)',
+      icon:'📋', iconBg:'var(--accent-dim)',
       text:`Feedback pending for <strong>${c.name}</strong> — ${job?job.title:''}`,
       time:'Action needed', unread:true,
       type:'cand', candId:c.id,
@@ -3859,7 +3859,7 @@ function buildNotifications() {
     const c = getCand(o.candidateId);
     const job = c?getJob(c.jobId):null;
     if(c) notifs.push({
-      icon:'<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:-2px;flex-shrink:0;"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>', iconBg:'var(--purple-dim)',
+      icon:'📄', iconBg:'var(--purple-dim)',
       text:`Offer pending for <strong>${c.name}</strong> — ${job?job.title:''}. Waiting for response.`,
       time:o.sentDate||'Recently', unread:true,
       type:'cand', candId:c.id,
@@ -3873,7 +3873,7 @@ function buildNotifications() {
   candidates.forEach(c=>{
     (c.interviews||[]).filter(iv=>iv.status==='Scheduled'&&iv.date>=today).forEach(iv=>{
       notifs.push({
-        icon:'<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:-2px;flex-shrink:0;"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>', iconBg:'var(--green-dim)',
+        icon:'📅', iconBg:'var(--green-dim)',
         text:`<strong>${iv.round}</strong> with <strong>${c.name}</strong> on ${iv.date} at ${iv.time} — ${iv.interviewer}`,
         time:iv.date===today?'Today!':iv.date, unread:iv.date===today,
         type:'cand', candId:c.id,
@@ -3889,7 +3889,7 @@ function buildNotifications() {
   candidates.filter(c=>c.applied>=sevenDaysAgo&&c.stage==='Applied').forEach(c=>{
     const job = getJob(c.jobId);
     notifs.push({
-      icon:'<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:-2px;flex-shrink:0;"><path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>', iconBg:'var(--accent-dim)',
+      icon:'👤', iconBg:'var(--accent-dim)',
       text:`New application from <strong>${c.name}</strong> for <strong>${job?job.title:''}</strong>`,
       time:c.applied, unread:true,
       type:'cand', candId:c.id,
@@ -3903,7 +3903,7 @@ function buildNotifications() {
   candidates.filter(c=>c.stage==='Hired').slice(0,2).forEach(c=>{
     const job = getJob(c.jobId);
     notifs.push({
-      icon:'<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:-2px;flex-shrink:0;"><circle cx="12" cy="12" r="10"/><path d="M8 14s1.5 2 4 2 4-2 4-2"/><line x1="9" y1="9" x2="9.01" y2="9"/><line x1="15" y1="9" x2="15.01" y2="9"/></svg>', iconBg:'var(--green-dim)',
+      icon:'🌐', iconBg:'var(--green-dim)',
       text:`<strong>${c.name}</strong> has been hired for <strong>${job?job.title:''}</strong> — congratulations!`,
       time:'Recently', unread:false,
       type:'cand', candId:c.id,
@@ -3916,7 +3916,7 @@ function buildNotifications() {
   // Jobs with no applicants
   jobs.filter(j=>j.status==='Active'&&j.applicants===0).forEach(j=>{
     notifs.push({
-      icon:'<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:-2px;flex-shrink:0;"><rect x="2" y="7" width="20" height="14" rx="2" ry="2"/><path d="M16 21V5a2 2 0 00-2-2h-4a2 2 0 00-2 2v16"/></svg>', iconBg:'var(--amber-dim)',
+      icon:'💼', iconBg:'var(--amber-dim)',
       text:`<strong>${j.title}</strong> has no applicants yet. Consider sharing the job posting.`,
       time:'Heads up', unread:false,
       type:'job', jobId:j.id,
@@ -3929,7 +3929,7 @@ function buildNotifications() {
   // Activities from the activity feed (last 5)
   activities.slice(0,5).forEach(a=>{
     notifs.push({
-      icon:'<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:-2px;flex-shrink:0;"><path d="M18 8A6 6 0 006 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 01-3.46 0"/></svg>', iconBg:'var(--bg4)',
+      icon:'🔔', iconBg:'var(--bg4)',
       text:a.text, time:a.time, unread:false,
       type:'activity',
       category:'movement'
@@ -3941,7 +3941,7 @@ function buildNotifications() {
     const job = getJob(c.jobId);
     const daysAgo = Math.round((Date.now()-new Date(c.rejectedAt))/(1000*60*60*24));
     if(daysAgo <= 14) notifs.push({
-      icon:'<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:-2px;flex-shrink:0;"><circle cx="12" cy="12" r="10"/><line x1="4.93" y1="4.93" x2="19.07" y2="19.07"/></svg>', iconBg:'var(--red-dim)',
+      icon:'🌐', iconBg:'var(--red-dim)',
       text:`<strong>${c.name}</strong> rejected — ${c.rejectionReasonLabel||'No reason'} · ${job?job.title:''}`,
       time: daysAgo===0?'Today':daysAgo===1?'Yesterday':`${daysAgo}d ago`,
       unread:false, type:'cand', candId:c.id,
@@ -3957,7 +3957,7 @@ function buildNotifications() {
     const startDate = candOffer?.startDate || '';
     const daysUntil = startDate ? Math.round((new Date(startDate)-new Date())/86400000) : null;
     notifs.push({
-      icon:'<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:-2px;flex-shrink:0;"><path d="M5 22h14"/><path d="M5 2h14"/><path d="M17 22v-4.172a2 2 0 00-.586-1.414L12 12l-4.414 4.414A2 2 0 007 17.828V22"/><path d="M7 2v4.172a2 2 0 00.586 1.414L12 12l4.414-4.414A2 2 0 0017 6.172V2"/></svg>', iconBg:'#06b6d418',
+      icon:'📋', iconBg:'#06b6d418',
       text:`<strong>${c.name}</strong> accepted offer for <strong>${job?job.title:''}</strong>${startDate?' — starts '+startDate:''}${daysUntil!==null?' ('+( daysUntil===0?'today':daysUntil>0?daysUntil+'d away':Math.abs(daysUntil)+'d overdue')+')':''}`,
       time: daysUntil===0?'Starting today!':daysUntil!==null&&daysUntil<0?'Start date passed':'Pending join',
       unread: daysUntil!==null&&daysUntil<=3,
@@ -3970,7 +3970,7 @@ function buildNotifications() {
     const job = getJob(c.jobId);
     const candOffer = offers.find(o=>o.candidateId===c.id&&o.status==='Accepted');
     if(candOffer) notifs.push({
-      icon:'<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:-2px;flex-shrink:0;"><circle cx="12" cy="12" r="10"/><path d="M8 14s1.5 2 4 2 4-2 4-2"/><line x1="9" y1="9" x2="9.01" y2="9"/><line x1="15" y1="9" x2="15.01" y2="9"/></svg>', iconBg:'var(--green-dim)',
+      icon:'🌐', iconBg:'var(--green-dim)',
       text:`<strong>${c.name}</strong> accepted offer for <strong>${job?job.title:''}</strong>${candOffer.startDate?' — starts '+candOffer.startDate:''}`,
       time:'Onboarding needed', unread:true,
       type:'cand', candId:c.id,
@@ -3985,7 +3985,7 @@ function buildNotifications() {
     const job = t.jobId ? getJob(parseInt(t.jobId)) : null;
     const cand = t.candidateId ? getCand(parseInt(t.candidateId)) : null;
     notifs.push({
-      icon:'<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:-2px;flex-shrink:0;"><path d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>', iconBg:'var(--red-dim)',
+      icon:'📋', iconBg:'var(--red-dim)',
       text:`Overdue task: <strong>${escapeHtml(t.title)}</strong>${job?' · '+escapeHtml(job.title):''}${cand?' · '+escapeHtml(cand.name):''}`,
       time:'Overdue · due ' + new Date(t.dueDate+'T00:00:00').toLocaleDateString('en-MY',{day:'numeric',month:'short'}),
       unread:true, type:'task', taskId:t.id,
@@ -3998,7 +3998,7 @@ function buildNotifications() {
   tasks.filter(t => t.dueDate === todayStr && t.status !== TASK_STATUSES[TASK_STATUSES.length-1]).forEach(t => {
     const job = t.jobId ? getJob(parseInt(t.jobId)) : null;
     notifs.push({
-      icon:'<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:-2px;flex-shrink:0;"><path d="M16 4h2a2 2 0 012 2v14a2 2 0 01-2 2H6a2 2 0 01-2-2V6a2 2 0 012-2h2"/><rect x="8" y="2" width="8" height="4" rx="1" ry="1"/></svg>', iconBg:'var(--amber-dim)',
+      icon:'📋', iconBg:'var(--amber-dim)',
       text:`Due today: <strong>${escapeHtml(t.title)}</strong>${job?' · '+escapeHtml(job.title):''}`,
       time:'Due today', unread:true, type:'task', taskId:t.id,
       action:'View Task', actionType:'task',
@@ -4086,7 +4086,7 @@ function updateHiringRound(i, key, val) {
 }
 function addHiringRound() {
   const rounds = getHiringRounds();
-  rounds.push({ id: 'custom_' + Date.now(), label: 'New Round', icon: '<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:-2px;flex-shrink:0;"><path d="M16 4h2a2 2 0 012 2v14a2 2 0 01-2 2H6a2 2 0 01-2-2V6a2 2 0 012-2h2"/><rect x="8" y="2" width="8" height="4" rx="1" ry="1"/></svg>', desc: '' });
+  rounds.push({ id: 'custom_' + Date.now(), label: 'New Round', icon: '📋', desc: '' });
   const s = getSettings(); s.hiringRounds = rounds;
   localStorage.setItem('tf_settings', JSON.stringify(s));
   switchSettingsTab('s-rounds');
@@ -5471,6 +5471,43 @@ function getEffectiveTpl(tplId) {
 
 
 
+// ── Self-heal: strip any SVG strings that leaked into stored settings/data ──
+function sanitizeStoredSvgIcons() {
+  try {
+    const raw = localStorage.getItem('tf_settings');
+    if(!raw) return;
+    const s = JSON.parse(raw);
+    let changed = false;
+    const ICON_FALLBACK = '📋';
+    const isSvg = (v) => typeof v === 'string' && v.trim().startsWith('<svg');
+
+    // Fix hiring rounds icons
+    if(s.hiringRounds) {
+      const emojiMap = { hr_screening:'📋', hiring_manager:'👤', technical:'💻', culture_fit:'🤝', final_round:'🏆' };
+      s.hiringRounds.forEach(r => {
+        if(isSvg(r.icon)) { r.icon = emojiMap[r.id] || ICON_FALLBACK; changed = true; }
+      });
+    }
+    // Fix onboarding category icons
+    if(s.onboarding?.categories) {
+      const catEmoji = ['📄','🎉','💻','💵','👥','✅'];
+      s.onboarding.categories.forEach((cat, i) => {
+        if(isSvg(cat.icon)) { cat.icon = catEmoji[i] || ICON_FALLBACK; changed = true; }
+      });
+    }
+    // Fix pipeline stages (if they have icons stored)
+    if(s.stages) {
+      s.stages.forEach(st => {
+        if(isSvg(st.icon)) { st.icon = ICON_FALLBACK; changed = true; }
+      });
+    }
+    if(changed) {
+      localStorage.setItem('tf_settings', JSON.stringify(s));
+      console.log('TalentFlow: Sanitized SVG icons from stored settings');
+    }
+  } catch(e) { /* non-critical */ }
+}
+
 // Apply saved settings on load
 function applySavedSettings() {
   const s = getSettings();
@@ -6807,11 +6844,11 @@ function addToTimeline(c, title, color) {
 
 // Your hiring rounds & team — pre-configured
 const DEFAULT_HIRING_ROUNDS = [
-  { id:'hr_screening',   label:'HR Screening',         icon:'<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:-2px;flex-shrink:0;"><path d="M16 4h2a2 2 0 012 2v14a2 2 0 01-2 2H6a2 2 0 01-2-2V6a2 2 0 012-2h2"/><rect x="8" y="2" width="8" height="4" rx="1" ry="1"/></svg>', desc:'Initial HR review & fit check' },
-  { id:'hiring_manager', label:'Hiring Manager Review', icon:'<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:-2px;flex-shrink:0;"><path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>', desc:'Hiring manager evaluation' },
-  { id:'technical',      label:'Technical Interview',   icon:'<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:-2px;flex-shrink:0;"><rect x="2" y="3" width="20" height="14" rx="2" ry="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg>', desc:'Technical skills assessment' },
-  { id:'culture_fit',    label:'Culture Fit',           icon:'<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:-2px;flex-shrink:0;"><path d="M20.84 4.61a5.5 5.5 0 00-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 00-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 000-7.78z"/></svg>', desc:'Team & culture alignment' },
-  { id:'final_round',    label:'Final Round',           icon:'<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:-2px;flex-shrink:0;"><path d="M6 9H4.5a2.5 2.5 0 010-5H6"/><path d="M18 9h1.5a2.5 2.5 0 000-5H18"/><path d="M4 22h16"/><path d="M10 14.66V17c0 .55-.47.98-.97 1.21C7.85 18.75 7 20.24 7 22"/><path d="M14 14.66V17c0 .55.47.98.97 1.21C16.15 18.75 17 20.24 17 22"/><path d="M18 2H6v7a6 6 0 0012 0V2z"/></svg>', desc:'Final decision interview' },
+  { id:'hr_screening',   label:'HR Screening',         icon:'📋', desc:'Initial HR review & fit check' },
+  { id:'hiring_manager', label:'Hiring Manager Review', icon:'👤', desc:'Hiring manager evaluation' },
+  { id:'technical',      label:'Technical Interview',   icon:'💻', desc:'Technical skills assessment' },
+  { id:'culture_fit',    label:'Culture Fit',           icon:'🤝', desc:'Team & culture alignment' },
+  { id:'final_round',    label:'Final Round',           icon:'🏆', desc:'Final decision interview' },
 ];
 const DEFAULT_COMPETENCIES = ['Communication Skills','Technical Knowledge','Problem Solving','Culture Fit','Work Experience','Leadership','Motivation & Initiative'];
 
@@ -7032,11 +7069,11 @@ function openAddFeedbackRound(id, preRound, preInterviewer) {
       <label>Hiring Recommendation</label>
       <div style="display:grid;grid-template-columns:repeat(5,1fr);gap:6px;margin-top:6px;">
         ${[
-          {val:'Strong Yes', color:'var(--green)',   bg:'var(--green-dim)',  icon:'<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:-2px;flex-shrink:0;"><path d="M14 9V5a3 3 0 00-3-3l-4 9v11h11.28a2 2 0 002-1.7l1.38-9a2 2 0 00-2-2.3H14z"/><path d="M7 22H4a2 2 0 01-2-2v-7a2 2 0 012-2h3"/></svg><svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:-2px;flex-shrink:0;"><path d="M14 9V5a3 3 0 00-3-3l-4 9v11h11.28a2 2 0 002-1.7l1.38-9a2 2 0 00-2-2.3H14z"/><path d="M7 22H4a2 2 0 01-2-2v-7a2 2 0 012-2h3"/></svg>'},
-          {val:'Yes',        color:'var(--accent)',  bg:'var(--accent-dim)', icon:'<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:-2px;flex-shrink:0;"><path d="M14 9V5a3 3 0 00-3-3l-4 9v11h11.28a2 2 0 002-1.7l1.38-9a2 2 0 00-2-2.3H14z"/><path d="M7 22H4a2 2 0 01-2-2v-7a2 2 0 012-2h3"/></svg>'},
-          {val:'Maybe',      color:'var(--amber)',   bg:'var(--amber-dim)',  icon:'<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:-2px;flex-shrink:0;"><circle cx="12" cy="12" r="10"/><path d="M9 9a3 3 0 015.12 2.12c0 2-3 3-3 3"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>'},
-          {val:'No',         color:'var(--red)',     bg:'var(--red-dim)',    icon:'<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:-2px;flex-shrink:0;"><path d="M10 15v4a3 3 0 003 3l4-9V2H5.72a2 2 0 00-2 1.7l-1.38 9a2 2 0 002 2.3H10z"/><path d="M17 2h2.67A2.31 2.31 0 0122 4v7a2.31 2.31 0 01-2.33 2H17"/></svg>'},
-          {val:'Strong No',  color:'var(--red)',     bg:'var(--red-dim)',    icon:'<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:-2px;flex-shrink:0;"><circle cx="12" cy="12" r="10"/><line x1="4.93" y1="4.93" x2="19.07" y2="19.07"/></svg>'},
+          {val:'Strong Yes', color:'var(--green)',   bg:'var(--green-dim)',  icon:'📋'},
+          {val:'Yes',        color:'var(--accent)',  bg:'var(--accent-dim)', icon:'📋'},
+          {val:'Maybe',      color:'var(--amber)',   bg:'var(--amber-dim)',  icon:'🌐'},
+          {val:'No',         color:'var(--red)',     bg:'var(--red-dim)',    icon:'📋'},
+          {val:'Strong No',  color:'var(--red)',     bg:'var(--red-dim)',    icon:'🌐'},
         ].map(r=>`
           <div onclick="selectRec(this,'${r.val}')" data-rec="${r.val}"
             style="padding:8px 4px;border-radius:8px;border:2px solid var(--border);background:var(--bg3);
@@ -8086,7 +8123,7 @@ function saveJob() {
   const newJob = {
     id: newId, title, dept, type:'Full-time', location:'', status:'Active',
     applicants:0, salary:'TBD', posted: new Date().toISOString().split('T')[0],
-    color: colors[newId%colors.length], icon: icons[dept]||'<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:-2px;flex-shrink:0;"><rect x="2" y="7" width="20" height="14" rx="2" ry="2"/><path d="M16 21V5a2 2 0 00-2-2h-4a2 2 0 00-2 2v16"/></svg>',
+    color: colors[newId%colors.length], icon: icons[dept]||'💼',
     skills:[], priority:'Medium', jobStages:[], assessments:[]
   };
   applyJobFormToObject(newJob);
@@ -8598,27 +8635,27 @@ function showStageFollowUp(id, newStage, prevStage) {
 
   const configs = {
     'Screening': {
-      icon:'<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:-2px;flex-shrink:0;"><path d="M22 16.92v3a2 2 0 01-2.18 2 19.79 19.79 0 01-8.63-3.07A19.5 19.5 0 013.07 9.81a19.79 19.79 0 01-3.07-8.63A2 2 0 012 .82h3a2 2 0 012 1.72c.127.96.361 1.903.7 2.81a2 2 0 01-.45 2.11L6.91 8.35a16 16 0 006.74 6.74l1.61-1.61a2 2 0 012.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0122 16.92z"/></svg>', title:'Schedule Screening Call?',
+      icon:'📋', title:'Schedule Screening Call?',
       body:`<strong>${escapeHtml(c.name)}</strong> is now in Screening. Would you like to schedule a screening call?`,
       btnLabel:'<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:-2px;flex-shrink:0;"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg> Schedule Now', btnAction:`closeModal();openScheduleInterview(${id})`, skip:'Skip for now'
     },
     'Interview': {
-      icon:'<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:-2px;flex-shrink:0;"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>', title:'Schedule Interview?',
+      icon:'📅', title:'Schedule Interview?',
       body:`<strong>${escapeHtml(c.name)}</strong> is ready for interviews. Schedule the first round now?`,
       btnLabel:'<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:-2px;flex-shrink:0;"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg> Schedule Interview', btnAction:`closeModal();openScheduleInterview(${id})`, skip:'Skip for now'
     },
     'Offer': {
-      icon:'<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:-2px;flex-shrink:0;"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>', title:'Create Offer?',
+      icon:'📄', title:'Create Offer?',
       body:`<strong>${escapeHtml(c.name)}</strong> has been moved to Offer stage. Create and send an offer now?`,
       btnLabel:'<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:-2px;flex-shrink:0;"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/></svg> Create Offer', btnAction:`closeModal();openCreateOffer(${id})`, skip:'Do it later'
     },
     'Pending Join': {
-      icon:'<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:-2px;flex-shrink:0;"><circle cx="12" cy="12" r="10"/><path d="M8 14s1.5 2 4 2 4-2 4-2"/><line x1="9" y1="9" x2="9.01" y2="9"/><line x1="15" y1="9" x2="15.01" y2="9"/></svg>', title:'Offer Accepted — Pending Start!',
+      icon:'🌐', title:'Offer Accepted — Pending Start!',
       body:`<strong>${escapeHtml(c.name)}</strong> has accepted the offer. Make sure the start date is set in their offer details.`,
       btnLabel:'<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:-2px;flex-shrink:0;"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/></svg> View Offer Details', btnAction:`closeModal();openCandProfile(${id})`, skip:'Got it'
     },
     'Hired': {
-      icon:'<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:-2px;flex-shrink:0;"><circle cx="12" cy="12" r="10"/><path d="M8 14s1.5 2 4 2 4-2 4-2"/><line x1="9" y1="9" x2="9.01" y2="9"/><line x1="15" y1="9" x2="15.01" y2="9"/></svg>', title:'Welcome to the team!',
+      icon:'🌐', title:'Welcome to the team!',
       body:`<strong>${escapeHtml(c.name)}</strong> has officially joined. Start the onboarding process!`,
       btnLabel:'<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:-2px;flex-shrink:0;"><path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/><circle cx="12" cy="7" r="4"/></svg> View Profile', btnAction:`closeModal();openCandProfile(${id})`, skip:'Close'
     },
@@ -8860,7 +8897,7 @@ function showGlobalResults(query) {
     const searchable = [j.title, j.dept, j.location, j.type, j.salary,
       (j.skills||[]).join(' '), j.description].filter(Boolean).join(' ').toLowerCase();
     if(searchable.includes(q)) {
-      results.push({ type:'job', icon:j.icon||'<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:-2px;flex-shrink:0;"><rect x="2" y="7" width="20" height="14" rx="2" ry="2"/><path d="M16 21V5a2 2 0 00-2-2h-4a2 2 0 00-2 2v16"/></svg>', color:j.color||'#4f8ef7',
+      results.push({ type:'job', icon:j.icon||'💼', color:j.color||'#4f8ef7',
         title:j.title, sub:j.dept + ' · ' + j.location + ' · ' + j.status,
         action:`showPage('jobs',null);setTimeout(()=>openJobDetail(${j.id}),100)`,
         score: j.title.toLowerCase().startsWith(q)?3:2 });
@@ -8871,7 +8908,7 @@ function showGlobalResults(query) {
   projects.forEach(p => {
     const searchable = [p.name, p.description, p.status, (p.team||[]).join(' ')].filter(Boolean).join(' ').toLowerCase();
     if(searchable.includes(q)) {
-      results.push({ type:'project', icon:p.icon||'<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:-2px;flex-shrink:0;"><path d="M22 19a2 2 0 01-2 2H4a2 2 0 01-2-2V5a2 2 0 012-2h5l2 3h9a2 2 0 012 2z"/></svg>', color:p.color||'#4f8ef7',
+      results.push({ type:'project', icon:p.icon||'📁', color:p.color||'#4f8ef7',
         title:p.name, sub:(p.description||'').slice(0,50) + (p.description?.length>50?'…':''),
         action:`openProjectDetail(${p.id})`, score:2 });
     }
@@ -9537,7 +9574,7 @@ const EMAIL_TEMPLATES = [
     id: 'hr_screen',
     category: 'interview',
     categoryLabel: 'Interview',
-    icon: '<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:-2px;flex-shrink:0;"><path d="M22 16.92v3a2 2 0 01-2.18 2 19.79 19.79 0 01-8.63-3.07A19.5 19.5 0 013.07 9.81a19.79 19.79 0 01-3.07-8.63A2 2 0 012 .82h3a2 2 0 012 1.72c.127.96.361 1.903.7 2.81a2 2 0 01-.45 2.11L6.91 8.35a16 16 0 006.74 6.74l1.61-1.61a2 2 0 012.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0122 16.92z"/></svg>',
+    icon: '📋',
     color: 'var(--accent)',
     title: 'HR Screening Call',
     subject: 'HR Screening Call Invitation – {job_title} at {company_name}',
@@ -9564,7 +9601,7 @@ Warm regards,
     id: 'tech_interview',
     category: 'interview',
     categoryLabel: 'Interview',
-    icon: '<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:-2px;flex-shrink:0;"><rect x="2" y="3" width="20" height="14" rx="2" ry="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg>',
+    icon: '💻',
     color: 'var(--accent)',
     title: 'Technical Interview',
     subject: 'Technical Interview Invitation – {job_title} at {company_name}',
@@ -9595,7 +9632,7 @@ Best regards,
     id: 'hiring_manager',
     category: 'interview',
     categoryLabel: 'Interview',
-    icon: '<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:-2px;flex-shrink:0;"><path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>',
+    icon: '👤',
     color: 'var(--accent)',
     title: 'Hiring Manager Interview',
     subject: 'Interview with Hiring Manager – {job_title} at {company_name}',
@@ -9623,7 +9660,7 @@ Best regards,
     id: 'final_round',
     category: 'interview',
     categoryLabel: 'Interview',
-    icon: '<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:-2px;flex-shrink:0;"><path d="M6 9H4.5a2.5 2.5 0 010-5H6"/><path d="M18 9h1.5a2.5 2.5 0 000-5H18"/><path d="M4 22h16"/><path d="M10 14.66V17c0 .55-.47.98-.97 1.21C7.85 18.75 7 20.24 7 22"/><path d="M14 14.66V17c0 .55.47.98.97 1.21C16.15 18.75 17 20.24 17 22"/><path d="M18 2H6v7a6 6 0 0012 0V2z"/></svg>',
+    icon: '🏆',
     color: 'var(--accent)',
     title: 'Final Round Interview',
     subject: 'Final Round Interview Invitation – {job_title} at {company_name}',
@@ -9650,7 +9687,7 @@ Kind regards,
     id: 'reject_screening',
     category: 'rejection',
     categoryLabel: 'Rejection',
-    icon: '<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:-2px;flex-shrink:0;"><path d="M12 2a10 10 0 100 20A10 10 0 0012 2z"/><path d="M12 8v8M9.5 10.5L12 8l2.5 2.5"/></svg>',
+    icon: '📋',
     color: 'var(--red)',
     title: 'Post-Screening Rejection',
     subject: 'Your Application for {job_title} at {company_name}',
@@ -9672,7 +9709,7 @@ Warm regards,
     id: 'reject_interview',
     category: 'rejection',
     categoryLabel: 'Rejection',
-    icon: '<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:-2px;flex-shrink:0;"><path d="M12 2a10 10 0 100 20A10 10 0 0012 2z"/><path d="M12 8v8M9.5 10.5L12 8l2.5 2.5"/></svg>',
+    icon: '📋',
     color: 'var(--red)',
     title: 'Post-Interview Rejection',
     subject: 'Update on Your {job_title} Application – {company_name}',
@@ -9694,7 +9731,7 @@ Kind regards,
     id: 'reject_offer',
     category: 'rejection',
     categoryLabel: 'Rejection',
-    icon: '<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:-2px;flex-shrink:0;"><path d="M12 2a10 10 0 100 20A10 10 0 0012 2z"/><path d="M12 8v8M9.5 10.5L12 8l2.5 2.5"/></svg>',
+    icon: '📋',
     color: 'var(--red)',
     title: 'Post-Offer Rejection',
     subject: 'Regarding Your Offer – {job_title} at {company_name}',
@@ -9717,7 +9754,7 @@ With apologies and best wishes,
     id: 'offer_letter',
     category: 'offer',
     categoryLabel: 'Offer',
-    icon: '<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:-2px;flex-shrink:0;"><circle cx="12" cy="12" r="10"/><path d="M8 14s1.5 2 4 2 4-2 4-2"/><line x1="9" y1="9" x2="9.01" y2="9"/><line x1="15" y1="9" x2="15.01" y2="9"/></svg>',
+    icon: '🌐',
     color: 'var(--green)',
     title: 'Offer Letter',
     subject: 'Job Offer – {job_title} at {company_name}',
@@ -9748,7 +9785,7 @@ Warm regards,
     id: 'onboard_welcome',
     category: 'onboarding',
     categoryLabel: 'Onboarding',
-    icon: '<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:-2px;flex-shrink:0;"><path d="M18 11V6a2 2 0 00-2-2 2 2 0 00-2 2"/><path d="M14 10V4a2 2 0 00-2-2 2 2 0 00-2 2v2"/><path d="M10 10.5V6a2 2 0 00-2-2 2 2 0 00-2 2v8"/><path d="M18 8a2 2 0 114 0v6a8 8 0 01-8 8h-2c-2.8 0-4.5-.86-5.99-2.34l-3.6-3.6a2 2 0 012.83-2.82L7 15"/></svg>',
+    icon: '📋',
     color: 'var(--purple)',
     title: 'Welcome to the Team',
     subject: 'Welcome to {company_name}, {candidate_name}! <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:-2px;flex-shrink:0;"><circle cx="12" cy="12" r="10"/><path d="M8 14s1.5 2 4 2 4-2 4-2"/><line x1="9" y1="9" x2="9.01" y2="9"/><line x1="15" y1="9" x2="15.01" y2="9"/></svg>',
@@ -9782,7 +9819,7 @@ See you soon,
     id: 'onboard_day1_prep',
     category: 'onboarding',
     categoryLabel: 'Onboarding',
-    icon: '<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:-2px;flex-shrink:0;"><path d="M16 4h2a2 2 0 012 2v14a2 2 0 01-2 2H6a2 2 0 01-2-2V6a2 2 0 012-2h2"/><rect x="8" y="2" width="8" height="4" rx="1" ry="1"/></svg>',
+    icon: '📋',
     color: 'var(--purple)',
     title: 'Pre-Day 1 Checklist',
     subject: 'Getting Ready for Your First Day – {company_name}',
@@ -9821,7 +9858,7 @@ Warmly,
     id: 'onboard_week1',
     category: 'onboarding',
     categoryLabel: 'Onboarding',
-    icon: '<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:-2px;flex-shrink:0;"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>',
+    icon: '📅',
     color: 'var(--purple)',
     title: 'First Week Schedule',
     subject: 'Your First Week at {company_name} – Schedule Inside',
@@ -9862,7 +9899,7 @@ Looking forward to an amazing first week,
     id: 'onboard_30day',
     category: 'onboarding',
     categoryLabel: 'Onboarding',
-    icon: '<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:-2px;flex-shrink:0;"><path d="M12 22V12"/><path d="M17 8c0-2.8-2.2-5-5-5S7 5.2 7 8c0 3.3 2.2 6 5 6s5-2.7 5-6z"/></svg>',
+    icon: '📋',
     color: 'var(--purple)',
     title: '30-Day Check-in',
     subject: '30 Days at {company_name} – How Are You Settling In?',
@@ -9893,7 +9930,7 @@ Warmly,
     id: 'ob_docs_offer',
     category: 'onboarding',
     categoryLabel: 'Onboarding',
-    icon: '<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:-2px;flex-shrink:0;"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>',
+    icon: '📄',
     color: 'var(--purple)',
     title: 'Docs for Offer Email',
     audience: 'candidate',
@@ -9923,7 +9960,7 @@ Best regards,
     id: 'ob_indicative_offer',
     category: 'onboarding',
     categoryLabel: 'Onboarding',
-    icon: '<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:-2px;flex-shrink:0;"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 000 7h5a3.5 3.5 0 010 7H6"/></svg>',
+    icon: '💰',
     color: 'var(--purple)',
     title: 'Indicative Offer Email',
     audience: 'candidate',
@@ -9952,7 +9989,7 @@ Warm regards,
     id: 'ob_post_acceptance',
     category: 'onboarding',
     categoryLabel: 'Onboarding',
-    icon: '<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:-2px;flex-shrink:0;"><circle cx="12" cy="12" r="10"/><path d="M8 14s1.5 2 4 2 4-2 4-2"/><line x1="9" y1="9" x2="9.01" y2="9"/><line x1="15" y1="9" x2="15.01" y2="9"/></svg>',
+    icon: '🌐',
     color: 'var(--purple)',
     title: 'Post-Acceptance Congratulations',
     audience: 'candidate',
@@ -9984,7 +10021,7 @@ Warmest regards,
     id: 'ob_create_employee_id',
     category: 'onboarding',
     categoryLabel: 'Onboarding',
-    icon: '<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:-2px;flex-shrink:0;"><rect x="2" y="5" width="20" height="14" rx="2"/><circle cx="8" cy="12" r="2"/><path d="M14 9h4M14 12h4M14 15h2"/></svg>',
+    icon: '📋',
     color: 'var(--purple)',
     title: 'People Services – Create Employee ID',
     audience: 'internal',
@@ -10016,7 +10053,7 @@ HR / Talent Acquisition
     id: 'ob_sap_laptop',
     category: 'onboarding',
     categoryLabel: 'Onboarding',
-    icon: '<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:-2px;flex-shrink:0;"><rect x="2" y="3" width="20" height="14" rx="2" ry="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg>',
+    icon: '💻',
     color: 'var(--purple)',
     title: 'People Services + IT – SAP & Laptop',
     audience: 'internal',
@@ -10056,7 +10093,7 @@ HR / Talent Acquisition
     id: 'ob_payroll_docs',
     category: 'onboarding',
     categoryLabel: 'Onboarding',
-    icon: '<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:-2px;flex-shrink:0;"><path d="M16 4h2a2 2 0 012 2v14a2 2 0 01-2 2H6a2 2 0 01-2-2V6a2 2 0 012-2h2"/><rect x="8" y="2" width="8" height="4" rx="1" ry="1"/></svg>',
+    icon: '📋',
     color: 'var(--purple)',
     title: 'Payroll Docs Collection (to candidate)',
     audience: 'candidate',
@@ -10087,7 +10124,7 @@ Best regards,
     id: 'ob_team_leader_notify',
     category: 'onboarding',
     categoryLabel: 'Onboarding',
-    icon: '<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:-2px;flex-shrink:0;"><path d="M18 11V6a2 2 0 00-2-2 2 2 0 00-2 2"/><path d="M14 10V4a2 2 0 00-2-2 2 2 0 00-2 2v2"/><path d="M10 10.5V6a2 2 0 00-2-2 2 2 0 00-2 2v8"/><path d="M18 8a2 2 0 114 0v6a8 8 0 01-8 8h-2c-2.8 0-4.5-.86-5.99-2.34l-3.6-3.6a2 2 0 012.83-2.82L7 15"/></svg>',
+    icon: '📋',
     color: 'var(--purple)',
     title: 'Team Leader Notification',
     audience: 'internal',
@@ -10122,7 +10159,7 @@ HR / Talent Acquisition
     id: 'ob_calendar_invite',
     category: 'onboarding',
     categoryLabel: 'Onboarding',
-    icon: '<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:-2px;flex-shrink:0;"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>',
+    icon: '📅',
     color: 'var(--purple)',
     title: 'Onboarding Calendar Invite',
     audience: 'candidate',
@@ -10164,7 +10201,7 @@ Warm regards,
     id: 'ob_day1_email',
     category: 'onboarding',
     categoryLabel: 'Onboarding',
-    icon: '<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:-2px;flex-shrink:0;"><circle cx="12" cy="12" r="5"/><path d="M2 12h1M21 12h1M12 2v1M12 21v1M4.22 4.22l.707.707M19.07 19.07l.707.707M4.22 19.78l.707-.707M19.07 4.93l.707-.707"/></svg>',
+    icon: '📋',
     color: 'var(--purple)',
     title: 'Day 1 Welcome Email',
     audience: 'candidate',
@@ -10203,7 +10240,7 @@ With excitement,
     id: 'ob_payroll_submission',
     category: 'onboarding',
     categoryLabel: 'Onboarding',
-    icon: '<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:-2px;flex-shrink:0;"><rect x="1" y="4" width="22" height="16" rx="2" ry="2"/><line x1="1" y1="10" x2="23" y2="10"/></svg>',
+    icon: '📋',
     color: 'var(--purple)',
     title: 'Payroll Submission (to Payroll Team)',
     audience: 'internal',
@@ -10618,34 +10655,34 @@ function getEmailVariables(candId) {
 const DEFAULT_ONBOARDING_SETTINGS = {
   categories: [
     {
-      icon: '<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:-2px;flex-shrink:0;"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>', name: 'Pre-Offer Documents',
+      icon: '📄', name: 'Pre-Offer Documents',
       tasks: [
         { title: 'Send docs checklist for offer email to candidate', assignTo: 'hr', daysOffset: -30 },
         { title: 'Send indicative offer email to candidate', assignTo: 'hr', daysOffset: -28 },
       ]
     },
     {
-      icon: '<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:-2px;flex-shrink:0;"><circle cx="12" cy="12" r="10"/><path d="M8 14s1.5 2 4 2 4-2 4-2"/><line x1="9" y1="9" x2="9.01" y2="9"/><line x1="15" y1="9" x2="15.01" y2="9"/></svg>', name: 'Post-Acceptance',
+      icon: '🌐', name: 'Post-Acceptance',
       tasks: [
         { title: 'Send congratulatory email with policies & handbook', assignTo: 'hr', daysOffset: -21 },
         { title: 'Email People Services to create Employee ID', assignTo: 'hr', daysOffset: -21 },
       ]
     },
     {
-      icon: '<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:-2px;flex-shrink:0;"><rect x="2" y="3" width="20" height="14" rx="2" ry="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg>', name: 'IT & Systems Setup',
+      icon: '💻', name: 'IT & Systems Setup',
       tasks: [
         { title: 'Email People Services to create SAP account', assignTo: 'hr', daysOffset: -14 },
         { title: 'Email IT for laptop collection arrangement', assignTo: 'it', daysOffset: -14 },
       ]
     },
     {
-      icon: '<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:-2px;flex-shrink:0;"><rect x="1" y="4" width="22" height="16" rx="2" ry="2"/><line x1="1" y1="10" x2="23" y2="10"/></svg>', name: 'Payroll & Docs',
+      icon: '📋', name: 'Payroll & Docs',
       tasks: [
         { title: 'Send docs collection email to candidate for payroll', assignTo: 'hr', daysOffset: -10 },
       ]
     },
     {
-      icon: '<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:-2px;flex-shrink:0;"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87"/><path d="M16 3.13a4 4 0 010 7.75"/></svg>', name: 'Pre-Joining Comms',
+      icon: '👥', name: 'Pre-Joining Comms',
       tasks: [
         { title: 'Email team leader — new subordinate joining soon', assignTo: 'manager', daysOffset: -7 },
         { title: 'Send onboarding calendar invite to new joiner', assignTo: 'hr', daysOffset: -5 },
@@ -10653,7 +10690,7 @@ const DEFAULT_ONBOARDING_SETTINGS = {
       ]
     },
     {
-      icon: '<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:-2px;flex-shrink:0;"><path d="M22 11.08V12a10 10 0 11-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>', name: 'Post-Joining',
+      icon: '✅', name: 'Post-Joining',
       tasks: [
         { title: 'Submit payroll docs to payroll team', assignTo: 'payroll', daysOffset: 3 },
         { title: 'Collect signed offer letter & employment contract', assignTo: 'hr', daysOffset: 1 },
@@ -10726,7 +10763,7 @@ function deleteObCat(ci) {
 }
 function addOnboardingCategory() {
   const ob = getOnboardingSettings();
-  ob.categories.push({ icon:'<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:-2px;flex-shrink:0;"><path d="M16 4h2a2 2 0 012 2v14a2 2 0 01-2 2H6a2 2 0 01-2-2V6a2 2 0 012-2h2"/><rect x="8" y="2" width="8" height="4" rx="1" ry="1"/></svg>', name:'New Category', tasks:[] });
+  ob.categories.push({ icon:'📋', name:'New Category', tasks:[] });
   _saveObSettings(ob);
   switchSettingsTab('s-onboarding');
 }
@@ -11901,6 +11938,7 @@ populateJobFilters();
 loadProjectsFromStorage();
 initCustomStages();
 renderDashboard();
+sanitizeStoredSvgIcons();
 applySavedSettings();
 initSidebarState();
 initMobileNav();
