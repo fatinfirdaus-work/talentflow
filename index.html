@@ -4103,6 +4103,24 @@ function removeHiringRound(i) {
   switchSettingsTab('s-rounds');
 }
 function saveHiringRounds() {
+  // Collect round data from DOM inputs
+  const rounds = [];
+  document.querySelectorAll('#rounds-list > div').forEach((row, i) => {
+    const inputs = row.querySelectorAll('input');
+    if(inputs.length >= 2) {
+      rounds.push({
+        id: 'round_' + i,
+        icon: inputs[0]?.value || '📋',
+        label: inputs[1]?.value || 'Round ' + (i+1),
+        desc: inputs[2]?.value || ''
+      });
+    }
+  });
+  if(rounds.length > 0) {
+    const s = getSettings();
+    s.hiringRounds = rounds;
+    localStorage.setItem('tf_settings', JSON.stringify(s));
+  }
   showToast('Interview rounds saved ✓');
   switchSettingsTab('s-rounds');
 }
@@ -9550,25 +9568,57 @@ function exportFullReport() {
 }
 
 function getResumeData(id) { try { return JSON.parse(localStorage.getItem(`tf_resume_${id}`)); } catch(e) { return null; } }
-function viewResume(id) {
-  const r = getResumeData(id);
-  if(!r) { showToast('Resume not found'); return; }
-  if(r.type === 'application/pdf') {
-    const blob = b64toBlob(r.b64, r.type);
-    const url = URL.createObjectURL(blob);
-    window.open(url, '_blank');
-  } else {
-    downloadResume(id);
-  }
+
+function getResumeB64(id) {
+  // Check localStorage first
+  const stored = getResumeData(id);
+  if(stored?.b64) return stored;
+  // Then check documents array
+  const cand = getCand(id);
+  const docs = cand?.documents || [];
+  const pdfDoc = docs.find(d => d.b64 && (d.type?.includes('pdf') || d.name?.toLowerCase().endsWith('.pdf')));
+  if(pdfDoc?.b64) return { b64: pdfDoc.b64, type: pdfDoc.type || 'application/pdf', filename: pdfDoc.name };
+  return null;
 }
+
+function viewResume(id) {
+  const r = getResumeB64(id);
+  if(r?.b64) {
+    const blob = b64toBlob(r.b64, r.type || 'application/pdf');
+    window.open(URL.createObjectURL(blob), '_blank');
+    return;
+  }
+  // Fall back to Firebase signed URL
+  if(window.getResumeData) {
+    showToast('Loading...');
+    window.getResumeData(id).then(r => {
+      if(r?.url) window.open(r.url, '_blank');
+      else showToast('Resume not found — try re-uploading');
+    });
+    return;
+  }
+  showToast('Resume not available on this device — try re-uploading');
+}
+
 function downloadResume(id) {
-  const r = getResumeData(id);
-  if(!r) { showToast('Resume not found'); return; }
-  const blob = b64toBlob(r.b64, r.type);
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement('a');
-  a.href = url; a.download = r.filename || 'resume';
-  a.click(); URL.revokeObjectURL(url);
+  const r = getResumeB64(id);
+  if(r?.b64) {
+    const blob = b64toBlob(r.b64, r.type || 'application/pdf');
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(blob);
+    a.download = r.filename || 'resume.pdf';
+    a.click();
+    return;
+  }
+  if(window.getResumeData) {
+    showToast('Loading...');
+    window.getResumeData(id).then(r => {
+      if(r?.url) { const a = document.createElement('a'); a.href = r.url; a.download = getCand(id)?.resumeFilename||'resume.pdf'; a.target='_blank'; a.click(); }
+      else showToast('Resume not found — try re-uploading');
+    });
+    return;
+  }
+  showToast('Resume not available on this device — try re-uploading');
 }
 function b64toBlob(b64, type) {
   const bytes = atob(b64);
@@ -11468,20 +11518,13 @@ async function loadInlinePdf(candId) {
   const isDocx = (cand?.resumeFilename||'').toLowerCase().endsWith('.docx') ||
                  (cand?.resumeType||'').includes('word');
 
-  // Debug log helper — shows steps visibly in the panel
-  const steps = [];
-  const log = (msg, ok=true) => {
-    steps.push({ msg, ok });
-    container.innerHTML = '<div style="padding:20px;font-family:monospace;font-size:11px;color:var(--text2);line-height:2;">' +
-      steps.map(s => `<div style="color:${s.ok?'var(--green)':'var(--red)'};">${s.ok?'✓':'✗'} ${s.msg}</div>`).join('') +
-      '</div>';
-  };
+  container.innerHTML = '<div style="text-align:center;color:#ccc;padding:40px;"><div style="font-size:14px;margin-top:16px;">Loading resume...</div></div>';
 
   const showFallback = (msg) => {
     container.innerHTML =
-      '<div style="color:var(--text3);padding:24px;text-align:center;">' +
-      '<div style="font-size:13px;font-weight:600;color:var(--text);margin-bottom:6px;">' + escapeHtml(cand?.resumeFilename||'Resume') + '</div>' +
-      '<div style="font-size:11px;font-family:monospace;background:var(--bg3);padding:10px;border-radius:6px;margin-bottom:16px;text-align:left;color:var(--red);">' + msg + '</div>' +
+      '<div style="color:var(--text3);padding:32px;text-align:center;">' +
+      '<div style="font-size:14px;font-weight:600;margin-bottom:6px;color:var(--text);">' + escapeHtml(cand?.resumeFilename||'Resume') + '</div>' +
+      '<div style="font-size:12px;color:var(--text3);margin-bottom:20px;">' + msg + '</div>' +
       '<div style="display:flex;gap:8px;justify-content:center;flex-wrap:wrap;">' +
       '<button class="btn btn-primary btn-sm" onclick="viewResume('+candId+')">Open in New Tab</button>' +
       '<button class="btn btn-ghost btn-sm" onclick="downloadResume('+candId+')">Download</button>' +
@@ -11489,49 +11532,74 @@ async function loadInlinePdf(candId) {
       '</div></div>';
   };
 
-  log(`Candidate ${candId} · hasResume=${cand?.hasResume} · file=${cand?.resumeFilename||'none'}`);
-
-  if(!cand?.hasResume) { showFallback('hasResume is false — no resume on record'); return; }
-  if(isDocx) { showFallback('DOCX cannot preview inline — use Open or Download'); return; }
+  if(!cand?.hasResume) { showFallback('No resume on record for this candidate.'); return; }
+  if(isDocx) { showFallback('DOCX files cannot be previewed inline. Use Open or Download.'); return; }
 
   try {
-    // Wait for Firebase auth
-    let waited = 0;
-    while((!currentUser || !window.getResumeData) && waited < 8000) {
-      await new Promise(res => setTimeout(res, 250));
-      waited += 250;
+    let pdfData = null;
+
+    // 1. Try Cloudinary URL (cloud storage — works on all devices)
+    if(cand.resumeUrl) {
+      try {
+        const resp = await fetch(cand.resumeUrl);
+        if(resp.ok) {
+          const buf = await resp.arrayBuffer();
+          pdfData = new Uint8Array(buf);
+          // Cache locally for faster next load
+          try {
+            let b64 = '';
+            const chunk = 8192;
+            for(let i = 0; i < pdfData.length; i += chunk)
+              b64 += btoa(String.fromCharCode(...pdfData.subarray(i, i + chunk)));
+            localStorage.setItem('tf_resume_' + candId, JSON.stringify({ b64, type: cand.resumeType || 'application/pdf', filename: cand.resumeFilename }));
+          } catch(e) { /* quota exceeded — fine */ }
+        }
+      } catch(e) { console.warn('Cloudinary fetch failed:', e); }
     }
 
-    if(!currentUser) { showFallback('ERROR: Not signed in (currentUser is null after 8s)'); return; }
-    if(!window.getResumeData) { showFallback('ERROR: window.getResumeData not loaded — Firebase module may have failed'); return; }
+    // 2. Try localStorage (device cache)
+    if(!pdfData) {
+      try {
+        const stored = JSON.parse(localStorage.getItem('tf_resume_' + candId) || 'null');
+        if(stored?.b64) {
+          const bin = atob(stored.b64);
+          pdfData = new Uint8Array(bin.length);
+          for(let i = 0; i < bin.length; i++) pdfData[i] = bin.charCodeAt(i);
+        }
+      } catch(e) { console.warn('localStorage read failed:', e); }
+    }
 
-    log(`Auth OK · uid=${currentUser.uid}`);
-    log(`resumePath stored = ${cand.resumePath || '(none — will try default)'}`);
+    // 3. Try documents array b64
+    if(!pdfData) {
+      const docs = cand.documents || [];
+      const pdfDoc = docs.find(d => d.b64 && (d.type?.includes('pdf') || d.name?.toLowerCase().endsWith('.pdf')));
+      if(pdfDoc?.b64) {
+        try {
+          const bin = atob(pdfDoc.b64);
+          pdfData = new Uint8Array(bin.length);
+          for(let i = 0; i < bin.length; i++) pdfData[i] = bin.charCodeAt(i);
+        } catch(e) { console.warn('documents b64 read failed:', e); }
+      }
+    }
 
-    const r = await window.getResumeData(candId);
-
-    if(!r?.url) {
-      const triedPath = cand.resumePath || `users/${currentUser.uid}/resumes/${candId}`;
-      showFallback(`getResumeData returned null.\nTried path: ${triedPath}\n\nThe file may not exist in Firebase Storage.\nCheck: Firebase Console → Storage → users/${currentUser.uid}/resumes/`);
+    if(!pdfData) {
+      showFallback('Resume not available. Upload the resume to make it accessible everywhere.');
       return;
     }
 
-    log(`Got signed URL ✓`);
-    log(`Loading in iframe...`);
-
-    container.style.padding = '0';
-    container.innerHTML =
-      `<iframe src="${r.url}"
-         style="width:100%;height:100%;min-height:600px;border:none;background:#fff;display:block;"
-         title="Resume preview">
-       </iframe>`;
-
+    // Render with PDF.js
+    if(!window.pdfjsLib) { showFallback('PDF viewer not loaded. Try opening in a new tab.'); return; }
+    pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+    pdfDoc = await pdfjsLib.getDocument({ data: pdfData }).promise;
+    pdfPage = 1;
+    pdfZoom = 1.0;
     const totalEl = document.getElementById('pdf-page-total');
-    if(totalEl) totalEl.textContent = '–';
+    if(totalEl) totalEl.textContent = pdfDoc.numPages;
+    await renderPdfPage();
 
   } catch(err) {
-    showFallback(`EXCEPTION: ${err.message}\n${err.stack||''}`);
-    console.error('Resume load error:', err);
+    console.error('PDF load error:', err);
+    showFallback('Could not render PDF. Try opening in a new tab.');
   }
 }
 
@@ -12156,6 +12224,7 @@ import { getFirestore, collection, doc, getDocs, setDoc, deleteDoc, onSnapshot, 
   from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js';
 import { getStorage, ref, uploadString, getDownloadURL, deleteObject }
   from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-storage.js';
+// Note: Firebase Storage import kept for compatibility but Cloudinary is used for resume storage
 
 const firebaseConfig = {
   apiKey: "AIzaSyAtIeukuX0jNyKrLwMN3724zONRm3GdO9I",
@@ -12273,9 +12342,6 @@ onAuthStateChanged(auth, async (user) => {
     if(loginScreen) loginScreen.classList.add('hidden');
     if(appShell) appShell.classList.add('ready');
     if(mobileNav && window.matchMedia('(max-width:768px)').matches) mobileNav.style.display='flex';
-
-    // Silently backfill any missing resumePaths in the background
-    setTimeout(() => { if(window.healResumePaths) window.healResumePaths(); }, 3000);
 
   } else {
     currentUser = null;
@@ -12426,90 +12492,91 @@ window._saveProjects = async () => {
 };
 
 // ===================== OVERRIDE RESUME STORAGE =====================
+// ── Cloudinary Resume Storage ──
+// Uses unsigned uploads via upload preset — API secret never exposed in frontend
+const CLOUDINARY_CLOUD = 'dnymvvbrz';
+const CLOUDINARY_PRESET = 'talentflow_resumes'; // Create this in Cloudinary Dashboard → Settings → Upload → Upload presets
+
 window.saveResumeToCloud = async (candidateId, b64, mimeType, filename) => {
   if(!currentUser) return false;
   try {
-    const path = `users/${currentUser.uid}/resumes/${candidateId}`;
-    const storageRef = ref(storage, path);
-    await uploadString(storageRef, b64, 'base64', {contentType: mimeType});
-    // Persist resumePath + metadata back to candidate record in Firestore
+    // Upload to Cloudinary via unsigned upload preset
+    const formData = new FormData();
+    formData.append('file', `data:${mimeType};base64,${b64}`);
+    formData.append('upload_preset', CLOUDINARY_PRESET);
+    formData.append('public_id', `resumes/${currentUser.uid}/${candidateId}`);
+    formData.append('resource_type', 'raw'); // PDFs are raw files
+
+    const resp = await fetch(`https://api.cloudinary.com/v1_1/${CLOUDINARY_CLOUD}/raw/upload`, {
+      method: 'POST',
+      body: formData
+    });
+
+    if(!resp.ok) {
+      const err = await resp.json();
+      throw new Error(err.error?.message || `HTTP ${resp.status}`);
+    }
+
+    const data = await resp.json();
     const c = getCand(candidateId);
     if(c) {
       c.resumeFilename = filename;
       c.hasResume = true;
-      c.resumePath = path;
+      c.resumeUrl = data.secure_url;  // Store the direct Cloudinary URL
       c.resumeType = mimeType;
-      save(); // persist to Firestore so resumePath survives page reloads
+      c.resumePath = data.public_id;  // Store public_id for deletion later
+      save();
     }
     return true;
-  } catch(e) { console.error('Resume upload error', e); return false; }
+  } catch(e) {
+    console.error('Cloudinary upload error:', e);
+    return false;
+  }
 };
 
 window.getResumeData = async (id) => {
-  if(!currentUser) return null;
   const c = getCand(id);
   if(!c?.hasResume) return null;
-  try {
-    // Try stored path first, then fall back to default path
-    const pathsToTry = [
-      c.resumePath,
-      `users/${currentUser.uid}/resumes/${id}`,
-      `users/${currentUser.uid}/resumes/${String(id)}`,
-    ].filter(Boolean);
-
-    for(const path of pathsToTry) {
-      try {
-        const storageRef = ref(storage, path);
-        const url = await getDownloadURL(storageRef);
-        // Found it — store the working path back on the candidate
-        if(c.resumePath !== path) { c.resumePath = path; save(); }
-        return { url, type: c.resumeType || 'application/pdf', filename: c.resumeFilename };
-      } catch(e) {
-        // Not at this path, try next
-      }
-    }
-    console.warn('Resume not found at any path for candidate', id);
-    return null;
-  } catch(e) { console.error('Resume fetch error', e); return null; }
+  // If we have a direct Cloudinary URL, use it immediately — no auth needed
+  if(c.resumeUrl) {
+    return { url: c.resumeUrl, type: c.resumeType || 'application/pdf', filename: c.resumeFilename };
+  }
+  return null;
 };
 
-// Self-heal: scan all candidates missing resumePath and backfill from Firebase Storage
-window.healResumePaths = async () => {
-  if(!currentUser) return;
-  const broken = candidates.filter(c => c.hasResume && !c.resumePath);
-  if(!broken.length) return;
-  console.log(`TalentFlow: Healing resumePath for ${broken.length} candidate(s)...`);
-  let healed = 0;
-  for(const c of broken) {
-    try {
-      const path = `users/${currentUser.uid}/resumes/${c.id}`;
-      const storageRef = ref(storage, path);
-      await getDownloadURL(storageRef); // just checks existence
-      c.resumePath = path;
-      healed++;
-    } catch(e) { /* file not in Storage — needs re-upload */ }
-  }
-  if(healed > 0) {
-    save();
-    console.log(`TalentFlow: Healed ${healed} resume path(s) ✓`);
-  }
+window.deleteResumeFromCloud = async (candidateId) => {
+  // Deletion requires server-side signing — just orphan the file for now
+  // (Cloudinary free plan allows manual deletion from dashboard)
+  const c = getCand(candidateId);
+  if(c) { c.resumeUrl = null; c.resumePath = null; }
 };
+
 
 window.viewResume = async (id) => {
-  showToast('Loading resume...');
-  const r = await getResumeData(id);
-  if(!r) { showToast('Resume not found'); return; }
-  window.open(r.url, '_blank');
+  const c = getCand(id);
+  // Use Cloudinary URL directly if available
+  if(c?.resumeUrl) { window.open(c.resumeUrl, '_blank'); return; }
+  // Fall back to localStorage b64
+  const r = getResumeB64(id);
+  if(r?.b64) { window.open(URL.createObjectURL(b64toBlob(r.b64, r.type||'application/pdf')), '_blank'); return; }
+  showToast('Resume not available — try re-uploading');
 };
 
 window.downloadResume = async (id) => {
-  showToast('Preparing download...');
-  const r = await getResumeData(id);
-  if(!r) { showToast('Resume not found'); return; }
-  const a = document.createElement('a');
-  a.href = r.url; a.download = r.filename || 'resume'; a.target='_blank';
-  a.click();
-};
+  const c = getCand(id);
+  if(c?.resumeUrl) {
+    const a = document.createElement('a');
+    a.href = c.resumeUrl; a.download = c.resumeFilename||'resume.pdf'; a.target='_blank';
+    a.click(); return;
+  }
+  const r = getResumeB64(id);
+  if(r?.b64) {
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(b64toBlob(r.b64, r.type||'application/pdf'));
+    a.download = r.filename||'resume.pdf'; a.click(); return;
+  }
+  showToast('Resume not available — try re-uploading');
+};};
 
 // Override saveCandidate to upload resume to cloud
 const _origSaveCandidate = window.saveCandidate;
