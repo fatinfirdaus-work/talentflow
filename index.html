@@ -2280,6 +2280,8 @@ async function docsHandleFiles(files, candId) {
       try { localStorage.setItem('tf_resume_'+candId, JSON.stringify({b64, type: file.type, filename: file.name})); } catch(e){}
       // Upload to Firebase Storage
       if(window.saveResumeToCloud && currentUser) {
+        // Set path optimistically so it's in Firestore immediately
+        cand.resumePath = `users/${currentUser.uid}/resumes/${candId}`;
         window.saveResumeToCloud(candId, b64, file.type, file.name).catch(e=>console.warn('Cloud upload failed',e));
       }
     }
@@ -7296,8 +7298,10 @@ function saveEditCandidate(id) {
     }
     // Upload to Firebase Storage in background (non-blocking)
     if(window.saveResumeToCloud && currentUser) {
+      // Set path optimistically so Firestore gets it on next save()
+      c.resumePath = `users/${currentUser.uid}/resumes/${id}`;
       window.saveResumeToCloud(id, resumeB64, resumeType, resumeFilename)
-        .then(() => showToast('Resume uploaded to cloud'))
+        .then(() => { save(); showToast('Resume uploaded to cloud'); })
         .catch(e => console.warn('Cloud upload failed:', e));
     }
   }
@@ -9214,7 +9218,10 @@ function saveCandidate() {
       newCand.resumeType = currentResumeType;
       // Upload to Firebase Storage (non-blocking)
       if(window.saveResumeToCloud && currentUser) {
+        // Set path optimistically before save() runs
+        newCand.resumePath = `users/${currentUser.uid}/resumes/${newId}`;
         window.saveResumeToCloud(newId, currentResumeB64, currentResumeType, currentResumeFilename)
+          .then(() => save()) // re-save after upload to confirm resumePath in Firestore
           .catch(e => console.warn('Cloud resume upload failed:', e));
       }
     } catch(e) { console.warn('Resume too large to store', e); }
@@ -12255,6 +12262,9 @@ onAuthStateChanged(auth, async (user) => {
     if(appShell) appShell.classList.add('ready');
     if(mobileNav && window.matchMedia('(max-width:768px)').matches) mobileNav.style.display='flex';
 
+    // Silently backfill any missing resumePaths in the background
+    setTimeout(() => { if(window.healResumePaths) window.healResumePaths(); }, 3000);
+
   } else {
     currentUser = null;
     // Show login, hide app
@@ -12428,11 +12438,49 @@ window.getResumeData = async (id) => {
   const c = getCand(id);
   if(!c?.hasResume) return null;
   try {
-    const path = c.resumePath || `users/${currentUser.uid}/resumes/${id}`;
-    const storageRef = ref(storage, path);
-    const url = await getDownloadURL(storageRef);
-    return { url, type: c.resumeType || 'application/pdf', filename: c.resumeFilename };
+    // Try stored path first, then fall back to default path
+    const pathsToTry = [
+      c.resumePath,
+      `users/${currentUser.uid}/resumes/${id}`,
+      `users/${currentUser.uid}/resumes/${String(id)}`,
+    ].filter(Boolean);
+
+    for(const path of pathsToTry) {
+      try {
+        const storageRef = ref(storage, path);
+        const url = await getDownloadURL(storageRef);
+        // Found it — store the working path back on the candidate
+        if(c.resumePath !== path) { c.resumePath = path; save(); }
+        return { url, type: c.resumeType || 'application/pdf', filename: c.resumeFilename };
+      } catch(e) {
+        // Not at this path, try next
+      }
+    }
+    console.warn('Resume not found at any path for candidate', id);
+    return null;
   } catch(e) { console.error('Resume fetch error', e); return null; }
+};
+
+// Self-heal: scan all candidates missing resumePath and backfill from Firebase Storage
+window.healResumePaths = async () => {
+  if(!currentUser) return;
+  const broken = candidates.filter(c => c.hasResume && !c.resumePath);
+  if(!broken.length) return;
+  console.log(`TalentFlow: Healing resumePath for ${broken.length} candidate(s)...`);
+  let healed = 0;
+  for(const c of broken) {
+    try {
+      const path = `users/${currentUser.uid}/resumes/${c.id}`;
+      const storageRef = ref(storage, path);
+      await getDownloadURL(storageRef); // just checks existence
+      c.resumePath = path;
+      healed++;
+    } catch(e) { /* file not in Storage — needs re-upload */ }
+  }
+  if(healed > 0) {
+    save();
+    console.log(`TalentFlow: Healed ${healed} resume path(s) ✓`);
+  }
 };
 
 window.viewResume = async (id) => {
