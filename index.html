@@ -5937,6 +5937,10 @@ function refreshRightPanel(id) {
   const obSection = document.getElementById('cp-onboarding-section');
   if(obSection) obSection.innerHTML = buildCandOnboardingHTML(c);
 
+  // Rebuild job applications section
+  const jobAppsSection = document.getElementById('cp-job-applications');
+  if(jobAppsSection) jobAppsSection.innerHTML = buildJobApplicationsHTML(c);
+
   // Rebuild interviews section
   const ivSection = document.getElementById('cp-interviews-section');
   if(ivSection) ivSection.innerHTML = buildInterviewsHTML(c, allInterviews, allFeedback);
@@ -5944,12 +5948,9 @@ function refreshRightPanel(id) {
   // Refresh team notes
   refreshTeamNotes(id);
 
-  // Update stage tracker — rebuild the right panel header
-  const stageWrapper = document.getElementById('cp-right-panel');
-  if(stageWrapper) {
-    const trackerEl = stageWrapper.querySelector('.cp-stage-tracker-inner');
-    if(trackerEl) trackerEl.innerHTML = buildStageTrackerHTML(c, c.jobId);
-  }
+  // Update stage tracker
+  const trackerInner = document.getElementById('cp-stage-tracker-inner');
+  if(trackerInner) trackerInner.innerHTML = buildStageTrackerHTML(c, c.jobId);
 
   // Update action history
   const history = document.getElementById('cp-history-content');
@@ -6272,8 +6273,6 @@ function renderCandProfileContent(id, fromJobId=null) {
     '<span style="cursor:pointer;color:var(--text3);font-size:13px;" onclick="showPage(\'candidates\',null)">← Return</span>' +
     '<span style="color:var(--border2);margin:0 2px;">|</span>' +
     '<span style="font-size:13px;font-weight:600;color:var(--text);">' + escapeHtml(c.name) + '</span>' +
-    (c.phone ? '<span style="color:var(--border2);margin:0 4px;">·</span><a href="tel:' + c.phone + '" style="font-size:12.5px;color:var(--text3);"><svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:-2px;flex-shrink:0;"><path d="M22 16.92v3a2 2 0 01-2.18 2 19.79 19.79 0 01-8.63-3.07A19.5 19.5 0 013.07 9.81a19.79 19.79 0 01-3.07-8.63A2 2 0 012 .82h3a2 2 0 012 1.72c.127.96.361 1.903.7 2.81a2 2 0 01-.45 2.11L6.91 8.35a16 16 0 006.74 6.74l1.61-1.61a2 2 0 012.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0122 16.92z"/></svg> ' + escapeHtml(c.phone) + '</a>' : '') +
-    (c.email ? '<a href="mailto:' + c.email + '" style="font-size:12.5px;color:var(--text3);margin-left:4px;"><svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:-2px;flex-shrink:0;"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22 6 12 13 2 6"/></svg> ' + escapeHtml(c.email) + '</a>' : '') +
     '<div style="display:flex;align-items:center;gap:3px;margin-left:8px;">' +
     (prevCand ? '<button class="btn btn-ghost btn-sm" style="padding:3px 9px;" onclick="openCandProfile('+prevCand.id+',true,'+(fromJobId||'null')+')" title="'+escapeHtml(prevCand.name)+'">‹ Prev</button>' : '<button class="btn btn-ghost btn-sm" style="padding:3px 9px;opacity:0.3;" disabled>‹ Prev</button>') +
     '<span style="font-size:11px;color:var(--text3);padding:0 4px;">' + (navIdx+1) + '/' + navList.length + '</span>' +
@@ -6311,6 +6310,8 @@ function renderCandProfileContent(id, fromJobId=null) {
     (c.exp ? '<span><svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:-2px;flex-shrink:0;"><rect x="2" y="7" width="20" height="14" rx="2" ry="2"/><path d="M16 21V5a2 2 0 00-2-2h-4a2 2 0 00-2 2v16"/></svg> ' + escapeHtml(c.exp) + '</span>' : '') +
     (c.location ? '<span><svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:-2px;flex-shrink:0;"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0118 0z"/><circle cx="12" cy="10" r="3"/></svg> ' + escapeHtml(c.location) + '</span>' : '') +
     (c.applied ? '<span>Applied ' + c.applied + '</span>' : '') +
+    (c.phone ? '<a href="tel:' + c.phone + '" style="color:var(--text3);display:flex;align-items:center;gap:4px;"><svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M22 16.92v3a2 2 0 01-2.18 2 19.79 19.79 0 01-8.63-3.07A19.5 19.5 0 013.07 9.81a19.79 19.79 0 01-3.07-8.63A2 2 0 012 .82h3a2 2 0 012 1.72c.127.96.361 1.903.7 2.81a2 2 0 01-.45 2.11L6.91 8.35a16 16 0 006.74 6.74l1.61-1.61a2 2 0 012.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0122 16.92z"/></svg>' + escapeHtml(c.phone) + '</a>' : '') +
+    (c.email ? '<a href="mailto:' + c.email + '" style="color:var(--text3);display:flex;align-items:center;gap:4px;"><svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22 6 12 13 2 6"/></svg>' + escapeHtml(c.email) + '</a>' : '') +
     '</div>' +
     '</div></div>' +
     '</div>' + // end header
@@ -6326,7 +6327,7 @@ function renderCandProfileContent(id, fromJobId=null) {
     '<div id="lt-details" class="cp-tab-content" style="padding:20px 24px;">' + detailsTab + '</div>' +
     '<div id="lt-extra" class="cp-tab-content" style="padding:20px 24px;">' +
     '<div style="text-align:center;padding:32px 0;color:var(--text3);"><div style="font-size:32px;margin-bottom:10px;"><svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:-2px;flex-shrink:0;"><path d="M16 4h2a2 2 0 012 2v14a2 2 0 01-2 2H6a2 2 0 01-2-2V6a2 2 0 012-2h2"/><rect x="8" y="2" width="8" height="4" rx="1" ry="1"/></svg></div>Cover letters, portfolio links, and custom fields can be added when editing the candidate.<div style="margin-top:16px;"><button class="btn btn-primary btn-sm" onclick="openEditCandidate(' + c.id + ')">Edit Candidate</button></div></div></div>' +
-    '<div id="lt-history" class="cp-tab-content" style="padding:0;">' + historyTab + '</div>' +
+    '<div id="lt-history" class="cp-tab-content" style="padding:0;"><div id="cp-history-content">' + historyTab + '</div></div>' +
     '</div>' + // end left panel
 
     // ── RIGHT PANEL: job context → stage → actions → sections ──
@@ -6348,8 +6349,8 @@ function renderCandProfileContent(id, fromJobId=null) {
         (apps.length > 1 ? '<span style="font-size:11px;color:var(--text3);">+' + (apps.length-1) + ' more job' + (apps.length>2?'s':'') + '</span>' : '') +
         '</div>' +
         // Stage tracker — compact dots
-        '<div style="overflow-x:auto;-webkit-overflow-scrolling:touch;padding-bottom:2px;">' +
-        '<div style="display:flex;align-items:center;gap:0;min-width:max-content;">' +
+        '<div id="cp-stage-tracker-wrap" style="overflow-x:auto;-webkit-overflow-scrolling:touch;padding-bottom:2px;">' +
+        '<div id="cp-stage-tracker-inner" style="display:flex;align-items:center;gap:0;min-width:max-content;">' +
         buildStageTrackerHTML(c, displayJobId) + '</div></div>';
     })() +
     '</div>' +
@@ -8200,7 +8201,7 @@ function quickMoveStage(id, stage, jobId) {
   addToTimeline(c, `Moved to ${stage}` + (jobId ? ` (${getJob(jobId)?.title||''})` : ''), stageColors[stage]||'var(--accent)');
   activities.unshift({ text:`<strong>${c.name}</strong> moved to <strong>${stage}</strong>`, color:stageColors[stage], ts:Date.now() });
   save();
-  const tracker = document.getElementById('cp-stage-tracker');
+  const tracker = document.getElementById('cp-stage-tracker-inner');
   if(tracker) tracker.innerHTML = buildStageTrackerHTML(c, targetJobId);
   showToast(`Moved to ${stage}!`);
   setTimeout(() => {
@@ -8338,14 +8339,10 @@ function reactiveUpdate(candId) {
     const jobId = history.state?.id;
     if(jobId) renderJobDetailPage(jobId);
   }
-  else if(activePage === 'page-candprofile' && candId) {
+  else if(activePage === 'page-candprofile') {
     // Use surgical refresh — avoids PDF reload flicker
-    refreshRightPanel(candId);
-  } else if(activePage === 'page-candprofile') {
-    // Refresh tasks section even without candId (e.g. after task save)
-    const ct = document.getElementById('cp-tasks-section');
-    const currentId = window.pdfCandId;
-    if(ct && currentId) { const cnd = getCand(currentId); if(cnd) ct.innerHTML = buildCandTasksHTML(cnd); }
+    const refreshId = candId || window.pdfCandId;
+    if(refreshId) refreshRightPanel(refreshId);
   }
 
   // Also patch visible stage badges directly for instant feedback (no flicker wait)
