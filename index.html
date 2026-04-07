@@ -12222,9 +12222,7 @@ import { getAuth, onAuthStateChanged, signInWithPopup, GoogleAuthProvider,
   from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js';
 import { getFirestore, collection, doc, getDocs, setDoc, deleteDoc, onSnapshot, writeBatch }
   from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js';
-import { getStorage, ref, uploadString, getDownloadURL, deleteObject }
-  from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-storage.js';
-// Note: Firebase Storage import kept for compatibility but Cloudinary is used for resume storage
+// Firebase Storage not used — resumes stored via Cloudinary
 
 const firebaseConfig = {
   apiKey: "AIzaSyAtIeukuX0jNyKrLwMN3724zONRm3GdO9I",
@@ -12238,7 +12236,6 @@ const firebaseConfig = {
 const app = initializeApp(firebaseConfig);
 const auth = getAuth(app);
 const db = getFirestore(app);
-const storage = getStorage(app);
 const googleProvider = new GoogleAuthProvider();
 
 let currentUser = null;
