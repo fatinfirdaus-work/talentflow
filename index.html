@@ -5916,6 +5916,27 @@ function refreshRightPanel(id) {
   const allInterviews = (c.interviews||[]).slice().sort((a,b)=>new Date(b.date||0)-new Date(a.date||0));
   const allFeedback = (c.feedback||[]).slice().sort((a,b)=>new Date(b.createdAt||b.date||0)-new Date(a.createdAt||a.date||0));
 
+  // Rebuild right panel header (stage badge + stage tracker dots)
+  const rightHeader = document.getElementById('cp-right-header');
+  if(rightHeader) {
+    const fromJobId = window._cpFromJobId || c.jobId;
+    const apps = getCandJobs(c);
+    const displayJobId = fromJobId || c.jobId;
+    const displayJob = getJob(displayJobId);
+    const displayStage = fromJobId ? getCandStageForJob(c, fromJobId) : c.stage;
+    const stageColor = stageColors[displayStage] || 'var(--text2)';
+    rightHeader.innerHTML =
+      '<div style="display:flex;align-items:center;gap:8px;margin-bottom:8px;flex-wrap:wrap;">' +
+      (displayJob ? '<span style="font-size:13px;font-weight:700;cursor:pointer;" onclick="showPage(\'jobs\',null);setTimeout(()=>openJobDetail('+displayJob.id+'),100)">' + escapeHtml(displayJob.title) + '</span><span style="color:var(--border2);">›</span>' : '') +
+      '<span style="padding:3px 10px;border-radius:20px;font-size:12px;font-weight:700;background:'+stageColor+'18;color:'+stageColor+';border:1px solid '+stageColor+'40;">' + displayStage + '</span>' +
+      (c.rejectionReasonLabel ? '<span class="badge badge-red" style="font-size:10px;">' + escapeHtml(c.rejectionReasonLabel) + '</span>' : '') +
+      (apps.length > 1 ? '<span style="font-size:11px;color:var(--text3);">+' + (apps.length-1) + ' more job' + (apps.length>2?'s':'') + '</span>' : '') +
+      '</div>' +
+      '<div style="overflow-x:auto;-webkit-overflow-scrolling:touch;padding-bottom:2px;">' +
+      '<div id="cp-stage-tracker-inner" style="display:flex;align-items:center;gap:0;min-width:max-content;">' +
+      buildStageTrackerHTML(c, displayJobId) + '</div></div>';
+  }
+
   // Refresh action buttons (compact style)
   const actionBtns = document.getElementById('cp-action-buttons');
   if(actionBtns) actionBtns.innerHTML = buildStageActionsCompact(c, null);
@@ -6334,7 +6355,7 @@ function renderCandProfileContent(id, fromJobId=null) {
     '<div id="cp-right-panel" style="overflow-y:auto;background:var(--bg2);display:flex;flex-direction:column;">' +
 
     // Job context + stage badge — top of right panel
-    '<div style="padding:14px 16px;border-bottom:1px solid var(--border);background:var(--bg2);">' +
+    '<div id="cp-right-header" style="padding:14px 16px;border-bottom:1px solid var(--border);background:var(--bg2);">' +
     (() => {
       const apps = getCandJobs(c);
       const displayJobId = fromJobId || c.jobId;
