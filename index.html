@@ -1603,6 +1603,23 @@ let activities = stored.activities || [];
 let tasks = stored.tasks || [];
 
 const stages = ['Applied','Screening','Interview','Offer','Pending Join','Hired','Rejected'];
+
+// Returns true if a candidate's primary job is excluded from metrics
+function isCandExcludedFromMetrics(c) {
+  if(!c) return false;
+  // Check primary job
+  const j = getJob(c.jobId);
+  if(j?.excludeFromMetrics) return true;
+  // Check all job applications - if ALL are excluded, exclude the candidate
+  const apps = c.jobApplications || [];
+  if(apps.length > 0 && apps.every(a => getJob(a.jobId)?.excludeFromMetrics)) return true;
+  return false;
+}
+
+// Filtered candidate list excluding metric-excluded jobs
+function getMetricCandidates() {
+  return candidates.filter(c => !isCandExcludedFromMetrics(c));
+}
 const stageColors = {
   'Applied': 'var(--text2)', 'Screening': 'var(--accent)',
   'Interview': 'var(--amber)', 'Offer': 'var(--purple)',
@@ -1738,28 +1755,30 @@ function updateSidebarBadges() {
 function renderDashboard() {
   // Compute all stats from live data
   const activeJobs   = jobs.filter(j=>j.status==='Active').length;
-  const totalCands   = candidates.length;
+  const totalCands   = getMetricCandidates().length;
   const stageCounts  = {};
   stages.forEach(s => stageCounts[s] = 0);
-  candidates.forEach(c => {
+  getMetricCandidates().forEach(c => {
     const s = c.stage || 'Applied';
     if(stageCounts[s] !== undefined) stageCounts[s]++;
   });
   const inInterview  = stageCounts['Interview'] || 0;
   const inScreening  = stageCounts['Screening'] || 0;
   const pendingJoin  = stageCounts['Pending Join'] || 0;
-  const hiredCount   = stageCounts['Hired'] || 0;
+  const metricCands = getMetricCandidates();
+  const metricStageCounts = {}; metricCands.forEach(c => { metricStageCounts[c.stage] = (metricStageCounts[c.stage]||0)+1; });
+  const hiredCount   = metricStageCounts['Hired'] || 0;
   const rejectedCount = stageCounts['Rejected'] || 0;
   const inOfferCount = stageCounts['Offer'] || 0;
   const inPipelineTotal = (stageCounts['Applied']||0) + inScreening + inInterview + inOfferCount + pendingJoin;
 
   // This month hires
   const thisMonth = new Date().toISOString().slice(0,7);
-  const hiredThisMonth = candidates.filter(c => c.stage==='Hired' && (c.applied||'').startsWith(thisMonth)).length;
+  const hiredThisMonth = getMetricCandidates().filter(c => c.stage==='Hired' && (c.applied||'').startsWith(thisMonth)).length;
 
   // New candidates this week
   const weekAgo = new Date(Date.now() - 7*24*60*60*1000).toISOString().split('T')[0];
-  const newThisWeek = candidates.filter(c => (c.applied||'') >= weekAgo).length;
+  const newThisWeek = getMetricCandidates().filter(c => (c.applied||'') >= weekAgo).length;
 
   // Animate stat card values
   const statCards = document.querySelectorAll('#page-dashboard .stat-val');
@@ -1793,7 +1812,7 @@ function renderDashboard() {
   const subHires = document.getElementById('dash-sub-hires');
   if(subHires) {
     const lastMonth = new Date(new Date().setMonth(new Date().getMonth()-1)).toISOString().slice(0,7);
-    const hiredLastMonth = candidates.filter(c => c.stage==='Hired' && (c.applied||'').startsWith(lastMonth)).length;
+    const hiredLastMonth = getMetricCandidates().filter(c => c.stage==='Hired' && (c.applied||'').startsWith(lastMonth)).length;
     subHires.textContent = hiredLastMonth > 0 ? `vs ${hiredLastMonth} last month` : hiredCount > 0 ? `${hiredCount} total hired` : 'no hires yet';
     subHires.className = 'stat-change ' + (hiredThisMonth >= hiredLastMonth && hiredThisMonth > 0 ? 'up' : '');
   }
@@ -3074,9 +3093,9 @@ function renderAnalytics() {
   // Stage counts from real candidates
   const stageCts = {};
   stages.forEach(s => stageCts[s] = 0);
-  candidates.forEach(c => { const s = c.stage||'Applied'; if(stageCts[s]!==undefined) stageCts[s]++; });
+  getMetricCandidates().forEach(c => { const s = c.stage||'Applied'; if(stageCts[s]!==undefined) stageCts[s]++; });
 
-  const total      = candidates.length;
+  const total      = getMetricCandidates().length;
   const hired      = stageCts['Hired'] || 0;
   const pendingJoin = stageCts['Pending Join'] || 0;
   const offered    = stageCts['Offer'] || 0;
@@ -3102,7 +3121,7 @@ function renderAnalytics() {
   const o2h = safe(hired, offered + hired);
 
   // Time to hire: avg days from applied → hired (candidates with stage=Hired)
-  const hiredCands = candidates.filter(c=>c.stage==='Hired'&&c.applied);
+  const hiredCands = getMetricCandidates().filter(c=>c.stage==='Hired'&&c.applied);
   let avgHireDays = '—';
   if(hiredCands.length) {
     const now = new Date();
@@ -5694,7 +5713,8 @@ document.addEventListener('click', e => {
 function animateCount(el, targetText) {
   if(!el) return;
   const num = parseInt(targetText.replace(/\D/g,''));
-  if(isNaN(num) || num < 2) return;
+  if(isNaN(num)) { el.textContent = targetText; return; }
+  if(num < 2) { el.textContent = targetText; return; }
   const suffix = targetText.replace(/[\d,]/g,'').trim();
   let start = null;
   const duration = 700;
@@ -6102,8 +6122,8 @@ function buildInterviewsHTML(c, allInterviews, allFeedback) {
     // Action buttons
     html += '<div style="padding:8px 16px 12px;display:flex;gap:6px;background:var(--bg3);">';
     html += '<button class="btn btn-primary btn-sm" onclick="openAddFeedbackRound(' + c.id + ',\'' + iv.round.replace(/'/g,"\\'") + '\',\'' + (iv.interviewer||'').split(',')[0].trim().replace(/'/g,"\\'") + '\')"><svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:-2px;flex-shrink:0;"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg> Add Feedback</button>';
-    if (iv.status !== 'Completed') html += '<button class="btn btn-ghost btn-sm" onclick="markInterviewDone(' + c.id + ',' + idx + ');refreshRightPanel(' + c.id + ')">✓ Done</button>';
-    if (iv.status !== 'Cancelled') html += '<button class="btn btn-ghost btn-sm" style="color:var(--red);" onclick="cancelInterview(' + c.id + ',' + idx + ');refreshRightPanel(' + c.id + ')">✕ Cancel</button>';
+    if (iv.status !== 'Completed') html += '<button class="btn btn-ghost btn-sm" onclick="markInterviewDone(' + c.id + ',' + (c.interviews||[]).indexOf(iv) + ');refreshRightPanel(' + c.id + ')">✓ Done</button>';
+    if (iv.status !== 'Cancelled') html += '<button class="btn btn-ghost btn-sm" style="color:var(--red);" onclick="cancelInterview(' + c.id + ',' + (c.interviews||[]).indexOf(iv) + ');refreshRightPanel(' + c.id + ')">✕ Cancel</button>';
     html += '</div>';
 
     html += '</div>'; // end interview block
@@ -7961,6 +7981,15 @@ function buildJobFormHTML(j) {
           </select>
         </div>
       </div>
+      <div class="jf-row" style="margin-top:4px;">
+        <div class="jf-field" style="flex-direction:row;align-items:center;gap:10px;">
+          <input type="checkbox" id="jf-exclude-metrics" ${v('excludeFromMetrics')?'checked':''} style="width:16px;height:16px;accent-color:var(--accent);cursor:pointer;flex-shrink:0;">
+          <label for="jf-exclude-metrics" style="cursor:pointer;font-weight:500;margin:0;">
+            Exclude from hire metrics
+            <span style="display:block;font-size:11px;color:var(--text3);font-weight:400;margin-top:1px;">Hires from this job won't count in Dashboard or Analytics (e.g. internal onboarding assist roles)</span>
+          </label>
+        </div>
+      </div>
     </div>
 
     <!-- TAB 2: REQUISITION -->
@@ -8074,6 +8103,7 @@ function applyJobFormToObject(j) {
   j.location      = document.getElementById('jf-location')?.value.trim() || j.location;
   j.priority      = document.getElementById('jf-priority')?.value || j.priority;
   j.status        = document.getElementById('jf-status')?.value || j.status;
+  j.excludeFromMetrics = document.getElementById('jf-exclude-metrics')?.checked || false;
   j.description   = document.getElementById('jf-desc')?.value || '';
   j.internalNotes = document.getElementById('jf-internalnotes')?.value || '';
   j.hiringManager = document.getElementById('jf-hiringmanager')?.value.trim() || '';
