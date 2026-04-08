@@ -1620,6 +1620,43 @@ function isCandExcludedFromMetrics(c) {
 function getMetricCandidates() {
   return candidates.filter(c => !isCandExcludedFromMetrics(c));
 }
+
+// ── Single source of truth for hired state ──
+// Call this everywhere a candidate is confirmed hired
+function markCandidateHired(c, jobId) {
+  if(!c) return;
+  const now = new Date().toISOString();
+  c.stage   = 'Hired';
+  c.hiredAt = now;  // always stamp today — hire is confirmed when YOU move them to Hired
+  c.hiredJobId = jobId || c.jobId;
+  // Sync all job applications
+  (c.jobApplications || []).forEach(app => {
+    if(app.jobId === (jobId || c.jobId) || app.stage === 'Pending Join') {
+      app.stage    = 'Hired';
+      app.hiredAt  = app.hiredAt || now;
+    }
+  });
+}
+
+// Returns true if candidate is genuinely hired (stage=Hired OR offer accepted)
+function isCandHired(c) {
+  if(!c) return false;
+  if(c.stage === 'Hired') return true;
+  // Also check if any offer was accepted (belt-and-suspenders)
+  const hasAcceptedOffer = offers.some(o => String(o.candidateId) === String(c.id) && o.status === 'Accepted');
+  return hasAcceptedOffer;
+}
+
+// Returns hiredAt date — set when you manually confirm Hired stage
+function getCandHiredAt(c) {
+  if(!c) return null;
+  // 1. hiredAt — stamped the moment you move them to Hired (most accurate)
+  if(c.hiredAt) return c.hiredAt;
+  // 2. Offer updatedAt fallback
+  const acceptedOffer = offers.find(o => String(o.candidateId) === String(c.id) && o.status === 'Accepted');
+  if(acceptedOffer?.updatedAt) return acceptedOffer.updatedAt;
+  return null;
+}
 const stageColors = {
   'Applied': 'var(--text2)', 'Screening': 'var(--accent)',
   'Interview': 'var(--amber)', 'Offer': 'var(--purple)',
@@ -1774,7 +1811,11 @@ function renderDashboard() {
 
   // This month hires
   const thisMonth = new Date().toISOString().slice(0,7);
-  const hiredThisMonth = getMetricCandidates().filter(c => c.stage==='Hired' && (c.applied||'').startsWith(thisMonth)).length;
+  const hiredThisMonth = getMetricCandidates().filter(c => {
+    if(!isCandHired(c)) return false;
+    const hDate = getCandHiredAt(c) || c.applied || '';
+    return hDate.startsWith(thisMonth);
+  }).length;
 
   // New candidates this week
   const weekAgo = new Date(Date.now() - 7*24*60*60*1000).toISOString().split('T')[0];
@@ -1812,7 +1853,11 @@ function renderDashboard() {
   const subHires = document.getElementById('dash-sub-hires');
   if(subHires) {
     const lastMonth = new Date(new Date().setMonth(new Date().getMonth()-1)).toISOString().slice(0,7);
-    const hiredLastMonth = getMetricCandidates().filter(c => c.stage==='Hired' && (c.applied||'').startsWith(lastMonth)).length;
+    const hiredLastMonth = getMetricCandidates().filter(c => {
+      if(!isCandHired(c)) return false;
+      const hDate = getCandHiredAt(c) || c.applied || '';
+      return hDate.startsWith(lastMonth);
+    }).length;
     subHires.textContent = hiredLastMonth > 0 ? `vs ${hiredLastMonth} last month` : hiredCount > 0 ? `${hiredCount} total hired` : 'no hires yet';
     subHires.className = 'stat-change ' + (hiredThisMonth >= hiredLastMonth && hiredThisMonth > 0 ? 'up' : '');
   }
@@ -3048,10 +3093,12 @@ function renderOffers() {
 
 function updateOfferStatus(idx, status) {
   offers[idx].status = status;
+  offers[idx].updatedAt = new Date().toISOString();
   const c = getCand(offers[idx].candidateId);
   if(c && status==='Accepted') {
     c.stage = 'Pending Join';
     (c.jobApplications||[]).forEach(app => { app.stage = 'Pending Join'; });
+    // Note: hiredAt is NOT set here — hire is only confirmed when moved to Hired stage
     addToTimeline(c, 'Offer Accepted — Pending Join <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:-2px;flex-shrink:0;"><circle cx="12" cy="12" r="10"/><path d="M8 14s1.5 2 4 2 4-2 4-2"/><line x1="9" y1="9" x2="9.01" y2="9"/><line x1="15" y1="9" x2="15.01" y2="9"/></svg>', '#06b6d4');
     activities.unshift({ text:`<strong>${c.name}</strong> accepted the offer — awaiting start date! <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:-2px;flex-shrink:0;"><circle cx="12" cy="12" r="10"/><path d="M8 14s1.5 2 4 2 4-2 4-2"/><line x1="9" y1="9" x2="9.01" y2="9"/><line x1="15" y1="9" x2="15.01" y2="9"/></svg>`, color:'#06b6d4', ts:Date.now() });
   }
@@ -3083,7 +3130,11 @@ function openEditOfferModal(idx) {
 function saveEditOffer(idx) {
   const fields = getOfferFields().filter(f => f.enabled);
   fields.forEach(f => { offers[idx][f.id] = document.getElementById('of-'+f.id)?.value || ''; });
+  const o = offers[idx];
   save(); closeModal(); renderOffers();
+  // Refresh candidate profile if open
+  const candId = o?.candidateId;
+  if(candId) setTimeout(() => reactiveUpdate(candId), 80);
   showToast('Offer updated!');
 }
 
@@ -3121,7 +3172,7 @@ function renderAnalytics() {
   const o2h = safe(hired, offered + hired);
 
   // Time to hire: avg days from applied → hired (candidates with stage=Hired)
-  const hiredCands = getMetricCandidates().filter(c=>c.stage==='Hired'&&c.applied);
+  const hiredCands = getMetricCandidates().filter(c=>isCandHired(c)&&(getCandHiredAt(c)||c.applied));
   let avgHireDays = '—';
   if(hiredCands.length) {
     const now = new Date();
@@ -8416,9 +8467,12 @@ function confirmMoveStage(id) {
   const c = getCand(id);
   if(sel && c) {
     const targetJobId = jobIdEl ? parseInt(jobIdEl.value)||c.jobId : c.jobId;
-    setCandStageForJob(c, targetJobId, sel.value);
-    // Update all jobApplications for this job
-    (c.jobApplications||[]).forEach(app => { if(app.jobId === targetJobId) app.stage = sel.value; });
+    if(sel.value === 'Hired') {
+      markCandidateHired(c, targetJobId);
+    } else {
+      setCandStageForJob(c, targetJobId, sel.value);
+      (c.jobApplications||[]).forEach(app => { if(app.jobId === targetJobId) app.stage = sel.value; });
+    }
     activities.unshift({ text:`<strong>${c.name}</strong> moved to <strong>${c.stage}</strong>`, color: stageColors[c.stage]||'var(--accent)', ts:Date.now() });
     save();
   }
@@ -11116,8 +11170,8 @@ function checkPendingJoinDates() {
 
 function confirmCandidateJoined(candId) {
   const c = getCand(candId); if(!c) return;
-  c.stage = 'Hired';
-  (c.jobApplications||[]).forEach(a => { if(a.stage === 'Pending Join') a.stage = 'Hired'; });
+  // markCandidateHired stamps today as hiredAt — that's when you confirmed them hired
+  markCandidateHired(c, c.jobId);
   addToTimeline(c, 'Joined — Marked as Hired <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:-2px;flex-shrink:0;"><circle cx="12" cy="12" r="10"/><path d="M8 14s1.5 2 4 2 4-2 4-2"/><line x1="9" y1="9" x2="9.01" y2="9"/><line x1="15" y1="9" x2="15.01" y2="9"/></svg>', 'var(--green)');
   activities.unshift({ text:`<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:-2px;flex-shrink:0;"><circle cx="12" cy="12" r="10"/><path d="M8 14s1.5 2 4 2 4-2 4-2"/><line x1="9" y1="9" x2="9.01" y2="9"/><line x1="15" y1="9" x2="15.01" y2="9"/></svg> <strong>${c.name}</strong> has officially joined as <strong>${getJob(c.jobId)?.title||''}</strong>!`, color:'var(--green)', ts:Date.now() });
   save();
