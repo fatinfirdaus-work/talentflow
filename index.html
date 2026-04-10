@@ -7821,49 +7821,17 @@ function openModal(type, data={}) {
   } else if(type==='addCandidate') {
     title.textContent = 'Add Candidate';
     body.innerHTML = `
-      <!-- API KEY -->
-      <div id="apikey-section" style="${apiKey?'display:none':''}">
-        <div style="background:var(--accent-dim);border:1px solid var(--accent);border-radius:8px;padding:12px 14px;margin-bottom:4px">
-          <div style="font-size:13px;font-weight:600;color:var(--accent);margin-bottom:4px"><svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:-2px;flex-shrink:0;"><path d="M21 2l-2 2m-7.61 7.61a5.5 5.5 0 11-7.778 7.778 5.5 5.5 0 017.777-7.777zm0 0L15.5 7.5m0 0l3 3L22 7l-3-3m-3.5 3.5L19 4"/></svg> One-time setup: Enter your Anthropic API key</div>
-          <div style="font-size:12px;color:var(--text2);margin-bottom:10px">Used only locally in your browser to parse resumes. Never sent anywhere else. Get one free at <a href="https://console.anthropic.com" target="_blank" style="color:var(--accent)">console.anthropic.com</a></div>
-          <div style="display:flex;gap:8px">
-            <input type="password" id="api-key-input" placeholder="sk-ant-..." style="flex:1" value="${apiKey}">
-            <button class="btn btn-primary btn-sm" onclick="saveApiKey()">Save Key</button>
-          </div>
-        </div>
-      </div>
-      ${apiKey?`<div style="display:flex;align-items:center;gap:8px;margin-bottom:4px;font-size:12px;color:var(--green)">✓ API key saved &nbsp;<span style="color:var(--text3);cursor:pointer;text-decoration:underline" onclick="clearApiKey()">Change</span></div>`:''}
-
-      <!-- RESUME UPLOAD -->
-      <div class="form-group">
-        <label>Resume (PDF or DOCX) — AI will auto-fill the form</label>
-        <div id="drop-zone" style="border:2px dashed var(--border2);border-radius:10px;padding:28px;text-align:center;cursor:pointer;transition:all 0.2s;background:var(--bg3)" ondragover="dzOver(event)" ondragleave="dzLeave(event)" ondrop="dzDrop(event)" onclick="document.getElementById('resume-file').click()">
-          <div id="dz-icon" style="font-size:32px;margin-bottom:8px"><svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:-2px;flex-shrink:0;"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/></svg></div>
-          <div id="dz-text" style="font-size:13px;font-weight:600;margin-bottom:4px">Drop resume here or click to browse</div>
-          <div style="font-size:11px;color:var(--text3)">PDF or DOCX · Max 10MB</div>
-          <input type="file" id="resume-file" accept=".pdf,.docx,application/pdf,application/vnd.openxmlformats-officedocument.wordprocessingml.document" style="display:none" onchange="handleResumeFile(this.files[0])">
-        </div>
-        
-      </div>
-
-      <div style="display:flex;align-items:center;gap:10px;margin:4px 0">
-        <div style="flex:1;height:1px;background:var(--border)"></div>
-        <span style="font-size:11px;color:var(--text3)">or fill in manually</span>
-        <div style="flex:1;height:1px;background:var(--border)"></div>
-      </div>
-
-      <!-- CANDIDATE FIELDS -->
       <div class="form-row">
-        <div class="form-group"><label>Full Name</label><input type="text" id="nc-name" placeholder="Jane Smith"></div>
+        <div class="form-group"><label>Full Name *</label><input type="text" id="nc-name" placeholder="Jane Smith"></div>
         <div class="form-group"><label>Email</label><input type="email" id="nc-email" placeholder="jane@email.com"></div>
       </div>
       <div class="form-row">
-        <div class="form-group"><label>Phone</label><input type="text" id="nc-phone" placeholder="+1 555 000 0000"></div>
+        <div class="form-group"><label>Phone</label><input type="text" id="nc-phone" placeholder="+60 12 345 6789"></div>
         <div class="form-group"><label>Location</label><input type="text" id="nc-location" placeholder="City or Remote"></div>
       </div>
       <div class="form-row">
         <div class="form-group"><label>Apply For</label>
-          <select id="nc-job">${jobs.map(j=>`<option value="${j.id}">${j.title}</option>`).join('')}</select>
+          <select id="nc-job">${jobs.map(j=>`<option value="${j.id}">${escapeHtml(j.title)}</option>`).join('')}</select>
         </div>
         <div class="form-group"><label>Stage</label>
           <select id="nc-stage">${stages.map(s=>`<option>${s}</option>`).join('')}</select>
@@ -7875,12 +7843,25 @@ function openModal(type, data={}) {
       </div>
       <div class="form-row">
         <div class="form-group"><label>Source</label>
-          <select id="nc-source">${getCandidateSources().map(s=>`<option>${s}</option>`).join('')}</select>
+          <select id="nc-source">${getCandidateSources().map(s=>`<option>${escapeHtml(s)}</option>`).join('')}</select>
         </div>
-        
+        <div class="form-group"><label>LinkedIn URL</label><input type="text" id="nc-linkedin" placeholder="https://linkedin.com/in/..."></div>
       </div>
       <div class="form-group"><label>Skills (comma separated)</label><input type="text" id="nc-skills" placeholder="React, Python, SQL"></div>
-      <div class="form-group"><label>AI Summary / Notes</label><textarea id="nc-notes" placeholder="AI will summarize the candidate here..."></textarea></div>`;
+      <div class="form-group"><label>Notes</label><textarea id="nc-notes" placeholder="Any notes about this candidate..." style="height:70px;resize:vertical;"></textarea></div>
+      <div class="form-group">
+        <label>Resume (PDF or DOCX)</label>
+        <div id="nc-drop-zone" style="border:2px dashed var(--border2);border-radius:10px;padding:20px;text-align:center;cursor:pointer;transition:all 0.2s;background:var(--bg3);"
+          ondragover="this.style.borderColor='var(--accent)';this.style.background='var(--accent-dim)';event.preventDefault();"
+          ondragleave="this.style.borderColor='var(--border2)';this.style.background='var(--bg3)';"
+          ondrop="ncHandleResumeDrop(event)"
+          onclick="document.getElementById('nc-resume-file').click()">
+          <div id="nc-dz-icon" style="font-size:28px;margin-bottom:6px;">📎</div>
+          <div id="nc-dz-text" style="font-size:13px;font-weight:600;margin-bottom:3px;">Drop resume here or click to browse</div>
+          <div style="font-size:11px;color:var(--text3);">PDF or DOCX · Max 10MB</div>
+          <input type="file" id="nc-resume-file" accept=".pdf,.docx,application/pdf" style="display:none" onchange="ncHandleResumeFile(this.files[0])">
+        </div>
+      </div>`;
     footer.innerHTML = `<button class="btn btn-ghost" onclick="closeModal()">Cancel</button><button class="btn btn-primary" onclick="saveCandidate()">Add Candidate</button>`;
   } else if(type==='moveStage') {
     const c = getCand(data.id);
@@ -8882,32 +8863,17 @@ document.addEventListener('click', e => {
   if(!e.target.closest('#global-search-wrap')) hideGlobalResults();
 });
 
-// ===================== API KEY =====================
-function saveApiKey() {
-  const val = document.getElementById('api-key-input')?.value.trim();
-  if(!val || !val.startsWith('sk-ant-')) { showToast('Invalid key — Anthropic keys start with sk-ant-'); return; }
-  document.getElementById('apikey-section').style.display = 'none';
-  showToast('API key saved! ✓');
-}
-function clearApiKey() {
-  openModal('addCandidate');
-}
-
-// ===================== RESUME UPLOAD + PARSE =====================
 let currentResumeB64 = null;
 let currentResumeType = null;
 let currentResumeFilename = null;
 
-function dzOver(e) { e.preventDefault(); document.getElementById('drop-zone').style.borderColor='var(--accent)'; }
-function dzLeave(e) { document.getElementById('drop-zone').style.borderColor='var(--border2)'; }
-function dzDrop(e) {
+function ncHandleResumeDrop(e) {
   e.preventDefault();
-  document.getElementById('drop-zone').style.borderColor='var(--border2)';
-  const file = e.dataTransfer.files[0];
-  if(file) handleResumeFile(file);
+  const file = e.dataTransfer?.files?.[0];
+  if(file) ncHandleResumeFile(file);
 }
 
-function handleResumeFile(file) {
+function ncHandleResumeFile(file) {
   if(!file) return;
   const allowed = ['application/pdf','application/vnd.openxmlformats-officedocument.wordprocessingml.document'];
   if(!allowed.includes(file.type) && !file.name.match(/\.(pdf|docx)$/i)) {
@@ -8916,8 +8882,8 @@ function handleResumeFile(file) {
   if(file.size > 10 * 1024 * 1024) { showToast('File too large — max 10MB'); return; }
 
   // Update dropzone UI
-  document.getElementById('dz-icon').innerHTML = '<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:-2px;flex-shrink:0;"><path d="M5 22h14"/><path d="M5 2h14"/><path d="M17 22v-4.172a2 2 0 00-.586-1.414L12 12l-4.414 4.414A2 2 0 007 17.828V22"/><path d="M7 2v4.172a2 2 0 00.586 1.414L12 12l4.414-4.414A2 2 0 0017 6.172V2"/></svg>';
-  document.getElementById('dz-text').textContent = file.name;
+  document.getElementById('nc-dz-icon').innerHTML = '<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:-2px;flex-shrink:0;"><path d="M5 22h14"/><path d="M5 2h14"/><path d="M17 22v-4.172a2 2 0 00-.586-1.414L12 12l-4.414 4.414A2 2 0 007 17.828V22"/><path d="M7 2v4.172a2 2 0 00.586 1.414L12 12l4.414-4.414A2 2 0 0017 6.172V2"/></svg>';
+  document.getElementById('nc-dz-text').textContent = file.name;
 
   const reader = new FileReader();
   reader.onload = async (e) => {
@@ -8925,26 +8891,9 @@ function handleResumeFile(file) {
     currentResumeB64 = b64;
     currentResumeType = file.type || (file.name.endsWith('.pdf') ? 'application/pdf' : 'application/vnd.openxmlformats-officedocument.wordprocessingml.document');
     currentResumeFilename = file.name;
-    document.getElementById('dz-icon').innerHTML = '<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:-2px;flex-shrink:0;"><path d="M22 11.08V12a10 10 0 11-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>';
+    document.getElementById('nc-dz-icon').innerHTML = '<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:-2px;flex-shrink:0;"><path d="M22 11.08V12a10 10 0 11-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>';
   };
   reader.readAsDataURL(file);
-}
-
-async function extractTextFromPdf(b64) {
-  if(!window.pdfjsLib) throw new Error('PDF.js not loaded');
-  pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
-  const bin = atob(b64);
-  const arr = new Uint8Array(bin.length);
-  for(let i=0;i<bin.length;i++) arr[i]=bin.charCodeAt(i);
-  const pdf = await pdfjsLib.getDocument({data:arr}).promise;
-  let fullText = '';
-  for(let p=1;p<=Math.min(pdf.numPages,8);p++) {
-    const page = await pdf.getPage(p);
-    const content = await page.getTextContent();
-    const pageText = content.items.map(i=>i.str).join(' ');
-    fullText += pageText + '\n';
-  }
-  return fullText.trim();
 }
 
 function setVal(id, val) { const el = document.getElementById(id); if(el) el.value = val; }
