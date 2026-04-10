@@ -645,6 +645,20 @@
   .btn:active { transform:scale(0.97); }
   .btn-primary:active { transform:scale(0.97); box-shadow:0 0 0 3px rgba(79,142,247,0.25); }
   .ripple { position:absolute;border-radius:50%;background:rgba(255,255,255,0.25);transform:scale(0);animation:rippleAnim 0.5s ease; pointer-events:none; }
+  @keyframes slideDown { from { opacity:0; transform:translateY(-8px); } to { opacity:1; transform:translateY(0); } }
+  @keyframes slideUp   { from { opacity:1; transform:translateY(0); }    to { opacity:0; transform:translateY(-8px); } }
+  @keyframes fadeIn    { from { opacity:0; transform:scale(0.97); }       to { opacity:1; transform:scale(1); } }
+  @keyframes popIn     { from { opacity:0; transform:scale(0.92); }       to { opacity:1; transform:scale(1); } }
+  .modal-overlay.open .modal { animation: popIn 0.2s cubic-bezier(0.34,1.56,0.64,1) forwards; }
+  .page.active { animation: fadeIn 0.18s ease forwards; }
+  @keyframes badgePop { 0% { transform:scale(1); } 50% { transform:scale(1.18); } 100% { transform:scale(1); } }
+  .badge-pop { animation: badgePop 0.3s cubic-bezier(0.34,1.56,0.64,1); }
+  .nav-item { transition: background 0.12s, color 0.12s, transform 0.1s; }
+  .nav-item:active { transform: scale(0.97); }
+  .btn { transition: background 0.12s, border-color 0.12s, transform 0.1s, box-shadow 0.12s, opacity 0.12s; }
+  .btn:active:not(:disabled) { transform: scale(0.97); }
+  .stat-card { transition: transform 0.15s, box-shadow 0.15s; }
+  .stat-card:hover { transform: translateY(-2px); box-shadow: var(--shadow-md); }
 
   /* ── ANIMATIONS ── */
   @keyframes slideDown { from { opacity:0; transform:translateY(-8px); } to { opacity:1; transform:translateY(0); } }
@@ -1645,6 +1659,38 @@ let tasks = stored.tasks || [];
 
 const stages = ['Applied','Screening','Interview','Offer','Pending Join','Hired','Rejected'];
 
+function isCandExcludedFromMetrics(c) {
+  if(!c) return false;
+  const j = getJob(c.jobId);
+  if(j?.excludeFromMetrics) return true;
+  const apps = c.jobApplications || [];
+  if(apps.length > 0 && apps.every(a => getJob(a.jobId)?.excludeFromMetrics)) return true;
+  return false;
+}
+function getMetricCandidates() {
+  return candidates.filter(c => !isCandExcludedFromMetrics(c));
+}
+function markCandidateHired(c, jobId) {
+  if(!c) return;
+  const now = new Date().toISOString();
+  c.stage = 'Hired'; c.hiredAt = now; c.hiredJobId = jobId || c.jobId;
+  (c.jobApplications||[]).forEach(app => {
+    if(app.jobId===(jobId||c.jobId)||app.stage==='Pending Join') { app.stage='Hired'; app.hiredAt=app.hiredAt||now; }
+  });
+}
+function isCandHired(c) {
+  if(!c) return false;
+  if(c.stage==='Hired') return true;
+  return offers.some(o=>String(o.candidateId)===String(c.id)&&o.status==='Accepted');
+}
+function getCandHiredAt(c) {
+  if(!c) return null;
+  if(c.hiredAt) return c.hiredAt;
+  const acc = offers.find(o=>String(o.candidateId)===String(c.id)&&o.status==='Accepted');
+  if(acc?.updatedAt) return acc.updatedAt;
+  return null;
+}
+
 // Returns true if a candidate's primary job is excluded from metrics
 function isCandExcludedFromMetrics(c) {
   if(!c) return false;
@@ -1873,9 +1919,446 @@ function renderDashboard() {
   const subJobs = document.getElementById('dash-sub-jobs');
   if(subJobs) {
     const pausedJobs = jobs.filter(j=>j.status==='Paused').length;
-    subJobs.textContent = pausedJobs > 0 ? `${pausedJobs} paused` : `${jobs.filter(j=>!j.excludeFromMetrics).length} total`;
+    subJobs.textContent = pausedJobs > 0 ? `${pausedJobs} paused` : `${jobs.length} total`;
     subJobs.className = 'stat-change';
   }
+  const subCands = document.getElementById('dash-sub-cands');
+  if(subCands) {
+    subCands.textContent = newThisWeek > 0 ? `↑ ${newThisWeek} new this week` : 'total candidates';
+    subCands.className = 'stat-change ' + (newThisWeek > 0 ? 'up' : '');
+  }
+  const subInterview = document.getElementById('dash-sub-interview');
+  if(subInterview) {
+    const parts = [];
+    if(inInterview > 0) parts.push(`${inInterview} interviewing`);
+    if(pendingJoin > 0) parts.push(`${pendingJoin} pending join`);
+    if(inScreening > 0 && parts.length === 0) parts.push(`${inScreening} in screening`);
+    subInterview.textContent = parts.length ? parts.join(' · ') : 'across all stages';
+    subInterview.className = 'stat-change';
+  }
+  // 4th card (hires this month) — update both value and sub-label
+  const subHires = document.getElementById('dash-sub-hires');
+  if(subHires) {
+    const lastMonth = new Date(new Date().setMonth(new Date().getMonth()-1)).toISOString().slice(0,7);
+    const hiredLastMonth = getMetricCandidates().filter(c => {
+      if(!isCandHired(c)) return false;
+      const hDate = getCandHiredAt(c) || c.applied || '';
+      return hDate.startsWith(lastMonth);
+    }).length;
+    subHires.textContent = hiredLastMonth > 0 ? `vs ${hiredLastMonth} last month` : hiredCount > 0 ? `${hiredCount} total hired` : 'no hires yet';
+    subHires.className = 'stat-change ' + (hiredThisMonth >= hiredLastMonth && hiredThisMonth > 0 ? 'up' : '');
+  }
+
+  // Jobs list — use real candidate counts, not stale j.applicants
+  const list = document.getElementById('dash-jobs-list');
+  list.innerHTML = jobs.filter(j=>j.status==='Active').slice(0,5).map(j=>{
+    const cnt = candidates.filter(c=>getCandJobIds(c).includes(j.id)).length;
+    return `<div class="job-item" onclick="openJobDetail(${j.id})" style="cursor:pointer;">
+      <div class="job-avatar" style="background:${j.color}22;font-size:18px">${j.icon}</div>
+      <div class="job-info">
+        <div class="job-title">${j.title}</div>
+        <div class="job-meta"><span>${j.dept}</span><span>·</span><span>${j.location}</span></div>
+      </div>
+      <div class="job-right">
+        <span class="badge ${j.status==='Active'?'badge-green':'badge-amber'}">${j.status}</span>
+        <span style="font-size:11px;color:var(--text3)">${cnt} candidate${cnt!==1?'s':''}</span>
+      </div>
+    </div>`;
+  }).join('') || '<div style="padding:20px;text-align:center;color:var(--text3);">No active jobs</div>';
+
+  // Funnel — real counts from live candidates
+  const funnelStages = stages.filter(s => s !== 'Rejected');
+  const maxCount = Math.max(...funnelStages.map(s => stageCounts[s]||0), 1);
+  document.getElementById('funnel-chart').innerHTML = funnelStages.map(s => {
+    const count = stageCounts[s] || 0;
+    const color = stageColors[s] || 'var(--accent)';
+    return `<div class="funnel-stage" style="cursor:pointer;" onclick="showPage('candidates',null);selectCandStage('${s}')">
+      <div class="funnel-label" style="color:${color}">${s.toUpperCase()}</div>
+      <div class="funnel-bar-wrap">
+        <div class="funnel-bar" style="width:${Math.round(count/maxCount*100)}%;background:${color}">${count}</div>
+      </div>
+      <div class="funnel-count" style="color:${color}">${count}</div>
+    </div>`;
+  }).join('');
+
+  // Activity
+  document.getElementById('activity-feed').innerHTML = activities.slice(0, 20).map(a=>`
+    <div class="activity-item">
+      <div class="activity-dot" style="background:${a.color}"></div>
+      <div class="activity-content">
+        <div class="activity-text">${a.text}</div>
+        <div class="activity-time">${timeAgo(a.ts || a.time)}</div>
+      </div>
+    </div>`).join('') || '<div style="padding:20px;text-align:center;color:var(--text3);font-size:13px;">No recent activity</div>';
+
+  // Weekly chart — real candidates applied per day this week
+  const today = new Date();
+  const weekDays = Array.from({length:7}, (_,i) => {
+    const d = new Date(today); d.setDate(today.getDate()-6+i);
+    return d.toISOString().split('T')[0];
+  });
+  const dayLabels = weekDays.map(d => new Date(d).toLocaleDateString('en-MY',{weekday:'short'}));
+  const vals = weekDays.map(d => candidates.filter(c=>c.applied===d).length);
+  const mx = Math.max(...vals, 1);
+  const weekTotal = vals.reduce((a,b)=>a+b,0);
+  const weekCountEl = document.getElementById('dash-weekly-count');
+  if(weekCountEl) { weekCountEl.textContent = weekTotal + ' this week'; weekCountEl.className = 'badge ' + (weekTotal > 0 ? 'badge-green' : 'badge-gray'); }
+  document.getElementById('weekly-chart').innerHTML = vals.map((v,i)=>`
+    <div style="display:flex;flex-direction:column;align-items:center;flex:1;gap:3px;">
+      <div class="bar ${i===6?'active':''}" style="height:${Math.round(v/mx*100)}%;min-height:4px;" data-tip="${v} applied · ${dayLabels[i]}"></div>
+      <div style="font-size:9px;color:var(--text3);">${dayLabels[i]}</div>
+    </div>`).join('');
+
+  // Tasks summary
+  const taskEl = document.getElementById('dash-tasks-summary');
+  if(taskEl) {
+    if(!tasks.length) {
+      taskEl.innerHTML = '<div style="padding:16px;text-align:center;color:var(--text3);font-size:12px;">No tasks yet <button class="btn btn-primary btn-sm" style="margin-left:8px;" onclick="showPage(\'tasks\',null)">+ Create</button></div>';
+    } else {
+      const todayD = new Date().toISOString().split('T')[0];
+      const overdue = tasks.filter(t=>t.dueDate&&t.dueDate<todayD&&t.status!==TASK_STATUSES[TASK_STATUSES.length-1]);
+      const dueToday = tasks.filter(t=>t.dueDate===todayD&&t.status!==TASK_STATUSES[TASK_STATUSES.length-1]);
+      const inProgress = tasks.filter(t=>t.status===TASK_STATUSES[1]);
+      const upcoming = tasks.filter(t=>t.status!==TASK_STATUSES[TASK_STATUSES.length-1])
+        .sort((a,b)=>(a.dueDate||'9999')>(b.dueDate||'9999')?1:-1).slice(0,4);
+      taskEl.innerHTML =
+        (overdue.length?`<div style="padding:8px 16px;background:var(--red-dim);border-bottom:1px solid var(--border);font-size:12px;color:var(--red);font-weight:600;"><svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:-2px;flex-shrink:0;"><path d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg> ${overdue.length} overdue task${overdue.length>1?'s':''}</div>`:'')+
+        (dueToday.length?`<div style="padding:8px 16px;background:var(--amber-dim);border-bottom:1px solid var(--border);font-size:12px;color:var(--amber);font-weight:600;"><svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:-2px;flex-shrink:0;"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg> ${dueToday.length} due today</div>`:'')+
+        upcoming.map(t=>{
+          const job = t.jobId ? getJob(parseInt(t.jobId)) : null;
+          const od = t.dueDate && t.dueDate < todayD;
+          return `<div style="display:flex;align-items:center;gap:10px;padding:9px 16px;border-bottom:1px solid var(--border);cursor:pointer;"
+            onclick="showPage('tasks',null);setTimeout(()=>openTaskDetail('${t.id}'),200)"
+            onmouseover="this.style.background='var(--bg3)'" onmouseout="this.style.background=''">
+            <div style="width:8px;height:8px;border-radius:50%;flex-shrink:0;background:${TASK_STATUS_COLOR[t.status]||'var(--text3)'};"></div>
+            <div style="flex:1;min-width:0;">
+              <div style="font-size:12.5px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${escapeHtml(t.title)}</div>
+              <div style="font-size:10.5px;color:var(--text3);">${job?escapeHtml(job.title)+' · ':''}${t.dueDate?`<span style="color:${od?'var(--red)':'var(--text3)'};"><svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:-2px;flex-shrink:0;"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg> ${new Date(t.dueDate+'T00:00:00').toLocaleDateString('en-MY',{day:'numeric',month:'short'})}</span>`:''}</div>
+            </div>
+            <span class="badge ${TASK_STATUS_BADGE[t.status]||'badge-gray'}" style="font-size:9px;">${t.status}</span>
+          </div>`;
+        }).join('')+
+        `<div style="padding:8px 16px;font-size:11px;color:var(--text3);">${tasks.filter(t=>t.status!==TASK_STATUSES[TASK_STATUSES.length-1]).length} open · ${tasks.filter(t=>t.status===TASK_STATUSES[TASK_STATUSES.length-1]).length} done</div>`;
+    }
+  }
+
+  // Joining Soon widget
+  const obEl = document.getElementById('dash-onboarding-list');
+  if(obEl) {
+    const today = new Date().toISOString().split('T')[0];
+    const pendingJoin = candidates.filter(c => c.stage === 'Pending Join');
+    if(!pendingJoin.length) {
+      obEl.innerHTML = '<div style="padding:16px;text-align:center;color:var(--text3);font-size:12px;">No candidates pending onboarding</div>';
+    } else {
+      obEl.innerHTML = pendingJoin.slice(0,5).map(c => {
+        const accepted = offers.find(o => o.candidateId === c.id && o.status === 'Accepted');
+        const startDate = accepted?.startDate || '';
+        const job = getJob(c.jobId);
+        const daysUntil = startDate ? Math.round((new Date(startDate) - new Date(today)) / 86400000) : null;
+        const countColor = daysUntil === null ? 'var(--text3)' : daysUntil < 0 ? 'var(--red)' : daysUntil <= 3 ? 'var(--amber)' : 'var(--green)';
+        const countText = daysUntil === null ? 'No start date' : daysUntil === 0 ? '<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:-2px;flex-shrink:0;"><circle cx="12" cy="12" r="10"/><path d="M8 14s1.5 2 4 2 4-2 4-2"/><line x1="9" y1="9" x2="9.01" y2="9"/><line x1="15" y1="9" x2="15.01" y2="9"/></svg> Today!' : daysUntil < 0 ? Math.abs(daysUntil) + 'd overdue' : daysUntil + 'd to go';
+        const onb = getCandOnboarding(c);
+        const obTasks = tasks.filter(t => t._onboarding && String(t.candidateId) === String(c.id));
+        const doneTasks = obTasks.filter(t => t.status === 'Done').length;
+        const progress = obTasks.length ? Math.round(doneTasks / obTasks.length * 100) : 0;
+        return `<div style="display:flex;align-items:center;gap:10px;padding:10px 16px;border-bottom:1px solid var(--border);cursor:pointer;transition:background 0.1s;"
+          onclick="openCandProfile(${c.id})"
+          onmouseover="this.style.background='var(--bg3)'" onmouseout="this.style.background=''">
+          <div style="width:30px;height:30px;border-radius:50%;background:${c.color}33;color:${c.color};display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;flex-shrink:0;">${c.initials}</div>
+          <div style="flex:1;min-width:0;">
+            <div style="font-size:13px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${escapeHtml(c.name)}</div>
+            <div style="font-size:11px;color:var(--text3);">${job ? escapeHtml(job.title) : '–'}</div>
+          </div>
+          <div style="text-align:right;flex-shrink:0;">
+            <div style="font-size:12px;font-weight:700;color:${countColor};">${countText}</div>
+            ${obTasks.length ? `<div style="font-size:10px;color:var(--text3);">${doneTasks}/${obTasks.length} tasks</div>` : '<div style="font-size:10px;color:var(--text3);">Not started</div>'}
+          </div>
+        </div>`;
+      }).join('') +
+      (pendingJoin.length > 5 ? `<div style="padding:8px 16px;font-size:11px;color:var(--text3);">+${pendingJoin.length - 5} more</div>` : '');
+    }
+  }
+}
+
+function renderJobs() {
+  const searchQ = (document.getElementById('job-search')?.value||'').trim().toLowerCase();
+  const deptF   = document.getElementById('job-dept-filter')?.value||'';
+  const statusF = document.getElementById('job-status-filter')?.value||'';
+  const typeF   = document.getElementById('job-type-filter')?.value||'';
+  const sortV   = document.getElementById('job-sort')?.value||'date';
+
+  let filtered = [...jobs];
+  if(searchQ) filtered = filtered.filter(j=>[j.title,j.dept,j.location,j.type,(j.skills||[]).join(' ')].join(' ').toLowerCase().includes(searchQ));
+  if(deptF)   filtered = filtered.filter(j=>j.dept===deptF);
+  if(statusF) filtered = filtered.filter(j=>j.status===statusF);
+  if(typeF)   filtered = filtered.filter(j=>j.type===typeF);
+
+  const prioOrder = {High:0,Medium:1,Low:2};
+  if(sortV==='title')      filtered.sort((a,b)=>a.title.localeCompare(b.title));
+  else if(sortV==='applicants') filtered.sort((a,b)=>(b.applicants||0)-(a.applicants||0));
+  else if(sortV==='priority')   filtered.sort((a,b)=>(prioOrder[a.priority]||1)-(prioOrder[b.priority]||1));
+  else filtered.sort((a,b)=>new Date(b.posted||0)-new Date(a.posted||0));
+
+  const countEl = document.getElementById('jobs-count');
+  if(countEl) countEl.textContent = filtered.length + ' job' + (filtered.length!==1?'s':'');
+
+  const el = document.getElementById('jobs-list');
+  if(!filtered.length) {
+    el.innerHTML = '<div class="empty-state"><div class="empty-icon"><svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:-2px;flex-shrink:0;"><rect x="2" y="7" width="20" height="14" rx="2" ry="2"/><path d="M16 21V5a2 2 0 00-2-2h-4a2 2 0 00-2 2v16"/></svg></div><div class="empty-title">No jobs found</div><div class="empty-desc">Try adjusting your filters</div></div>';
+    return;
+  }
+
+  el.innerHTML = filtered.map(j=>{
+    const jobCands = candidates.filter(c=>getCandJobIds(c).includes(j.id));
+    const total = jobCands.length;
+    const stageCounts = stages.map(s=>({ s, n: jobCands.filter(c=>getCandStageForJob(c,j.id)===s).length, color: stageColors[s]||'var(--text3)' }));
+    const hired = stageCounts.find(x=>x.s==='Hired')?.n||0;
+    const intvw = stageCounts.find(x=>x.s==='Interview')?.n||0;
+    const offer = stageCounts.find(x=>x.s==='Offer')?.n||0;
+    const prioClass   = j.priority==='High'?'badge-red':j.priority==='Medium'?'badge-amber':'badge-gray';
+    const statusClass = j.status==='Active'?'badge-green':j.status==='Paused'?'badge-amber':'badge-gray';
+
+    // Clean pill stage boxes — no chevrons
+    const stagePills = stages.map(s => {
+      const sc = stageCounts.find(x=>x.s===s);
+      const n = sc?.n||0;
+      const color = sc?.color||'var(--text3)';
+      const hasData = n > 0;
+      return `<div onclick="event.stopPropagation();filterCandsByJob(${j.id},'${s}')"
+        title="${s}: ${n} candidate${n!==1?'s':''} — click to view"
+        style="flex:1;min-width:60px;padding:7px 10px;border-radius:8px;
+          background:${hasData ? color+'20' : 'var(--bg3)'};
+          border:1px solid ${hasData ? color+'50' : 'var(--border)'};
+          display:flex;align-items:center;justify-content:center;gap:5px;
+          cursor:pointer;transition:all 0.13s;"
+        onmouseover="this.style.background='${color}30';this.style.borderColor='${color}80'"
+        onmouseout="this.style.background='${hasData?color+'20':'var(--bg3)'}';this.style.borderColor='${hasData?color+'50':'var(--border)'}'">
+        <span style="font-size:15px;font-weight:800;color:${hasData?color:'var(--text3)'};">${n}</span>
+        <span style="font-size:10px;font-weight:600;color:${hasData?color:'var(--text3)'};white-space:nowrap;">${s}</span>
+      </div>`;
+    }).join('');
+
+    return `<div class="job-item" onclick="openJobDetail(${j.id})" style="flex-direction:column;align-items:stretch;padding:16px 20px;gap:12px;">
+      <!-- Top row: icon + title + stats -->
+      <div style="display:flex;align-items:center;gap:12px;">
+        <div class="job-avatar" style="background:${j.color}22;font-size:18px;flex-shrink:0;">${j.icon}</div>
+        <div style="flex:1;min-width:0;">
+          <div style="display:flex;align-items:center;gap:7px;margin-bottom:4px;flex-wrap:wrap;">
+            <span style="font-size:14px;font-weight:700;">${searchQ?highlightMatch(j.title,searchQ):escapeHtml(j.title)}</span>
+            <span class="badge ${statusClass}">${j.status}</span>
+            <span class="badge ${prioClass}">${j.priority}</span>
+          </div>
+          <div class="job-meta">
+            <span>${j.dept}</span><span>·</span><span>${j.type}</span><span>·</span><span>${j.location}</span>
+            ${j.salary&&j.salary!=='TBD'?`<span>·</span><span style="font-family:'JetBrains Mono';font-size:11px">${j.salary}</span>`:''}
+          </div>
+        </div>
+        <!-- Mini stats -->
+        <div style="display:flex;gap:18px;font-size:11px;color:var(--text3);flex-shrink:0;text-align:center;">
+          <div><div style="font-size:16px;font-weight:800;color:var(--accent);">${total}</div><div>Total</div></div>
+          <div><div style="font-size:16px;font-weight:800;color:var(--amber);">${intvw}</div><div>Interview</div></div>
+          <div><div style="font-size:16px;font-weight:800;color:var(--purple);">${offer}</div><div>Offer</div></div>
+          <div><div style="font-size:16px;font-weight:800;color:var(--green);">${hired}</div><div>Hired</div></div>
+        </div>
+      </div>
+      <!-- Stage pill boxes -->
+      <div style="display:flex;gap:6px;flex-wrap:wrap;" onclick="event.stopPropagation()">
+        ${stagePills}
+      </div>
+    </div>`;
+  }).join('');
+
+  // Always repopulate dept filter
+  const deptEl = document.getElementById('job-dept-filter');
+  if(deptEl) {
+    const current = deptEl.value;
+    deptEl.innerHTML = '<option value="">All Depts</option>' + getDepts().map(d=>`<option value="${d}" ${d===current?'selected':''}>${d}</option>`).join('');
+  }
+}
+
+function filterJobs(dept) { if(document.getElementById('job-dept-filter')) document.getElementById('job-dept-filter').value=dept; renderJobs(); }
+function filterJobStatus(status) { if(document.getElementById('job-status-filter')) document.getElementById('job-status-filter').value=status; renderJobs(); }
+
+function escapeHtml(str) {
+  return String(str||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+}
+
+
+
+function highlightMatch(text, query) {
+  if(!query) return escapeHtml(text);
+  const idx = text.toLowerCase().indexOf(query.toLowerCase());
+  if(idx < 0) return escapeHtml(text);
+  return escapeHtml(text.slice(0,idx)) +
+    '<mark style="background:var(--accent-dim);color:var(--accent);border-radius:2px;">' +
+    escapeHtml(text.slice(idx, idx+query.length)) + '</mark>' +
+    escapeHtml(text.slice(idx+query.length));
+}
+
+
+// ===================== CANDIDATES PAGE — SORT + FUNNEL + DRAG =====================
+let _candSortField = 'date';
+let _candSortDir   = 'desc'; // 'asc' | 'desc'
+let _dragCandId    = null;
+
+// ===================== CANDIDATES PAGE — FEISHU LAYOUT =====================
+let _candActiveJobId = null;  // currently selected job in sidebar (null = all jobs)
+let _candActiveStage = '';    // currently selected stage tab ('' = all)
+let _candView = 'list';       // 'list' or 'gallery'
+let _candSelectedIds = [];    // multi-select
+
+// ── CANDIDATE VIEW TOGGLE ──
+function setCandView(view) {
+  _candView = view;
+  const listBtn = document.getElementById('cand-view-list-btn');
+  const galleryBtn = document.getElementById('cand-view-gallery-btn');
+  if(listBtn) { listBtn.className = view==='list' ? 'btn btn-primary btn-sm' : 'btn btn-ghost btn-sm'; listBtn.style.cssText='border-radius:0;border:none;padding:5px 10px;'; }
+  if(galleryBtn) { galleryBtn.className = view==='gallery' ? 'btn btn-primary btn-sm' : 'btn btn-ghost btn-sm'; galleryBtn.style.cssText='border-radius:0;border:none;padding:5px 10px;'; }
+  renderCandidates();
+}
+
+function renderCandGallery(list) {
+  // Show gallery, hide table
+  const tableWrap = document.querySelector('#page-candidates .panel');
+  const gallery = document.getElementById('cand-gallery');
+  const grid = document.getElementById('cand-gallery-grid');
+  if(!grid) return;
+
+  // Toggle visibility
+  document.querySelectorAll('#page-candidates table').forEach(t => t.closest('.panel') && (t.closest('.panel').style.display = 'none'));
+  if(gallery) gallery.style.display = 'block';
+
+  if(!list.length) {
+    grid.innerHTML = '<div style="grid-column:1/-1;text-align:center;padding:60px;color:var(--text3);"><div style="font-size:40px;margin-bottom:12px;"><svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:-2px;flex-shrink:0;"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87"/><path d="M16 3.13a4 4 0 010 7.75"/></svg></div><div style="font-weight:700;font-size:15px;">No candidates</div></div>';
+    return;
+  }
+
+  grid.innerHTML = list.map(cand => {
+    const job = getJob(cand.jobId);
+    const stageCol = stageColors[cand.stage] || 'var(--text3)';
+    const topSkills = (cand.skills||[]).slice(0,3);
+    const docs = cand.documents || [];
+    const hasResume = cand.hasResume || docs.length > 0;
+
+    return `<div onclick="openCandProfile(${cand.id})"
+      style="background:var(--bg2);border:1px solid var(--border);border-radius:12px;overflow:hidden;
+        cursor:pointer;transition:all 0.15s;"
+      onmouseover="this.style.borderColor='var(--accent)';this.style.transform='translateY(-2px)';this.style.boxShadow='0 8px 24px rgba(0,0,0,0.15)'"
+      onmouseout="this.style.borderColor='var(--border)';this.style.transform='';this.style.boxShadow=''">
+
+      <!-- Thumbnail area -->
+      <div style="height:120px;background:${cand.color}18;display:flex;align-items:center;justify-content:center;position:relative;border-bottom:1px solid var(--border);">
+        <div id="gc-thumb-${cand.id}" style="width:100%;height:100%;display:flex;align-items:center;justify-content:center;">
+          <div style="width:64px;height:64px;border-radius:50%;background:${cand.color}33;color:${cand.color};display:flex;align-items:center;justify-content:center;font-size:24px;font-weight:800;">${cand.initials}</div>
+        </div>
+        <!-- Stage badge -->
+        <div style="position:absolute;top:8px;right:8px;">
+          <span class="badge ${stageBadge[cand.stage]||'badge-gray'}" style="font-size:10px;">${cand.stage}</span>
+        </div>
+        <!-- Doc count -->
+        ${hasResume ? `<div style="position:absolute;bottom:8px;right:8px;background:var(--bg2);border:1px solid var(--border);border-radius:5px;padding:2px 6px;font-size:10px;color:var(--text3);"><svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:-2px;flex-shrink:0;"><path d="M21.44 11.05l-9.19 9.19a6 6 0 01-8.49-8.49l9.19-9.19a4 4 0 015.66 5.66l-9.2 9.19a2 2 0 01-2.83-2.83l8.49-8.48"/></svg> ${docs.length || 1}</div>` : ''}
+      </div>
+
+      <!-- Info area -->
+      <div style="padding:12px 14px;">
+        <div style="font-size:13px;font-weight:700;margin-bottom:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${escapeHtml(cand.name)}</div>
+        <div style="font-size:11px;color:var(--text3);margin-bottom:8px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${escapeHtml(cand.currentTitle||'')}${cand.currentTitle&&job?' · ':''}${job?escapeHtml(job.title):''}</div>
+        ${topSkills.length ? `<div style="display:flex;flex-wrap:wrap;gap:4px;margin-bottom:8px;">${topSkills.map(s=>`<span class="skill-tag" style="font-size:10px;padding:2px 7px;">${escapeHtml(s)}</span>`).join('')}${(cand.skills||[]).length>3?`<span style="font-size:10px;color:var(--text3);">+${cand.skills.length-3}</span>`:''}</div>` : ''}
+        <div style="font-size:10.5px;color:var(--text3);display:flex;justify-content:space-between;">
+          <span><svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:-2px;flex-shrink:0;"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg> ${cand.applied||'–'}</span>
+          ${cand.resumeText ? '<span style="color:var(--green);"><svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:-2px;flex-shrink:0;"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/></svg> Parsed</span>' : (hasResume ? '<span style="color:var(--amber);"><svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:-2px;flex-shrink:0;"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/></svg> Not parsed</span>' : '')}
+        </div>
+      </div>
+    </div>`;
+  }).join('');
+
+  // Load PDF thumbnails async
+  requestAnimationFrame(() => {
+    list.forEach(cand => {
+      if(cand.hasResume || (cand.documents||[]).length) {
+        loadGalleryThumb(cand);
+      }
+    });
+  });
+}
+
+async function loadGalleryThumb(cand) {
+  const container = document.getElementById(`gc-thumb-${cand.id}`);
+  if(!container || !window.pdfjsLib) return;
+  try {
+    let pdfData = null;
+    const stored = JSON.parse(localStorage.getItem('tf_resume_'+cand.id)||'null');
+    if(stored?.b64) {
+      const bin = atob(stored.b64);
+      pdfData = new Uint8Array(bin.length);
+      for(let i=0;i<bin.length;i++) pdfData[i]=bin.charCodeAt(i);
+    } else if(currentUser && window.getResumeData) {
+      const r = await window.getResumeData(cand.id);
+      if(r?.url) {
+        try {
+          const resp = await fetch(r.url);
+          if(resp.ok) { const buf = await resp.arrayBuffer(); pdfData = new Uint8Array(buf); }
+        } catch(e) {}
+      }
+    }
+    if(!pdfData) return;
+    pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+    const pdf = await pdfjsLib.getDocument({data:pdfData}).promise;
+    const page = await pdf.getPage(1);
+    const vp = page.getViewport({scale:1});
+    const scale = container.offsetWidth / vp.width;
+    const scaled = page.getViewport({scale});
+    const canvas = document.createElement('canvas');
+    canvas.width = scaled.width;
+    canvas.height = scaled.height;
+    canvas.style.cssText = 'width:100%;height:100%;object-fit:cover;';
+    await page.render({canvasContext:canvas.getContext('2d'), viewport:scaled}).promise;
+    container.innerHTML = '';
+    container.appendChild(canvas);
+  } catch(e) {} // silently fail — initials fallback stays
+}
+
+// ── MULTI-FILE / DOCUMENTS ──
+function openManageDocs(candId) {
+  const cand = getCand(candId); if(!cand) return;
+  const docs = cand.documents || [];
+  document.getElementById('modal-title').textContent = 'Documents —' + cand.name;
+  document.getElementById('modal-body').innerHTML = `
+    <div style="font-size:12.5px;color:var(--text3);margin-bottom:14px;">
+      Upload multiple file versions. The latest resume is used for preview and parsing. All files are stored in your cloud.
+    </div>
+    <div id="docs-list" style="display:flex;flex-direction:column;gap:6px;margin-bottom:14px;">
+      ${docs.length ? docs.map((d,i) => `
+        <div style="display:flex;align-items:center;gap:10px;padding:9px 12px;background:var(--bg3);border-radius:8px;border:1px solid var(--border);">
+          <span style="font-size:18px;">${d.type?.includes('pdf')?'<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:-2px;flex-shrink:0;"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>':'<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:-2px;flex-shrink:0;"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg>'}</span>
+          <div style="flex:1;min-width:0;">
+            <div style="font-size:13px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${escapeHtml(d.name)}</div>
+            <div style="font-size:11px;color:var(--text3);">${d.label||''} · ${d.uploadedAt?new Date(d.uploadedAt).toLocaleDateString('en-MY',{day:'numeric',month:'short',year:'numeric'}):''}${d.parsed?'<span style="color:var(--green);margin-left:6px;">✓ Parsed</span>':''}</div>
+          </div>
+          <div style="display:flex;gap:5px;flex-shrink:0;">
+            ${i===0?'<span style="font-size:10px;background:var(--accent-dim);color:var(--accent);padding:2px 7px;border-radius:5px;font-weight:700;">ACTIVE</span>':''}
+            <button class="btn btn-ghost btn-sm" style="padding:3px 7px;" onclick="downloadCandDoc(${candId},${i})"><svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:-2px;flex-shrink:0;"><line x1="12" y1="5" x2="12" y2="19"/><polyline points="19 12 12 19 5 12"/></svg></button>
+            <button class="btn btn-ghost btn-sm" style="padding:3px 7px;color:var(--red);" onclick="deleteCandDoc(${candId},${i})">✕</button>
+          </div>
+        </div>`).join('')
+      : '<div style="text-align:center;padding:20px;color:var(--text3);font-size:12px;">No documents uploaded yet</div>'}
+    </div>
+    <div style="border:2px dashed var(--border2);border-radius:10px;padding:20px;text-align:center;cursor:pointer;background:var(--bg3);"
+      ondragover="this.style.borderColor='var(--accent)';event.preventDefault();"
+      ondragleave="this.style.borderColor='var(--border2)';"
+      ondrop="docsHandleDrop(event,${candId})"
+      onclick="document.getElementById('docs-file-input').click()">
+      <div style="font-size:28px;margin-bottom:8px;"><svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:-2px;flex-shrink:0;"><path d="M21.44 11.05l-9.19 9.19a6 6 0 01-8.49-8.49l9.19-9.19a4 4 0 015.66 5.66l-9.2 9.19a2 2 0 01-2.83-2.83l8.49-8.48"/></svg></div>
+      <div style="font-size:13px;font-weight:600;margin-bottom:4px;">Drop files here or click to upload</div>
+      <div style="font-size:11px;color:var(--text3);">PDF, DOCX · Multiple files · Max 20MB each</div>
+      <input type="file" id="docs-file-input" multiple accept=".pdf,.docx,application/pdf"
+        style="display:none" onchange="docsHandleFiles(this.files,${candId})">
+    </div>
+    <div id="docs-parse-status" style="margin-top:10px;"></div>`;
+  document.getElementById('modal-footer').innerHTML = `
+    <button class="btn btn-ghost" onclick="closeModal()">Close</button>
+    ${docs.length ? `` : ''}`;
+  document.getElementById('modal-overlay').classList.add('open');
 }
 
 async function switchDocView(candId, docIdx) {
@@ -1934,6 +2417,7 @@ async function docsHandleFiles(files, candId) {
   if(!files?.length) return;
   const cand = getCand(candId); if(!cand) return;
   if(!cand.documents) cand.documents = [];
+  const status = document.getElementById('docs-parse-status');
 
   for(const file of Array.from(files)) {
     if(file.size > 20*1024*1024) { showToast(`${file.name} too large (max 20MB)`); continue; }
@@ -2604,6 +3088,7 @@ function renderOffers() {
 
 function updateOfferStatus(idx, status) {
   offers[idx].status = status;
+  offers[idx].updatedAt = new Date().toISOString();
   offers[idx].updatedAt = new Date().toISOString();
   const c = getCand(offers[idx].candidateId);
   if(c && status==='Accepted') {
@@ -3698,41 +4183,27 @@ function getCandidateSources() {
   return s.candidateSources && s.candidateSources.length ? s.candidateSources : DEFAULT_CANDIDATE_SOURCES.slice();
 }
 function saveCandidateSources() {
-  const s = getSettings();
-  s.candidateSources = getCandidateSources();
-  localStorage.setItem('tf_settings', JSON.stringify(s));
-  showToast('Sources saved ✓');
+  const s = getSettings(); s.candidateSources = getCandidateSources();
+  localStorage.setItem('tf_settings', JSON.stringify(s)); showToast('Sources saved ✓');
 }
 function addCandidateSource() {
-  const s = getSettings();
-  const sources = getCandidateSources();
-  sources.push('New Source');
-  s.candidateSources = sources;
-  localStorage.setItem('tf_settings', JSON.stringify(s));
-  switchSettingsTab('s-sources');
+  const s = getSettings(); const sources = getCandidateSources(); sources.push('New Source');
+  s.candidateSources = sources; localStorage.setItem('tf_settings', JSON.stringify(s)); switchSettingsTab('s-sources');
 }
 function updateCandidateSource(i, val) {
-  const s = getSettings();
-  const sources = getCandidateSources();
-  sources[i] = val;
-  s.candidateSources = sources;
-  localStorage.setItem('tf_settings', JSON.stringify(s));
+  const s = getSettings(); const sources = getCandidateSources(); sources[i] = val;
+  s.candidateSources = sources; localStorage.setItem('tf_settings', JSON.stringify(s));
 }
 function removeCandidateSource(i) {
-  const s = getSettings();
-  const sources = getCandidateSources();
-  sources.splice(i, 1);
-  s.candidateSources = sources;
-  localStorage.setItem('tf_settings', JSON.stringify(s));
-  switchSettingsTab('s-sources');
+  const s = getSettings(); const sources = getCandidateSources(); sources.splice(i,1);
+  s.candidateSources = sources; localStorage.setItem('tf_settings', JSON.stringify(s)); switchSettingsTab('s-sources');
 }
 function resetCandidateSources() {
   if(!confirm('Reset to default sources?')) return;
-  const s = getSettings();
-  delete s.candidateSources;
-  localStorage.setItem('tf_settings', JSON.stringify(s));
-  switchSettingsTab('s-sources');
+  const s = getSettings(); delete s.candidateSources;
+  localStorage.setItem('tf_settings', JSON.stringify(s)); switchSettingsTab('s-sources');
 }
+
 function saveRejectionReasons(reasons) {
   const s = getSettings();
   s.rejectionReasons = reasons;
@@ -4269,225 +4740,11 @@ function switchSettingsTab(tabId) {
             </div>`).join('')}
         </div>
       </div>`;
-  } else if(tabId==='s-notifs') {
-    el.innerHTML = `
-      <div style="font-size:18px;font-weight:800;margin-bottom:20px;"><svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:-2px;flex-shrink:0;"><path d="M18 8A6 6 0 006 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 01-3.46 0"/></svg> Notifications</div>
-      <div class="panel">
-        <div class="panel-header"><span class="panel-title">Notification Preferences</span></div>
-        <div style="padding:20px;display:flex;flex-direction:column;gap:14px;">
-          ${[
-            {key:'notifNewApp',    label:'New application received',         desc:'When a candidate is added to any job'},
-            {key:'notifInterview', label:'Interview scheduled',              desc:'When a new interview is booked'},
-            {key:'notifFeedback',  label:'Feedback submitted',               desc:'When an interviewer submits feedback'},
-            {key:'notifStage',     label:'Candidate stage change',           desc:'When a candidate moves to a new stage'},
-            {key:'notifOffer',     label:'Offer accepted or rejected',       desc:'When a candidate responds to an offer'},
-            {key:'notifHired',     label:'Candidate hired',                  desc:'When a candidate is marked as hired'},
-            {key:'notifExpiry',    label:'Job posting expiry warning',       desc:'3 days before a job posting expires'},
-          ].map(n=>`
-            <div style="display:flex;align-items:center;justify-content:space-between;padding:10px 0;border-bottom:1px solid var(--border);">
-              <div>
-                <div style="font-size:13px;font-weight:600;">${n.label}</div>
-                <div style="font-size:12px;color:var(--text3);">${n.desc}</div>
-              </div>
-              <label class="toggle-switch">
-                <input type="checkbox" ${getSettings()[n.key]!==false?'checked':''} onchange="saveSettings({'${n.key}':this.checked})">
-                <div class="toggle-track"></div>
-              </label>
-            </div>`).join('')}
-        </div>
-      </div>`;
-
-  } else if(tabId==='s-appearance') {
-    const as = getSettings();
-    el.innerHTML = `
-      <div style="font-size:18px;font-weight:800;margin-bottom:20px;"><svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:-2px;flex-shrink:0;"><circle cx="12" cy="12" r="10"/><path d="M12 2a10 10 0 000 20c1.1 0 2-.9 2-2 0-.5-.2-1-.5-1.4-.3-.4-.5-.8-.5-1.3 0-1.1.9-2 2-2h2.4c3 0 5.6-2.5 5.6-5.5C23 6.8 18 2 12 2z"/></svg> Appearance</div>
-      <div class="panel" style="margin-bottom:16px;">
-        <div class="panel-header"><span class="panel-title">Theme</span></div>
-        <div style="padding:20px;display:flex;gap:12px;flex-wrap:wrap;">
-          ${[
-            {id:'light',  label:'<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:-2px;flex-shrink:0;"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/></svg> Light',      bg:'#f0f2f7', accent:'#3b72f6', text:'#1a1e2e', border:'#e0e3ef'},
-            {id:'dark',   label:'<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:-2px;flex-shrink:0;"><path d="M21 12.79A9 9 0 1111.21 3 7 7 0 0021 12.79z"/></svg> Dark',        bg:'#0d0f14', accent:'#4f8ef7', text:'#e8eaf0', border:'#2a2f42'},
-            {id:'darker', label:'<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:-2px;flex-shrink:0;"><rect x="3" y="3" width="18" height="18" rx="2" fill="currentColor" stroke="none"/></svg> Deep Black',  bg:'#060608', accent:'#4f8ef7', text:'#e8eaf0', border:'#1a1c20'},
-            {id:'blue',   label:'<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:-2px;flex-shrink:0;"><path d="M2 12c.5-2 2-3 3-3s2.5 1 3 3 2 3 3 3 2.5-1 3-3 2-3 3-3 2.5 1 3 3"/></svg> Navy Blue',   bg:'#0a1628', accent:'#60a5fa', text:'#e8eaf0', border:'#1a2a55'},
-            {id:'green',  label:'<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:-2px;flex-shrink:0;"><path d="M2 22c1-1 2-2.5 3-5 0 0 0-3 3-4 4-2 7-1 9-2 2.5-1 4-3.5 4-3.5S20.5 11 18 14c-2.3 2.8-5 3-7 4-1.5.7-3 3-4 4H2z"/></svg> Forest',      bg:'#0a1a0f', accent:'#34d399', text:'#e8eaf0', border:'#1a3526'},
-          ].map(t=>`
-            <div onclick="applyTheme('${t.id}')" style="cursor:pointer;border:2px solid ${as.theme===t.id?'var(--accent)':'var(--border)'};border-radius:10px;overflow:hidden;width:110px;transition:all 0.15s;" onmouseover="this.style.transform='translateY(-2px)'" onmouseout="this.style.transform='translateY(0)'">
-              <div style="height:52px;background:${t.bg};border-bottom:1px solid ${t.border};display:flex;align-items:center;justify-content:center;gap:5px;padding:8px;">
-                <div style="width:14px;height:14px;border-radius:3px;background:${t.bg==='#f0f2f7'?'#fff':t.bg};border:1px solid ${t.border};"></div>
-                <div style="flex:1;display:flex;flex-direction:column;gap:3px;">
-                  <div style="height:4px;border-radius:2px;background:${t.accent};width:80%;"></div>
-                  <div style="height:3px;border-radius:2px;background:${t.border};width:60%;"></div>
-                  <div style="height:3px;border-radius:2px;background:${t.border};width:40%;"></div>
-                </div>
-              </div>
-              <div style="padding:7px 8px;text-align:center;font-size:11px;font-weight:700;background:${t.bg};color:${t.text};">${t.label}</div>
-            </div>`).join('')}
-        </div>
-      </div>
-      <div class="panel" style="margin-bottom:16px;">
-        <div class="panel-header"><span class="panel-title">Accent Color</span></div>
-        <div style="padding:20px;display:flex;gap:10px;flex-wrap:wrap;">
-          ${[
-            {color:'#4f8ef7',label:'Blue'},
-            {color:'#a78bfa',label:'Purple'},
-            {color:'#34d399',label:'Green'},
-            {color:'#fbbf24',label:'Amber'},
-            {color:'#f472b6',label:'Pink'},
-            {color:'#fb7185',label:'Rose'},
-            {color:'#06b6d4',label:'Cyan'},
-          ].map(c=>`
-            <div onclick="applyAccent('${c.color}')" title="${c.label}"
-              style="width:36px;height:36px;border-radius:50%;background:${c.color};cursor:pointer;
-              border:3px solid ${as.accent===c.color?'white':'transparent'};
-              box-shadow:${as.accent===c.color?'0 0 0 2px '+c.color:'none'};
-              transition:all 0.15s;"></div>`).join('')}
-        </div>
-      </div>
-      <div class="panel">
-        <div class="panel-header"><span class="panel-title">Dashboard Name</span></div>
-        <div style="padding:20px;display:flex;flex-direction:column;gap:12px;">
-          <div class="form-group"><label>Your Name (shown in sidebar)</label>
-            <input type="text" id="s-yourname" value="${as.yourName||''}" placeholder="e.g. Jamie Lee">
-          </div>
-          <div class="form-group"><label>Your Role</label>
-            <input type="text" id="s-yourrole" value="${as.yourRole||''}" placeholder="e.g. HR Manager">
-          </div>
-          <button class="btn btn-primary btn-sm" style="align-self:flex-start;" onclick="saveAppearance()">Save</button>
-        </div>
-      </div>`;
-
-  } else if(tabId==='s-onboarding') {
-    const ob = getOnboardingSettings();
-    el.innerHTML = `
-      <div style="font-size:18px;font-weight:800;margin-bottom:4px;"><svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:-2px;flex-shrink:0;"><path d="M12 2c0 0-6 4-6 12l6 4 6-4c0-8-6-12-6-12z"/><circle cx="12" cy="10" r="2"/></svg> Onboarding Settings</div>
-      <div style="font-size:13px;color:var(--text3);margin-bottom:20px;">Configure default checklist categories and items applied to new joiners. These become Tasks when applied to a candidate.</div>
-
-      <!-- Checklist Template -->
-      <div class="panel" style="margin-bottom:20px;">
-        <div class="panel-header">
-          <span class="panel-title">Default Onboarding Checklist</span>
-          <button class="btn btn-primary btn-sm" onclick="addOnboardingCategory()">+ Add Category</button>
-        </div>
-        <div style="padding:10px 16px;background:var(--bg3);border-bottom:1px solid var(--border);">
-          <div style="font-size:11px;color:var(--text3);"><svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:-2px;flex-shrink:0;"><line x1="12" y1="2" x2="12" y2="3"/><path d="M12 6a6 6 0 110 12 6 6 0 010-12z"/><path d="M10 18a2 2 0 104 0"/><line x1="12" y1="22" x2="12" y2="21"/></svg> These categories and tasks are applied as a template when you start onboarding a candidate. Each task becomes a linked Task in the Tasks page.</div>
-        </div>
-        <div id="ob-checklist-editor" style="padding:12px 16px;display:flex;flex-direction:column;gap:12px;">
-          ${ob.categories.map((cat,ci) => `
-            <div style="background:var(--bg3);border:1px solid var(--border);border-radius:10px;overflow:hidden;">
-              <div style="display:flex;align-items:center;gap:10px;padding:10px 14px;background:var(--bg4);border-bottom:1px solid var(--border);">
-                <input value="${escapeHtml(cat.icon||'📋')}" onchange="updateObCat(${ci},'icon',this.value)" style="width:40px;text-align:center;background:var(--bg3);border:1px solid var(--border);border-radius:6px;padding:4px;font-size:15px;outline:none;">
-                <input value="${escapeHtml(cat.name)}" onchange="updateObCat(${ci},'name',this.value)" style="flex:1;background:var(--bg3);border:1px solid var(--border);border-radius:6px;padding:6px 10px;font-size:13px;font-weight:700;color:var(--text);outline:none;">
-                <button class="btn btn-ghost btn-sm" onclick="addObTask(${ci})">+ Task</button>
-                <button class="btn btn-ghost btn-sm" style="color:var(--red);" onclick="deleteObCat(${ci})">✕</button>
-              </div>
-              <div style="padding:8px 14px;display:flex;flex-direction:column;gap:6px;">
-                ${(cat.tasks||[]).map((task,ti) => `
-                  <div style="display:flex;align-items:center;gap:8px;">
-                    <span style="color:var(--text3);font-size:12px;">•</span>
-                    <input value="${escapeHtml(task.title)}" onchange="updateObTask(${ci},${ti},'title',this.value)"
-                      style="flex:1;background:var(--bg4);border:1px solid var(--border);border-radius:6px;padding:5px 9px;font-size:12.5px;color:var(--text);outline:none;">
-                    <select onchange="updateObTask(${ci},${ti},'assignTo',this.value)" style="background:var(--bg4);border:1px solid var(--border);border-radius:6px;padding:5px 8px;font-size:11px;color:var(--text2);outline:none;">
-                      <option value="hr" ${task.assignTo==='hr'?'selected':''}>HR</option>
-                      <option value="it" ${task.assignTo==='it'?'selected':''}>IT</option>
-                      <option value="manager" ${task.assignTo==='manager'?'selected':''}>Manager</option>
-                      <option value="candidate" ${task.assignTo==='candidate'?'selected':''}>Candidate</option>
-                      <option value="payroll" ${task.assignTo==='payroll'?'selected':''}>Payroll</option>
-                    </select>
-                    <input type="number" value="${task.daysOffset||0}" onchange="updateObTask(${ci},${ti},'daysOffset',parseInt(this.value)||0)"
-                      min="-30" max="90" style="width:60px;background:var(--bg4);border:1px solid var(--border);border-radius:6px;padding:5px 6px;font-size:11px;color:var(--text2);outline:none;" title="Days relative to start date (negative = before)">
-                    <span style="font-size:10px;color:var(--text3);white-space:nowrap;">days</span>
-                    <button class="btn btn-ghost btn-sm" style="color:var(--red);padding:3px 7px;" onclick="deleteObTask(${ci},${ti})">✕</button>
-                  </div>`).join('')}
-                ${!(cat.tasks||[]).length ? '<div style="font-size:12px;color:var(--text3);padding:4px 0;">No tasks — click + Task to add</div>' : ''}
-              </div>
-            </div>`).join('')}
-        </div>
-        <div style="padding:12px 16px;border-top:1px solid var(--border);display:flex;gap:8px;">
-          <button class="btn btn-primary btn-sm" onclick="saveOnboardingSettings()"><svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:-2px;flex-shrink:0;"><path d="M19 21H5a2 2 0 01-2-2V5a2 2 0 012-2h11l5 5v11a2 2 0 01-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg> Save</button>
-          <button class="btn btn-ghost btn-sm" onclick="resetOnboardingSettings()"><svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:-2px;flex-shrink:0;"><polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 102.13-9.36L1 10"/></svg> Reset to Default</button>
-        </div>
-      </div>
-
-      <!-- Documents Checklist Template -->
-      <div class="panel" style="margin-bottom:20px;">
-        <div class="panel-header">
-          <span class="panel-title"><svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:-2px;flex-shrink:0;"><path d="M22 19a2 2 0 01-2 2H4a2 2 0 01-2-2V5a2 2 0 012-2h5l2 3h9a2 2 0 012 2z"/></svg> Default Documents Checklist</span>
-          <button class="btn btn-primary btn-sm" onclick="addObDoc()">+ Add Doc</button>
-        </div>
-        <div id="ob-docs-editor" style="padding:12px 16px;display:flex;flex-direction:column;gap:6px;">
-          ${ob.documents.map((doc,di) => `
-            <div style="display:flex;align-items:center;gap:8px;">
-              <span style="font-size:14px;"><svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:-2px;flex-shrink:0;"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/></svg></span>
-              <input value="${escapeHtml(doc)}" onchange="updateObDoc(${di},this.value)" style="flex:1;background:var(--bg3);border:1px solid var(--border);border-radius:6px;padding:6px 10px;font-size:13px;color:var(--text);outline:none;">
-              <button class="btn btn-ghost btn-sm" style="color:var(--red);padding:3px 7px;" onclick="deleteObDoc(${di})">✕</button>
-            </div>`).join('')}
-        </div>
-        <div style="padding:12px 16px;border-top:1px solid var(--border);">
-          <button class="btn btn-primary btn-sm" onclick="saveOnboardingSettings()"><svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:-2px;flex-shrink:0;"><path d="M19 21H5a2 2 0 01-2-2V5a2 2 0 012-2h11l5 5v11a2 2 0 01-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg> Save</button>
-        </div>
-      </div>
-
-      <!-- Equipment Checklist Template -->
-      <div class="panel">
-        <div class="panel-header">
-          <span class="panel-title"><svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:-2px;flex-shrink:0;"><rect x="2" y="3" width="20" height="14" rx="2" ry="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg> Default Equipment Checklist</span>
-          <button class="btn btn-primary btn-sm" onclick="addObEquip()">+ Add Item</button>
-        </div>
-        <div id="ob-equip-editor" style="padding:12px 16px;display:flex;flex-direction:column;gap:6px;">
-          ${ob.equipment.map((eq,ei) => `
-            <div style="display:flex;align-items:center;gap:8px;">
-              <span style="font-size:14px;"><svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:-2px;flex-shrink:0;"><path d="M12.89 1.45l8 4A2 2 0 0122 7.24v9.53a2 2 0 01-1.11 1.79l-8 4a2 2 0 01-1.79 0l-8-4A2 2 0 012 16.76V7.24a2 2 0 011.11-1.79l8-4a2 2 0 011.78 0z"/><polyline points="2.32 6.16 12 11 21.68 6.16"/><line x1="12" y1="22.76" x2="12" y2="11"/></svg></span>
-              <input value="${escapeHtml(eq)}" onchange="updateObEquip(${ei},this.value)" style="flex:1;background:var(--bg3);border:1px solid var(--border);border-radius:6px;padding:6px 10px;font-size:13px;color:var(--text);outline:none;">
-              <button class="btn btn-ghost btn-sm" style="color:var(--red);padding:3px 7px;" onclick="deleteObEquip(${ei})">✕</button>
-            </div>`).join('')}
-        </div>
-        <div style="padding:12px 16px;border-top:1px solid var(--border);">
-          <button class="btn btn-primary btn-sm" onclick="saveOnboardingSettings()"><svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:-2px;flex-shrink:0;"><path d="M19 21H5a2 2 0 01-2-2V5a2 2 0 012-2h11l5 5v11a2 2 0 01-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg> Save</button>
-        </div>
-      </div>`;
-
-  } else if(tabId==='s-archive') {
-    el.innerHTML = `
-      <div style="font-size:18px;font-weight:800;margin-bottom:6px;"><svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:-2px;flex-shrink:0;"><rect x="2" y="2" width="20" height="8" rx="2" ry="2"/><rect x="2" y="14" width="20" height="8" rx="2" ry="2"/><line x1="6" y1="6" x2="6.01" y2="6"/><line x1="6" y1="18" x2="6.01" y2="18"/></svg> Archive</div>
-      <div style="font-size:13px;color:var(--text3);margin-bottom:20px;">Deleted jobs and candidates are kept here. You can restore them at any time.</div>
-      <div id="archive-list"><div style="text-align:center;padding:40px;color:var(--text3);">Loading archive...</div></div>`;
-    loadArchive();
-  } else if(tabId==='s-rejection-reasons') {
-    const reasons = getRejectionReasons();
-    el.innerHTML = `
-      <div style="font-size:18px;font-weight:800;margin-bottom:4px;"><svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:-2px;flex-shrink:0;"><circle cx="12" cy="12" r="10"/><line x1="4.93" y1="4.93" x2="19.07" y2="19.07"/></svg> Rejection Reasons</div>
-      <div style="font-size:13px;color:var(--text3);margin-bottom:20px;">Customise the list of reasons shown when rejecting a candidate. These appear on their profile and in analytics.</div>
-      <div class="panel" style="margin-bottom:16px;">
-        <div class="panel-header">
-          <span class="panel-title">Rejection Reasons</span>
-          <button class="btn btn-primary btn-sm" onclick="addRejectionReason()">+ Add Reason</button>
-        </div>
-        <div style="padding:12px 16px;background:var(--bg3);border-bottom:1px solid var(--border);">
-          <div style="font-size:11px;color:var(--text3);"><svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:-2px;flex-shrink:0;"><line x1="12" y1="2" x2="12" y2="3"/><path d="M12 6a6 6 0 110 12 6 6 0 010-12z"/><path d="M10 18a2 2 0 104 0"/><line x1="12" y1="22" x2="12" y2="21"/></svg> Click label to rename · Edit description · Remove custom reasons</div>
-        </div>
-        <div id="rejection-reasons-list">
-          ${reasons.map((r,i) => `
-            <div style="display:flex;align-items:center;gap:10px;padding:10px 16px;border-bottom:1px solid var(--border);">
-              <div style="width:8px;height:8px;border-radius:50%;background:var(--red);flex-shrink:0;"></div>
-              <div style="flex:1;display:flex;flex-direction:column;gap:4px;">
-                <input value="${escapeHtml(r.label)}" onchange="updateRejectionReason(${i},'label',this.value)"
-                  style="background:var(--bg3);border:1px solid var(--border);border-radius:6px;padding:5px 10px;font-size:13px;font-weight:600;color:var(--text);outline:none;width:100%;">
-                <input value="${escapeHtml(r.desc||'')}" placeholder="Short description (optional)" onchange="updateRejectionReason(${i},'desc',this.value)"
-                  style="background:var(--bg4);border:1px solid var(--border);border-radius:6px;padding:4px 10px;font-size:11.5px;color:var(--text3);outline:none;width:100%;">
-              </div>
-              <button class="btn btn-ghost btn-sm" style="color:var(--red);flex-shrink:0;" onclick="removeRejectionReason(${i})">✕</button>
-            </div>`).join('')}
-        </div>
-        <div style="padding:12px 16px;border-top:1px solid var(--border);display:flex;gap:8px;">
-          <button class="btn btn-primary btn-sm" onclick="showToast('Rejection reasons saved ✓')"><svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:-2px;flex-shrink:0;"><path d="M19 21H5a2 2 0 01-2-2V5a2 2 0 012-2h11l5 5v11a2 2 0 01-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg> Save Changes</button>
-          <button class="btn btn-ghost btn-sm" onclick="resetRejectionReasons()"><svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:-2px;flex-shrink:0;"><polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 102.13-9.36L1 10"/></svg> Reset to Default</button>
-        </div>
-      </div>`;
   } else if(tabId==='s-sources') {
     const sources = getCandidateSources();
     el.innerHTML = `
       <div style="font-size:18px;font-weight:800;margin-bottom:4px;">Candidate Sources</div>
-      <div style="font-size:13px;color:var(--text3);margin-bottom:20px;">Customise where candidates can come from. These appear in candidate profiles and analytics.</div>
+      <div style="font-size:13px;color:var(--text3);margin-bottom:20px;">Customise where candidates can come from.</div>
       <div class="panel" style="margin-bottom:16px;">
         <div class="panel-header">
           <span class="panel-title">Sources</span>
@@ -5531,22 +5788,19 @@ function refreshRightPanel(id) {
   const allInterviews = (c.interviews||[]).slice().sort((a,b)=>new Date(b.date||0)-new Date(a.date||0));
   const allFeedback = (c.feedback||[]).slice().sort((a,b)=>new Date(b.createdAt||b.date||0)-new Date(a.createdAt||a.date||0));
 
-  // Rebuild right panel header (stage badge + stage tracker dots)
+  // Rebuild right panel header (stage badge + tracker)
   const rightHeader = document.getElementById('cp-right-header');
   if(rightHeader) {
     const fromJobId = window._cpFromJobId || c.jobId;
-    const apps = getCandJobs(c);
     const displayJobId = fromJobId || c.jobId;
     const displayJob = getJob(displayJobId);
     const displayStage = fromJobId ? getCandStageForJob(c, fromJobId) : c.stage;
     const stageColor = stageColors[displayStage] || 'var(--text2)';
-    setTimeout(() => { const b = rightHeader?.querySelector('.badge'); if(b) { b.classList.remove('badge-pop'); void b.offsetWidth; b.classList.add('badge-pop'); } }, 50);
     rightHeader.innerHTML =
       '<div style="display:flex;align-items:center;gap:8px;margin-bottom:8px;flex-wrap:wrap;">' +
       (displayJob ? '<span style="font-size:13px;font-weight:700;cursor:pointer;" onclick="showPage(\'jobs\',null);setTimeout(()=>openJobDetail('+displayJob.id+'),100)">' + escapeHtml(displayJob.title) + '</span><span style="color:var(--border2);">›</span>' : '') +
-      '<span style="padding:3px 10px;border-radius:20px;font-size:12px;font-weight:700;background:'+stageColor+'18;color:'+stageColor+';border:1px solid '+stageColor+'40;">' + displayStage + '</span>' +
+      '<span class="badge-pop" style="padding:3px 10px;border-radius:20px;font-size:12px;font-weight:700;background:'+stageColor+'18;color:'+stageColor+';border:1px solid '+stageColor+'40;">' + displayStage + '</span>' +
       (c.rejectionReasonLabel ? '<span class="badge badge-red" style="font-size:10px;">' + escapeHtml(c.rejectionReasonLabel) + '</span>' : '') +
-      (apps.length > 1 ? '<span style="font-size:11px;color:var(--text3);">+' + (apps.length-1) + ' more job' + (apps.length>2?'s':'') + '</span>' : '') +
       '</div>' +
       '<div style="overflow-x:auto;-webkit-overflow-scrolling:touch;padding-bottom:2px;">' +
       '<div id="cp-stage-tracker-inner" style="display:flex;align-items:center;gap:0;min-width:max-content;">' +
@@ -7665,6 +7919,15 @@ function buildJobFormHTML(j) {
           <input type="checkbox" id="jf-exclude-metrics" ${v('excludeFromMetrics')?'checked':''} style="width:16px;height:16px;accent-color:var(--accent);cursor:pointer;flex-shrink:0;">
           <label for="jf-exclude-metrics" style="cursor:pointer;font-weight:500;margin:0;">
             Exclude from hire metrics
+            <span style="display:block;font-size:11px;color:var(--text3);font-weight:400;margin-top:1px;">Hires won't count in Dashboard or Analytics</span>
+          </label>
+        </div>
+      </div>
+      <div class="jf-row" style="margin-top:4px;">
+        <div class="jf-field" style="flex-direction:row;align-items:center;gap:10px;">
+          <input type="checkbox" id="jf-exclude-metrics" ${v('excludeFromMetrics')?'checked':''} style="width:16px;height:16px;accent-color:var(--accent);cursor:pointer;flex-shrink:0;">
+          <label for="jf-exclude-metrics" style="cursor:pointer;font-weight:500;margin:0;">
+            Exclude from hire metrics
             <span style="display:block;font-size:11px;color:var(--text3);font-weight:400;margin-top:1px;">Hires from this job won't count in Dashboard or Analytics (e.g. internal onboarding assist roles)</span>
           </label>
         </div>
@@ -7863,7 +8126,7 @@ function openModal(type, data={}) {
         </div>
       </div>`;
     footer.innerHTML = `<button class="btn btn-ghost" onclick="closeModal()">Cancel</button><button class="btn btn-primary" onclick="saveCandidate()">Add Candidate</button>`;
-  } else if(type==='moveStage') {
+    } else if(type==='moveStage') {
     const c = getCand(data.id);
     title.textContent = 'Move' + (c?c.name:'Candidate') + ' to Stage';
     body.innerHTML = `<div class="form-group"><label>Select Stage</label>
@@ -8618,141 +8881,6 @@ function debounced(key, fn, delay=220) {
 
 // Debounced wrappers for all search/filter inputs
 function dRenderJobs()          { debounced('jobs',          renderJobs); }
-
-function highlightMatch(text, query) {
-  if(!query || !text) return escapeHtml(text||'');
-  const escaped = escapeHtml(text);
-  const escapedQ = query.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-  return escaped.replace(new RegExp(`(${escapedQ})`, 'gi'), '<mark style="background:var(--accent-dim);color:var(--accent);border-radius:2px;padding:0 1px;">$1</mark>');
-}
-
-function renderCandGallery(list) {
-  const el = document.getElementById('cand-gallery');
-  if(!el) return;
-  if(!list.length) { el.innerHTML = '<div style="text-align:center;padding:60px;color:var(--text3);">No candidates found</div>'; return; }
-  el.innerHTML = list.map(c => {
-    const job = getJob(c.jobId);
-    const stageBadge = c.stage==='Hired'?'badge-green':c.stage==='Rejected'?'badge-red':c.stage==='Interview'?'badge-amber':c.stage==='Offer'?'badge-purple':'badge-gray';
-    const stars = Array(5).fill(0).map((_,i)=>`<span style="color:${i<(c.rating||3)?'#fbbf24':'var(--border2)'}">★</span>`).join('');
-    return `<div onclick="openCandProfile(${c.id})" style="background:var(--bg2);border:1px solid var(--border);border-radius:12px;padding:18px;cursor:pointer;transition:all 0.15s;" onmouseover="this.style.transform='translateY(-2px)';this.style.boxShadow='var(--shadow-md)'" onmouseout="this.style.transform='';this.style.boxShadow=''">
-      <div style="display:flex;align-items:center;gap:12px;margin-bottom:12px;">
-        <div style="width:44px;height:44px;border-radius:50%;background:${c.color}33;color:${c.color};display:flex;align-items:center;justify-content:center;font-size:16px;font-weight:800;flex-shrink:0;">${c.initials}</div>
-        <div style="flex:1;min-width:0;">
-          <div style="font-size:13px;font-weight:700;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${escapeHtml(c.name)}</div>
-          <div style="font-size:11px;color:var(--text3);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${escapeHtml(c.currentTitle||'')}${c.currentTitle&&job?' @ ':''} ${escapeHtml(job?.title||'')}</div>
-        </div>
-      </div>
-      <div style="display:flex;align-items:center;justify-content:space-between;">
-        <span class="badge ${stageBadge}" style="font-size:10px;">${c.stage||'Applied'}</span>
-        <span style="font-size:12px;">${stars}</span>
-      </div>
-    </div>`;
-  }).join('');
-}
-
-// ── Restored core functions ──
-
-function escapeHtml(s) {
-  if(s === null || s === undefined) return '';
-  return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;');
-}
-
-function setCandView(view) {
-  window._candView = view;
-  document.querySelectorAll('.cand-list-btn,.cand-gallery-btn').forEach(b => b.classList.remove('active'));
-  const btn = document.querySelector(view==='list' ? '.cand-list-btn' : '.cand-gallery-btn');
-  if(btn) btn.classList.add('active');
-  dRenderCandidates();
-}
-
-function renderJobs() {
-  const searchQ = document.getElementById('job-search')?.value.toLowerCase().trim() || '';
-  const deptF   = document.getElementById('job-dept-filter')?.value || '';
-  const statusF = document.getElementById('job-status-filter')?.value || '';
-  let filtered  = jobs.slice();
-  if(searchQ) filtered = filtered.filter(j=>[j.title,j.dept,j.location,j.type,(j.skills||[]).join(' ')].join(' ').toLowerCase().includes(searchQ));
-  if(deptF)   filtered = filtered.filter(j=>j.dept===deptF);
-  if(statusF) filtered = filtered.filter(j=>j.status===statusF);
-  const list = document.getElementById('jobs-list');
-  if(!list) return;
-  if(!filtered.length) {
-    list.innerHTML = '<div style="text-align:center;padding:60px 20px;color:var(--text3);"><div style="font-size:32px;margin-bottom:12px;">📋</div><div style="font-size:15px;font-weight:600;color:var(--text);">No jobs found</div></div>';
-    populateJobFilters(); return;
-  }
-  const stageCol = {Applied:'var(--text3)',Screening:'var(--accent)',Interview:'var(--purple)',Offer:'var(--amber)','Pending Join':'var(--blue)',Hired:'var(--green)',Rejected:'var(--red)'};
-  list.innerHTML = filtered.map(j => {
-    const jc = candidates.filter(c=>getCandJobIds(c).includes(j.id));
-    const sc = {}; jc.forEach(c=>{ const s=c.stage||'Applied'; sc[s]=(sc[s]||0)+1; });
-    const statusBadge = j.status==='Active'?'badge-green':j.status==='Paused'?'badge-amber':'badge-gray';
-    const prioBadge   = j.priority==='High'?'badge-red':j.priority==='Medium'?'badge-amber':'badge-gray';
-    const pills = ['Applied','Screening','Interview','Offer','Pending Join','Hired','Rejected']
-      .filter(s=>sc[s])
-      .map(s=>`<span style="background:${stageCol[s]||'var(--text3)'}18;color:${stageCol[s]||'var(--text3)'};border:1px solid ${stageCol[s]||'var(--text3)'}40;border-radius:20px;padding:2px 8px;font-size:10px;font-weight:700;">${sc[s]} ${s}</span>`)
-      .join('');
-    return `<div onclick="openJobDetail(${j.id})" style="display:flex;align-items:flex-start;gap:14px;padding:16px 20px;border-bottom:1px solid var(--border);cursor:pointer;transition:background 0.12s;" onmouseover="this.style.background='var(--bg3)'" onmouseout="this.style.background=''">
-      <div style="width:40px;height:40px;border-radius:10px;background:${j.color||'#4f8ef7'}22;color:${j.color||'#4f8ef7'};display:flex;align-items:center;justify-content:center;font-size:20px;flex-shrink:0;">${j.icon||'💼'}</div>
-      <div style="flex:1;min-width:0;">
-        <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:3px;">
-          <span style="font-size:14px;font-weight:700;">${escapeHtml(j.title)}</span>
-          <span class="badge ${statusBadge}" style="font-size:10px;">${j.status}</span>
-          ${j.priority&&j.priority!=='Low'?`<span class="badge ${prioBadge}" style="font-size:10px;">${j.priority}</span>`:''}
-          ${j.excludeFromMetrics?'<span class="badge badge-gray" style="font-size:10px;">Excluded</span>':''}
-        </div>
-        <div style="font-size:12px;color:var(--text3);margin-bottom:6px;">${escapeHtml(j.dept||'')}${j.location?' · '+escapeHtml(j.location):''}${j.type?' · '+escapeHtml(j.type):''}</div>
-        <div style="display:flex;flex-wrap:wrap;gap:4px;">${pills||'<span style="font-size:11px;color:var(--text3);">No candidates yet</span>'}</div>
-      </div>
-      <div style="text-align:right;flex-shrink:0;min-width:50px;">
-        <div style="font-size:20px;font-weight:800;color:var(--accent);">${jc.length}</div>
-        <div style="font-size:10px;color:var(--text3);">total</div>
-        ${sc['Interview']?`<div style="font-size:11px;color:var(--purple);font-weight:600;">${sc['Interview']} interview</div>`:''}
-        ${sc['Offer']?`<div style="font-size:11px;color:var(--amber);font-weight:600;">${sc['Offer']} offer</div>`:''}
-        ${sc['Hired']?`<div style="font-size:11px;color:var(--green);font-weight:600;">${sc['Hired']} hired</div>`:''}
-      </div>
-    </div>`;
-  }).join('');
-  populateJobFilters();
-}
-
-function openManageDocs(candId) {
-  const cand = getCand(candId); if(!cand) return;
-  const docs = cand.documents || [];
-  const overlay = document.getElementById('modal-overlay');
-  document.getElementById('modal-title').innerHTML = 'Documents — ' + escapeHtml(cand.name);
-  document.getElementById('modal-body').innerHTML = `
-    <div style="margin-bottom:16px;">
-      <div style="border:2px dashed var(--border2);border-radius:10px;padding:24px;text-align:center;cursor:pointer;transition:all 0.2s;background:var(--bg3);"
-        ondragover="this.style.borderColor='var(--accent)';this.style.background='var(--accent-dim)';event.preventDefault();"
-        ondragleave="this.style.borderColor='var(--border2)';this.style.background='var(--bg3)';"
-        ondrop="docsHandleDrop(event,${candId})"
-        onclick="document.getElementById('docs-file-input-${candId}').click()">
-        <div style="font-size:28px;margin-bottom:8px;">📎</div>
-        <div style="font-size:13px;font-weight:600;margin-bottom:4px;">Upload resume or documents</div>
-        <div style="font-size:11px;color:var(--text3);">PDF or DOCX · Max 10MB · Drop here or click</div>
-        <input type="file" id="docs-file-input-${candId}" accept=".pdf,.docx,application/pdf" style="display:none"
-          onchange="docsHandleFile(this.files[0],${candId})">
-      </div>
-      <div id="docs-upload-status" style="margin-top:8px;"></div>
-    </div>
-    ${docs.length ? `
-    <div class="panel">
-      <div class="panel-header"><span class="panel-title">Uploaded Files (${docs.length})</span></div>
-      ${docs.map((d,i) => `
-        <div style="display:flex;align-items:center;gap:10px;padding:10px 16px;border-bottom:1px solid var(--border);">
-          <span style="font-size:20px;">${d.type?.includes('pdf') ? '📄' : '📝'}</span>
-          <div style="flex:1;min-width:0;">
-            <div style="font-size:13px;font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${escapeHtml(d.name)}</div>
-            <div style="font-size:11px;color:var(--text3);">${d.label||''} ${d.uploadedAt?'· '+new Date(d.uploadedAt).toLocaleDateString('en-GB',{day:'numeric',month:'short',year:'numeric'}):''}</div>
-          </div>
-          <div style="display:flex;gap:4px;flex-shrink:0;">
-            <button class="btn btn-ghost btn-sm" onclick="downloadCandDoc(${candId},${i})" title="Download">⬇</button>
-            <button class="btn btn-ghost btn-sm" style="color:var(--red);" onclick="deleteCandDoc(${candId},${i})" title="Remove">✕</button>
-          </div>
-        </div>`).join('')}
-    </div>` : '<div style="text-align:center;padding:20px;color:var(--text3);font-size:12px;">No documents uploaded yet</div>'}`;
-  document.getElementById('modal-footer').innerHTML = `<button class="btn btn-ghost" onclick="closeModal()">Close</button>`;
-  overlay.classList.add('open');
-}
-
 function dRenderCandidates()    { debounced('candidates',    renderCandidates); }
 function dRenderCandJobSidebar(){ debounced('candSidebar',   renderCandJobSidebar); }
 function dRenderProjects()      { debounced('projects',      renderProjects); }
@@ -8894,6 +9022,8 @@ document.addEventListener('click', e => {
   if(!e.target.closest('#global-search-wrap')) hideGlobalResults();
 });
 
+// ===================== API KEY =====================
+function setVal(id, val) { const el = document.getElementById(id); if(el) el.value = val; }
 let currentResumeB64 = null;
 let currentResumeType = null;
 let currentResumeFilename = null;
@@ -8907,27 +9037,19 @@ function ncHandleResumeDrop(e) {
 function ncHandleResumeFile(file) {
   if(!file) return;
   const allowed = ['application/pdf','application/vnd.openxmlformats-officedocument.wordprocessingml.document'];
-  if(!allowed.includes(file.type) && !file.name.match(/\.(pdf|docx)$/i)) {
-    showToast('Please upload a PDF or DOCX file'); return;
-  }
-  if(file.size > 10 * 1024 * 1024) { showToast('File too large — max 10MB'); return; }
-
-  // Update dropzone UI
-  document.getElementById('nc-dz-icon').innerHTML = '<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:-2px;flex-shrink:0;"><path d="M5 22h14"/><path d="M5 2h14"/><path d="M17 22v-4.172a2 2 0 00-.586-1.414L12 12l-4.414 4.414A2 2 0 007 17.828V22"/><path d="M7 2v4.172a2 2 0 00.586 1.414L12 12l4.414-4.414A2 2 0 0017 6.172V2"/></svg>';
+  if(!allowed.includes(file.type) && !file.name.match(/\.(pdf|docx)$/i)) { showToast('Please upload a PDF or DOCX'); return; }
+  if(file.size > 10*1024*1024) { showToast('File too large — max 10MB'); return; }
+  document.getElementById('nc-dz-icon').textContent = '✅';
   document.getElementById('nc-dz-text').textContent = file.name;
-
   const reader = new FileReader();
-  reader.onload = async (e) => {
-    const b64 = e.target.result.split(',')[1];
-    currentResumeB64 = b64;
-    currentResumeType = file.type || (file.name.endsWith('.pdf') ? 'application/pdf' : 'application/vnd.openxmlformats-officedocument.wordprocessingml.document');
+  reader.onload = e => {
+    currentResumeB64 = e.target.result.split(',')[1];
+    currentResumeType = file.type || 'application/pdf';
     currentResumeFilename = file.name;
-    document.getElementById('nc-dz-icon').innerHTML = '<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:-2px;flex-shrink:0;"><path d="M22 11.08V12a10 10 0 11-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>';
   };
   reader.readAsDataURL(file);
 }
 
-function setVal(id, val) { const el = document.getElementById(id); if(el) el.value = val; }
 function saveCandidate() {
   const name = document.getElementById('nc-name')?.value.trim();
   const email = document.getElementById('nc-email')?.value.trim();
@@ -8939,6 +9061,7 @@ function saveCandidate() {
   const currentTitle = document.getElementById('nc-title')?.value.trim() || '';
   const phone = document.getElementById('nc-phone')?.value.trim() || '';
   const source = document.getElementById('nc-source')?.value || 'Direct';
+  const linkedin = document.getElementById('nc-linkedin')?.value.trim() || '';
   const skillsRaw = document.getElementById('nc-skills')?.value || '';
   const notes = document.getElementById('nc-notes')?.value.trim() || '';
   const colors = ['#4f8ef7','#a78bfa','#34d399','#fbbf24','#f472b6','#fb7185','#06b6d4','#84cc16','#c084fc','#8b91a8'];
@@ -8952,7 +9075,7 @@ function saveCandidate() {
     initials, color: colors[newId % colors.length],
     exp, currentTitle, location,
     skills: skillsRaw ? skillsRaw.split(',').map(s=>s.trim()).filter(Boolean) : [],
-    source, notes, rating: 3
+    source, notes, rating: 3, linkedin
   };
 
   // Store resume if uploaded
@@ -9328,6 +9451,13 @@ function viewResume(id) {
     return;
   }
   showToast('Resume not available on this device — try re-uploading');
+}
+
+function getResumeDownloadName(id, filename) {
+  const c = getCand(id);
+  const name = c?.name || 'Candidate';
+  const ext = (filename||'resume.pdf').split('.').pop() || 'pdf';
+  return name + ' — Resume.' + ext;
 }
 
 function getResumeDownloadName(id, filename) {
