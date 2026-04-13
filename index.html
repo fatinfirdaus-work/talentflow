@@ -764,7 +764,7 @@
   tbody tr:nth-child(8){animation-delay:175ms}
 
   /* Kanban col stagger */
-  .kanban-col { animation:slideUp 0.2s ease both; }
+  .kanban-col { animation:fadeIn 0.2s ease both; }
   .kanban-col:nth-child(1){animation-delay:0ms}
   .kanban-col:nth-child(2){animation-delay:40ms}
   .kanban-col:nth-child(3){animation-delay:80ms}
@@ -2876,6 +2876,7 @@ function renderPipeline() {
   }
 
   const board = document.getElementById('kanban-board');
+  if(!board) return;
   board.innerHTML = stages.map(s=>{
     const cards = list.filter(c => {
       const stageForJob = jobId ? getCandStageForJob(c, jobId) : c.stage;
@@ -6111,10 +6112,7 @@ function buildResumeTabHTML(c) {
     '<div style="flex:1;display:flex;flex-direction:column;overflow:hidden;min-height:0;">' +
     '<div style="display:flex;align-items:center;gap:6px;padding:8px 12px;background:var(--bg2);border-bottom:1px solid var(--border);flex-shrink:0;flex-wrap:wrap;">' +
     '<span id="pdf-filename" style="font-size:12px;font-weight:600;flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;"><svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:-2px;flex-shrink:0;"><path d="M21.44 11.05l-9.19 9.19a6 6 0 01-8.49-8.49l9.19-9.19a4 4 0 015.66 5.66l-9.2 9.19a2 2 0 01-2.83-2.83l8.49-8.48"/></svg> ' + escapeHtml(c.resumeFilename||'Resume') + '</span>' +
-    '<div style="display:flex;align-items:center;gap:4px;background:var(--bg3);border:1px solid var(--border);border-radius:7px;padding:3px 6px;">' +
-    '<button onclick="pdfPrevPage()" class="btn btn-ghost btn-sm" style="padding:2px 7px;font-size:13px;">‹</button>' +
-    '<span style="font-size:11px;font-family:JetBrains Mono,monospace;color:var(--text2);"><span id="pdf-page-num">1</span>/<span id="pdf-page-total">–</span></span>' +
-    '<button onclick="pdfNextPage()" class="btn btn-ghost btn-sm" style="padding:2px 7px;font-size:13px;">›</button></div>' +
+    '<span id="pdf-page-num" style="display:none">1</span><span id="pdf-page-total" style="display:none">–</span>' +
     '<div style="display:flex;align-items:center;gap:2px;background:var(--bg3);border:1px solid var(--border);border-radius:7px;padding:3px 6px;">' +
     '<button onclick="pdfZoomOut()" class="btn btn-ghost btn-sm" style="padding:2px 7px;">−</button>' +
     '<span id="pdf-zoom-label" style="font-size:11px;font-family:JetBrains Mono,monospace;color:var(--text2);min-width:36px;text-align:center;">100%</span>' +
@@ -11486,28 +11484,40 @@ async function renderPdfPage() {
   if(!container) { pdfRendering=false; return; }
 
   try {
-    const page = await pdfDoc.getPage(pdfPage);
     const containerWidth = container.clientWidth - 32;
-    const viewport = page.getViewport({ scale: 1 });
-    const fitScale = containerWidth / viewport.width;
-    const scale = fitScale * pdfZoom;
-    const scaledViewport = page.getViewport({ scale });
-
-    const canvas = document.createElement('canvas');
-    canvas.width = scaledViewport.width;
-    canvas.height = scaledViewport.height;
-    canvas.style.cssText = `box-shadow:0 4px 24px rgba(0,0,0,0.4);border-radius:4px;max-width:100%;display:block;`;
-
-    const ctx = canvas.getContext('2d');
-    await page.render({ canvasContext: ctx, viewport: scaledViewport }).promise;
-
     container.innerHTML = '';
-    container.appendChild(canvas);
 
-    document.getElementById('pdf-page-num').textContent = pdfPage;
+    // Render ALL pages continuously — no pagination
+    for(let p = 1; p <= pdfDoc.numPages; p++) {
+      const page = await pdfDoc.getPage(p);
+      const viewport = page.getViewport({ scale: 1 });
+      const fitScale = containerWidth / viewport.width;
+      const scale = fitScale * pdfZoom;
+      const scaledViewport = page.getViewport({ scale });
+
+      const canvas = document.createElement('canvas');
+      canvas.width = scaledViewport.width;
+      canvas.height = scaledViewport.height;
+      canvas.style.cssText = 'box-shadow:0 4px 24px rgba(0,0,0,0.4);border-radius:4px;max-width:100%;display:block;margin:0 auto 12px;';
+      canvas.dataset.page = p;
+
+      container.appendChild(canvas);
+      const ctx = canvas.getContext('2d');
+      await page.render({ canvasContext: ctx, viewport: scaledViewport }).promise;
+    }
+
     document.getElementById('pdf-zoom-label').textContent = Math.round(pdfZoom * 100) + '%';
+    // Hide page nav controls since we show all pages
+    const pageNav = document.querySelector('#pdf-container ~ div .pdf-page-nav, [id="pdf-page-num"]');
   } catch(e) { console.error('Render error', e); }
   pdfRendering = false;
+}
+
+// Re-render all pages when zoom changes
+async function reRenderPdf() {
+  if(!pdfDoc) return;
+  pdfRendering = false;
+  await renderPdfPage();
 }
 
 function pdfNextPage() {
@@ -11518,9 +11528,9 @@ function pdfPrevPage() {
   if(!pdfDoc || pdfPage <= 1) return;
   pdfPage--; renderPdfPage();
 }
-function pdfZoomIn()  { pdfZoom = Math.min(pdfZoom + 0.25, 4); renderPdfPage(); }
-function pdfZoomOut() { pdfZoom = Math.max(pdfZoom - 0.25, 0.5); renderPdfPage(); }
-function pdfZoomFit() { pdfZoom = 1.0; renderPdfPage(); }
+function pdfZoomIn()  { pdfZoom = Math.min(pdfZoom + 0.25, 4); reRenderPdf(); }
+function pdfZoomOut() { pdfZoom = Math.max(pdfZoom - 0.25, 0.5); reRenderPdf(); }
+function pdfZoomFit() { pdfZoom = 1.0; reRenderPdf(); }
 
 
 // ===================== PROJECTS =====================
