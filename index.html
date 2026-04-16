@@ -102,6 +102,8 @@
   /* ALL pages: no padding - each page handles its own spacing consistently */
   .page { display: none; }
   .page.active { display: block; }
+  #page-settings.active { display: flex; flex-direction: column; overflow: hidden; }
+  #page-settings > div { flex: 1; min-height: 0; overflow: hidden; }
 
   /* Standard pages: inner content gets 24px padding via .page-inner class */
   .page-inner { padding: 24px; }
@@ -5093,36 +5095,30 @@ function switchSettingsTab(tabId) {
         <div class="panel-header"><span class="panel-title">Default Checklist</span><button class="btn btn-ghost btn-sm" onclick="resetOnboardingSettings()">Reset</button></div>
         <div style="padding:16px;font-size:13px;color:var(--text3);">Onboarding checklist is configured per candidate from the candidate profile. Settings coming soon.</div>
       </div>`;
-  } else if(tabId==='s-notifs') {
-    el.innerHTML = `
-      <div style="font-size:18px;font-weight:800;margin-bottom:4px;">Notifications</div>
-      <div style="font-size:13px;color:var(--text3);margin-bottom:20px;">Manage your notification preferences.</div>
-      <div class="panel">
-        <div class="panel-header"><span class="panel-title">Preferences</span></div>
-        <div style="padding:16px;">
-          ${[
-            {label:'Interview reminders', key:'notif_interviews', desc:'Notify when interviews are scheduled for today'},
-            {label:'Offer alerts',        key:'notif_offers',     desc:'Notify when offers are pending response'},
-            {label:'Candidate activity',  key:'notif_activity',   desc:'Notify when candidates move stages'},
-            {label:'Joining dates',       key:'notif_joining',    desc:'Notify when candidates are joining this week'},
-          ].map(n => {
-            const s = getSettings();
-            const on = s[n.key] !== false;
-            return `<div style="display:flex;align-items:center;justify-content:space-between;padding:10px 0;border-bottom:1px solid var(--border);">
-              <div>
-                <div style="font-size:13px;font-weight:600;">\${n.label}</div>
-                <div style="font-size:11px;color:var(--text3);">\${n.desc}</div>
-              </div>
-              <label style="position:relative;display:inline-block;width:36px;height:20px;cursor:pointer;">
-                <input type="checkbox" \${on?'checked':''} onchange="const s=getSettings();s['\${n.key}']=this.checked;localStorage.setItem('tf_settings',JSON.stringify(s));showToast('Saved ✓')" style="opacity:0;width:0;height:0;">
-                <span style="position:absolute;inset:0;background:\${on?'var(--accent)':'var(--border2)'};border-radius:20px;transition:0.2s;"></span>
-                <span style="position:absolute;top:3px;left:\${on?'19':'3'}px;width:14px;height:14px;background:#fff;border-radius:50%;transition:0.2s;"></span>
-              </label>
-            </div>`;
-          }).join('')}
-        </div>
-      </div>`;
-  } else if(tabId==='s-appearance') {
+    } else if(tabId==='s-notifs') {
+    const s = getSettings();
+    const notifItems = [
+      {label:'Interview reminders', key:'notif_interviews', desc:'Notify when interviews are scheduled for today'},
+      {label:'Offer alerts',        key:'notif_offers',     desc:'Notify when offers are pending response'},
+      {label:'Candidate activity',  key:'notif_activity',   desc:'Notify when candidates move stages'},
+      {label:'Joining dates',       key:'notif_joining',    desc:'Notify when candidates are joining this week'},
+    ];
+    const rows = notifItems.map(n => {
+      const on = s[n.key] !== false;
+      return '<div style="display:flex;align-items:center;justify-content:space-between;padding:12px 0;border-bottom:1px solid var(--border);">' +
+        '<div><div style="font-size:13px;font-weight:600;">' + n.label + '</div>' +
+        '<div style="font-size:11px;color:var(--text3);">' + n.desc + '</div></div>' +
+        '<label style="position:relative;display:inline-block;width:36px;height:20px;cursor:pointer;flex-shrink:0;">' +
+        '<input type="checkbox" ' + (on?'checked':'') + ' onchange="const s=getSettings();s[\''+n.key+'\']= this.checked;localStorage.setItem(\'tf_settings\',JSON.stringify(s));showToast(\'Saved ✓\')" style="opacity:0;width:0;height:0;">' +
+        '<span style="position:absolute;inset:0;background:' + (on?'var(--accent)':'var(--border2)') + ';border-radius:20px;transition:0.2s;"></span>' +
+        '<span style="position:absolute;top:3px;left:' + (on?'19':'3') + 'px;width:14px;height:14px;background:#fff;border-radius:50%;transition:0.2s;"></span>' +
+        '</label></div>';
+    }).join('');
+    el.innerHTML = '<div style="font-size:18px;font-weight:800;margin-bottom:4px;">Notifications</div>' +
+      '<div style="font-size:13px;color:var(--text3);margin-bottom:20px;">Manage your notification preferences.</div>' +
+      '<div class="panel"><div class="panel-header"><span class="panel-title">Preferences</span></div>' +
+      '<div style="padding:0 16px;">' + rows + '</div></div>';
+    } else if(tabId==='s-appearance') {
     const s = getSettings();
     el.innerHTML = `
       <div style="font-size:18px;font-weight:800;margin-bottom:4px;">Appearance</div>
@@ -5416,13 +5412,46 @@ function openEmailTemplateEditor(tplId) {
   const panel = document.getElementById('stpl-editor-panel');
   if(!panel) return;
 
-  const varChips = ALL_VARS.map(v =>
-    `<span onclick="insertVarAtCursor('${v}')"
-      style="cursor:pointer;background:var(--bg2);border:1px solid var(--border);border-radius:4px;
-      padding:2px 7px;font-size:10px;font-family:'JetBrains Mono',monospace;color:var(--accent);transition:background 0.1s;"
-      onmouseover="this.style.background='var(--accent-dim)'"
-      onmouseout="this.style.background='var(--bg2)'"
-      title="Insert {${v}}">{${v}}</span>`
+  // Grouped variable chips
+  const VAR_GROUPS = [
+    { label: 'Candidate', color: '#4f8ef7', vars: [
+      { key:'candidate_name', label:'Full Name', example:'Ahmad Razif' },
+      { key:'candidate_email', label:'Email', example:'ahmad@email.com' },
+    ]},
+    { label: 'Job', color: '#a78bfa', vars: [
+      { key:'job_title', label:'Job Title', example:'Senior Designer' },
+      { key:'company_name', label:'Company', example:'Your Company' },
+      { key:'location', label:'Location', example:'Petaling Jaya' },
+      { key:'salary', label:'Salary', example:'RM 8,000' },
+    ]},
+    { label: 'Interview', color: '#fbbf24', vars: [
+      { key:'interview_date', label:'Date', example:'2026-05-01' },
+      { key:'interview_time', label:'Time', example:'10:00 AM' },
+      { key:'interview_type', label:'Format', example:'Video Call' },
+      { key:'interview_duration', label:'Duration', example:'45 minutes' },
+      { key:'interviewer_name', label:'Interviewer', example:'Fatin Firdaus' },
+      { key:'interview_location', label:'Location', example:'Zoom link' },
+    ]},
+    { label: 'Offer', color: '#34d399', vars: [
+      { key:'start_date', label:'Start Date', example:'2026-06-01' },
+      { key:'offer_expiry', label:'Expiry', example:'2026-05-10' },
+    ]},
+    { label: 'Sender', color: '#f472b6', vars: [
+      { key:'sender_name', label:'Your Name', example:'Fatin Firdaus' },
+    ]},
+  ];
+
+  const varChips = VAR_GROUPS.map(g =>
+    `<div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap;">
+      <span style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:0.06em;color:${g.color};min-width:56px;">${g.label}</span>
+      ${g.vars.map(v => `<button
+        onclick="insertVarAtCursor('${v.key}');this.style.transform='scale(0.88)';setTimeout(()=>this.style.transform='',150)"
+        title="${v.example ? 'e.g. ' + v.example : ''}"
+        style="cursor:pointer;background:${g.color}15;border:1px solid ${g.color}40;border-radius:20px;padding:3px 10px;font-size:11.5px;font-weight:600;color:${g.color};transition:all 0.12s;white-space:nowrap;font-family:inherit;"
+        onmouseover="this.style.background='${g.color}28';this.style.borderColor='${g.color}'"
+        onmouseout="this.style.background='${g.color}15';this.style.borderColor='${g.color}40'"
+        >${v.label}</button>`).join('')}
+    </div>`
   ).join('');
 
   panel.style.cssText = 'display:flex;flex-direction:column;background:var(--bg2);overflow:hidden;';
@@ -5451,11 +5480,11 @@ function openEmailTemplateEditor(tplId) {
       <div style="display:flex;flex-wrap:wrap;gap:4px;">${varChips}</div>
     </div>` +
 
-    // Side-by-side body
-    `<div style="display:grid;grid-template-columns:55% 45%;flex:1;min-height:0;overflow:hidden;">
+    // Full-width editor + collapsible preview below
+    `<div style="display:flex;flex-direction:column;flex:1;min-height:0;overflow:hidden;">
 
       <!-- LEFT: rich text editor -->
-      <div style="display:flex;flex-direction:column;border-right:1px solid var(--border);overflow:hidden;">
+      <div style="display:flex;flex-direction:column;overflow:hidden;flex:1;min-height:0;">
         <div style="padding:10px 14px;border-bottom:1px solid var(--border);flex-shrink:0;">
           <div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:0.5px;color:var(--text3);margin-bottom:5px;">Subject</div>
           <input id="stpl-subject" type="text" value="${escapeHtml(currentSubject)}"
@@ -5550,20 +5579,53 @@ function openEmailTemplateEditor(tplId) {
         </div>
       </div>
 
-      <!-- RIGHT: live preview -->
-      <div style="display:flex;flex-direction:column;overflow:hidden;background:var(--bg2);">
-        <div style="padding:10px 14px;border-bottom:1px solid var(--border);flex-shrink:0;">
-          <div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:0.5px;color:var(--text3);margin-bottom:5px;">Preview (sample values)</div>
+      <!-- VAR CHIPS — below editor -->
+      <div style="border-top:1px solid var(--border);padding:12px 16px;background:var(--bg3);flex-shrink:0;">
+        <div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:0.06em;color:var(--text3);margin-bottom:8px;">Click to insert variable at cursor</div>
+        <div style="display:flex;flex-direction:column;gap:6px;">${varChips}</div>
+      </div>
+
+      <!-- COLLAPSIBLE PREVIEW -->
+      <div style="border-top:1px solid var(--border);flex-shrink:0;">
+        <div onclick="const p=document.getElementById('stpl-preview-body');const open=p.style.display!=='none';p.style.display=open?'none':'flex';this.querySelector('.pchev').style.transform=open?'rotate(-90deg)':''"
+          style="padding:10px 16px;display:flex;align-items:center;justify-content:space-between;cursor:pointer;background:var(--bg3);user-select:none;"
+          onmouseover="this.style.background='var(--bg4)'" onmouseout="this.style.background='var(--bg3)'">
+          <span style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.06em;color:var(--text3);">Preview with sample values</span>
+          <div style="display:flex;align-items:center;gap:8px;">
+            <span style="font-size:10px;color:var(--text3);"><span style="color:var(--green);font-weight:700;">Green</span> = filled · <span style="color:var(--amber);font-weight:700;">Amber</span> = needs value</span>
+            <svg class="pchev" xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="color:var(--text3);transition:transform 0.2s;"><polyline points="6 9 12 15 18 9"/></svg>
+          </div>
+        </div>
+        <div id="stpl-preview-body" style="display:flex;flex-direction:column;padding:14px 16px;gap:8px;background:var(--bg2);max-height:320px;overflow-y:auto;">
+          <div style="padding:10px 14px;border-bottom:1px solid var(--border);flex-shrink:0;">
+          <div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:0.5px;color:var(--text3);margin-bottom:5px;">Preview (sample values)
           <div id="stpl-preview-subject"
             style="font-size:12px;font-weight:600;color:var(--text);background:var(--bg3);
-            border:1px solid var(--border);border-radius:7px;padding:7px 10px;min-height:34px;line-height:1.5;word-break:break-word;"></div>
-        </div>
+            border:1px solid var(--border);border-radius:7px;padding:7px 10px;min-height:34px;line-height:1.5;word-break:break-word;">
+        
         <div style="padding:10px 14px;flex:1;display:flex;flex-direction:column;gap:4px;overflow:hidden;">
-          <div style="font-size:10px;color:var(--text3);flex-shrink:0;"><span style="color:var(--green);font-weight:600;">Green</span> = filled · <span style="color:var(--amber);font-weight:600;">Amber</span> = needs value</div>
+          <div style="font-size:10px;color:var(--text3);flex-shrink:0;"><span style="color:var(--green);font-weight:600;">Green</span> = filled · <span style="color:var(--amber);font-weight:600;">Amber</span> = needs value
           <div id="stpl-preview-body"
             style="flex:1;background:var(--bg3);border:1px solid var(--border);border-radius:7px;
             padding:10px;font-size:11.5px;color:var(--text2);line-height:1.8;
-            overflow-y:auto;word-break:break-word;"></div>
+            overflow-y:auto;word-break:break-word;">
+        
+      
+        </div>
+      </div>
+
+      <!-- BOTTOM ACTION BAR -->
+      <div style="border-top:1px solid var(--border);padding:12px 16px;background:var(--bg2);display:flex;align-items:center;justify-content:space-between;flex-shrink:0;">
+        <div id="stpl-save-status" style="font-size:11.5px;color:var(--text3);"></div>
+        <div style="display:flex;gap:8px;">
+          <button onclick="copyEmailToClipboard()" class="btn btn-ghost btn-sm" style="gap:6px;">
+            <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"/><path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/></svg>
+            Copy Email
+          </button>
+          <button onclick="saveEmailTemplate()" class="btn btn-primary btn-sm" style="gap:6px;">
+            <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 21H5a2 2 0 01-2-2V5a2 2 0 012-2h11l5 5v11a2 2 0 01-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg>
+            Save
+          </button>
         </div>
       </div>
     </div>`;
