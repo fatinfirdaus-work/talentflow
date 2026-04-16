@@ -101,9 +101,11 @@
   /* ALL pages: no padding - each page handles its own spacing consistently */
   .page { display: none; }
   .page.active { display: block; }
+  #page-settings.active { display: flex; }
 
   /* Standard pages: inner content gets 24px padding via .page-inner class */
   .page-inner { padding: 24px; }
+  #page-settings { padding: 0 !important; }
 
   /* Jobs: sticky toolbar + scrollable list */
   #page-jobs.active { display: flex; flex-direction: column; }
@@ -1541,8 +1543,8 @@
     </div>
 
     <!-- SETTINGS PAGE -->
-    <div class="page" id="page-settings">
-      <div style="display:grid;grid-template-columns:220px 1fr;gap:0;flex:1;overflow:hidden;">
+    <div class="page" id="page-settings" style="display:flex;flex-direction:column;height:100%;overflow:hidden;">
+      <div style="display:grid;grid-template-columns:220px 1fr;gap:0;flex:1;overflow:hidden;min-height:0;">
         <!-- Settings sidebar -->
         <div style="border-right:1px solid var(--border);padding:16px 8px;overflow-y:auto;background:var(--bg2);" id="settings-sidebar">
           <!-- GENERAL -->
