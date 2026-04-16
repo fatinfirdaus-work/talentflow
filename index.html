@@ -521,7 +521,7 @@
 
     /* Settings page: no grid sidebar, stack vertically */
     #page-settings > div { grid-template-columns: 1fr !important; }
-    #settings-sidebar { border-right: none !important; border-bottom: 1px solid var(--border); display: flex; flex-wrap: wrap; gap: 4px; padding: 10px !important; }
+    @media (max-width: 768px) { #settings-sidebar { border-right: none !important; border-bottom: 1px solid var(--border); display: flex !important; flex-wrap: wrap; gap: 4px; padding: 10px !important; } }
     #settings-sidebar .nav-item { padding: 5px 10px; font-size: 11px; flex-shrink: 0; }
 
     /* Candidate profile topbar: wrap buttons */
@@ -1040,109 +1040,76 @@
     <!-- DASHBOARD PAGE -->
     <div class="page active" id="page-dashboard">
       <div class="page-inner">
-      <div class="stats-row">
-        <div class="stat-card">
-          <div class="stat-label">Open Positions</div>
-          <div class="stat-val" style="color:var(--accent)">–</div>
-          <div class="stat-change" id="dash-sub-jobs">active jobs</div>
-        </div>
-        <div class="stat-card">
-          <div class="stat-label">Total Applicants</div>
-          <div class="stat-val" style="color:var(--purple)">–</div>
-          <div class="stat-change" id="dash-sub-cands">total candidates</div>
-        </div>
-        <div class="stat-card">
-          <div class="stat-label">In Pipeline</div>
-          <div class="stat-val" style="color:var(--amber)">–</div>
-          <div class="stat-change" id="dash-sub-interview">in pipeline</div>
-        </div>
-        <div class="stat-card">
-          <div class="stat-label">Hires This Month</div>
-          <div class="stat-val" style="color:var(--green)">–</div>
-          <div class="stat-change" id="dash-sub-hires">no hires yet</div>
-        </div>
-      </div>
 
-      <!-- Today's Actions -->
-      <div class="panel" style="margin-bottom:18px;">
-        <div class="panel-header">
-          <span class="panel-title" style="display:flex;align-items:center;gap:8px;">
-            Today's Actions
-            <span id="dash-actions-badge" style="display:none;background:var(--red);color:#fff;font-size:10px;font-weight:700;border-radius:20px;padding:1px 8px;"></span>
-          </span>
-          <span style="font-size:11px;color:var(--text3);">Click any item to open candidate</span>
-        </div>
-        <div id="dash-actions-list" style="max-height:300px;overflow-y:auto;">
-          <div style="padding:16px;text-align:center;color:var(--text3);font-size:12px;">Loading...</div>
-        </div>
-      </div>
-
-      <div class="two-col" style="align-items:start;">
-        <div style="display:flex;flex-direction:column;gap:20px;">
-          <!-- Active Jobs -->
-          <div class="panel">
-            <div class="panel-header">
-              <span class="panel-title">Active Jobs</span>
-              <button class="btn btn-ghost btn-sm" onclick="showPage('jobs', document.querySelector('.nav-item:nth-child(1)'))" style="font-size:12px">View All →</button>
-            </div>
-            <div class="panel-body" id="dash-jobs-list"></div>
+        <!-- STATS ROW -->
+        <div class="stats-row">
+          <div class="stat-card">
+            <div class="stat-label">Open Positions</div>
+            <div class="stat-val" style="color:var(--accent)">–</div>
+            <div class="stat-change" id="dash-sub-jobs">active jobs</div>
           </div>
+          <div class="stat-card">
+            <div class="stat-label">Total Applicants</div>
+            <div class="stat-val" style="color:var(--purple)">–</div>
+            <div class="stat-change" id="dash-sub-cands">total candidates</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-label">In Pipeline</div>
+            <div class="stat-val" style="color:var(--amber)">–</div>
+            <div class="stat-change" id="dash-sub-interview">in pipeline</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-label">Hires This Month</div>
+            <div class="stat-val" style="color:var(--green)">–</div>
+            <div class="stat-change" id="dash-sub-hires">no hires yet</div>
+          </div>
+        </div>
 
-          <!-- Hiring Funnel -->
+        <!-- TODAY'S ACTIONS — full width, no height cap, hidden when empty -->
+        <div class="panel" id="dash-actions-panel" style="margin-bottom:18px;display:none;">
+          <div class="panel-header">
+            <span class="panel-title" style="display:flex;align-items:center;gap:8px;">
+              Today's Actions
+              <span id="dash-actions-badge" style="display:none;background:var(--red);color:#fff;font-size:10px;font-weight:700;border-radius:20px;padding:1px 8px;"></span>
+            </span>
+            <span style="font-size:11px;color:var(--text3);">Click any item to open candidate</span>
+          </div>
+          <div id="dash-actions-list"></div>
+        </div>
+
+        <!-- ACTIVE JOBS — full width, condensed with days open -->
+        <div class="panel" style="margin-bottom:18px;">
+          <div class="panel-header">
+            <span class="panel-title">Active Jobs</span>
+            <button class="btn btn-ghost btn-sm" onclick="showPage('jobs',null)" style="font-size:12px;">View All →</button>
+          </div>
+          <div id="dash-jobs-list"></div>
+        </div>
+
+        <!-- BOTTOM ROW: Funnel + Joining Soon -->
+        <div style="display:grid;grid-template-columns:1fr 340px;gap:18px;align-items:start;">
           <div class="panel">
             <div class="panel-header"><span class="panel-title">Hiring Funnel</span></div>
             <div class="funnel" id="funnel-chart"></div>
           </div>
-
-          <!-- Onboarding / Joining Soon -->
           <div class="panel" id="dash-onboarding-panel">
             <div class="panel-header">
-              <span class="panel-title"><svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:-2px;flex-shrink:0;"><path d="M12 2c0 0-6 4-6 12l6 4 6-4c0-8-6-12-6-12z"/><circle cx="12" cy="10" r="2"/></svg> Joining Soon</span>
-              <button class="btn btn-ghost btn-sm" onclick="showPage('onboarding',null)" style="font-size:12px">View All →</button>
+              <span class="panel-title">Joining Soon</span>
+              <button class="btn btn-ghost btn-sm" onclick="showPage('onboarding',null)" style="font-size:12px;">View All →</button>
             </div>
-            <div id="dash-onboarding-list" class="panel-body"></div>
+            <div id="dash-onboarding-list"></div>
           </div>
         </div>
 
-        <div style="display:flex;flex-direction:column;gap:20px;">
-          <!-- Recent Activity -->
-          <div class="panel">
-            <div class="panel-header"><span class="panel-title">Recent Activity</span></div>
-            <div class="panel-body" id="activity-feed"></div>
-          </div>
-
-          <!-- Weekly Applicants Chart -->
-          <div class="panel">
-            <div class="panel-header">
-              <span class="panel-title">Applicants This Week</span>
-              <span id="dash-weekly-count" class="badge badge-gray" style="font-size:11px;"></span>
-            </div>
-            <div style="padding:16px 20px;">
-              <div class="mini-chart" id="weekly-chart"></div>
-              <div style="display:flex;justify-content:space-between;margin-top:6px;">
-                <span style="font-size:10px;color:var(--text3)">Mon</span>
-                <span style="font-size:10px;color:var(--text3)">Tue</span>
-                <span style="font-size:10px;color:var(--text3)">Wed</span>
-                <span style="font-size:10px;color:var(--text3)">Thu</span>
-                <span style="font-size:10px;color:var(--text3)">Fri</span>
-                <span style="font-size:10px;color:var(--text3)">Sat</span>
-                <span style="font-size:10px;color:var(--text3)">Sun</span>
-              </div>
-            </div>
-          </div>
-
-          <!-- Tasks Summary -->
-          <div class="panel">
-            <div class="panel-header">
-              <span class="panel-title"><svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:-2px;flex-shrink:0;"><path d="M22 11.08V12a10 10 0 11-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg> Tasks</span>
-              <button class="btn btn-ghost btn-sm" onclick="showPage('tasks',null)" style="font-size:12px">View All →</button>
-            </div>
-            <div id="dash-tasks-summary" class="panel-body"></div>
-          </div>
+        <!-- Hidden elements kept for JS compatibility -->
+        <div style="display:none;">
+          <div id="activity-feed"></div>
+          <div id="weekly-chart"></div>
+          <span id="dash-weekly-count"></span>
+          <div id="dash-tasks-summary"></div>
         </div>
-    </div>
-    </div>
 
+      </div>
     </div>
     <!-- JOBS PAGE -->
     <div class="page" id="page-jobs">
@@ -1573,9 +1540,9 @@
 
     <!-- SETTINGS PAGE -->
     <div class="page" id="page-settings">
-      <div style="display:grid;grid-template-columns:220px 1fr;gap:0;flex:1;overflow:hidden;box-shadow:0 2px 16px rgba(0,0,0,0.08);border-radius:12px;border:1px solid var(--border);margin:16px;">
+      <div style="display:grid;grid-template-columns:220px 1fr;gap:0;flex:1;overflow:hidden;">
         <!-- Settings sidebar -->
-        <div style="border-right:1px solid var(--border);padding:16px 8px;overflow-y:auto;" id="settings-sidebar">
+        <div style="border-right:1px solid var(--border);padding:16px 8px;overflow-y:auto;background:var(--bg2);" id="settings-sidebar">
           <!-- GENERAL -->
           <div style="font-size:10px;font-weight:700;letter-spacing:0.08em;color:var(--text3);padding:10px 12px 4px;text-transform:uppercase;">General</div>
           <div onclick="switchSettingsTab('s-company')" id="stab-s-company" class="nav-item"><span class="icon"><svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:-2px;flex-shrink:0;"><path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg></span>Company Profile</div>
@@ -1727,14 +1694,6 @@ let tasks = stored.tasks || [];
 
 const stages = ['Applied','Screening','Interview','Offer','Pending Join','Hired','Rejected'];
 
-function isCandExcludedFromMetrics(c) {
-  if(!c) return false;
-  const j = getJob(c.jobId);
-  if(j?.excludeFromMetrics) return true;
-  const apps = c.jobApplications || [];
-  if(apps.length > 0 && apps.every(a => getJob(a.jobId)?.excludeFromMetrics)) return true;
-  return false;
-}
 function getMetricCandidates() {
   return candidates.filter(c => !isCandExcludedFromMetrics(c));
 }
@@ -1857,28 +1816,6 @@ function getTodayActions() {
 }
 // ══════════════════════════════════════════════
 
-function markCandidateHired(c, jobId) {
-  if(!c) return;
-  const now = new Date().toISOString();
-  c.stage = 'Hired'; c.hiredAt = now; c.hiredJobId = jobId || c.jobId;
-  (c.jobApplications||[]).forEach(app => {
-    if(app.jobId===(jobId||c.jobId)||app.stage==='Pending Join') { app.stage='Hired'; app.hiredAt=app.hiredAt||now; }
-  });
-}
-function isCandHired(c) {
-  if(!c) return false;
-  if(c.stage==='Hired') return true;
-  return offers.some(o=>String(o.candidateId)===String(c.id)&&o.status==='Accepted');
-}
-function getCandHiredAt(c) {
-  if(!c) return null;
-  if(c.hiredAt) return c.hiredAt;
-  const acc = offers.find(o=>String(o.candidateId)===String(c.id)&&o.status==='Accepted');
-  if(acc?.updatedAt) return acc.updatedAt;
-  return null;
-}
-
-// Returns true if a candidate's primary job is excluded from metrics
 function isCandExcludedFromMetrics(c) {
   if(!c) return false;
   // Check primary job
@@ -2135,19 +2072,19 @@ function renderDashboard() {
 
   // ── TODAY'S ACTIONS ──
   const actEl = document.getElementById('dash-actions-list');
+  const actPanel = document.getElementById('dash-actions-panel');
   if(actEl) {
-    const acts = getTodayActions().slice(0, 10);
+    const acts = getTodayActions();
     const badge = document.getElementById('dash-actions-badge');
     if(badge) { badge.textContent = acts.length; badge.style.display = acts.length ? 'inline-flex' : 'none'; }
-    if(!acts.length) {
-      actEl.innerHTML = '<div style="padding:16px;text-align:center;color:var(--text3);font-size:12px;">✅ All clear — nothing needs attention today!</div>';
-    } else {
-      actEl.innerHTML = acts.map(a => `
-        <div onclick="openCandProfile(${a.candId})" style="display:flex;align-items:center;gap:10px;padding:10px 14px;border-bottom:1px solid var(--border);cursor:pointer;transition:background 0.12s;" onmouseover="this.style.background='var(--bg3)'" onmouseout="this.style.background=''">
-          ${a.icon ? `<span style="font-size:15px;flex-shrink:0;">${a.icon}</span>` : ''}
+    if(actPanel) actPanel.style.display = acts.length ? 'block' : 'none';
+    if(acts.length) {
+      actEl.innerHTML = acts.map((a,i) => `
+        <div onclick="openCandProfile(${a.candId})" style="display:flex;align-items:center;gap:12px;padding:11px 16px;${i<acts.length-1?'border-bottom:1px solid var(--border);':''}cursor:pointer;transition:background 0.12s;" onmouseover="this.style.background='var(--bg3)'" onmouseout="this.style.background=''">
+          <div style="width:3px;height:34px;border-radius:2px;background:${a.color};flex-shrink:0;"></div>
           <div style="flex:1;min-width:0;">
-            <div style="font-size:12px;font-weight:700;color:${a.color};">${a.label}</div>
-            <div style="font-size:11.5px;color:var(--text3);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${a.detail}</div>
+            <div style="font-size:12.5px;font-weight:700;color:${a.color};margin-bottom:2px;">${a.label}</div>
+            <div style="font-size:12px;color:var(--text2);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${a.detail}</div>
           </div>
           <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="color:var(--text3);flex-shrink:0;"><polyline points="9 18 15 12 9 6"/></svg>
         </div>`).join('');
@@ -2156,20 +2093,33 @@ function renderDashboard() {
 
   // Jobs list — use real candidate counts, not stale j.applicants
   const list = document.getElementById('dash-jobs-list');
-  list.innerHTML = jobs.filter(j=>j.status==='Active').slice(0,5).map(j=>{
-    const cnt = candidates.filter(c=>getCandJobIds(c).includes(j.id)).length;
-    return `<div class="job-item" onclick="openJobDetail(${j.id})" style="cursor:pointer;">
-      <div class="job-avatar" style="background:${j.color}22;font-size:18px">${j.icon}</div>
-      <div class="job-info">
-        <div class="job-title">${j.title}</div>
-        <div class="job-meta"><span>${j.dept}</span><span>·</span><span>${j.location}</span></div>
-      </div>
-      <div class="job-right">
-        <span class="badge ${j.status==='Active'?'badge-green':'badge-amber'}">${j.status}</span>
-        <span style="font-size:11px;color:var(--text3)">${cnt} candidate${cnt!==1?'s':''}</span>
-      </div>
-    </div>`;
-  }).join('') || '<div style="padding:20px;text-align:center;color:var(--text3);">No active jobs</div>';
+  if(list) {
+    const activeJobs = jobs.filter(j=>j.status==='Active');
+    list.innerHTML = activeJobs.length ? activeJobs.map((j,i) => {
+      const cnt = candidates.filter(c=>getCandJobIds(c).includes(j.id)).length;
+      const stageBreakdown = ['Screening','Interview','Offer'].map(s=>{
+        const n = candidates.filter(c=>getCandJobIds(c).includes(j.id)&&(getCandStageForJob(c,j.id)||c.stage)===s).length;
+        return n ? `<span style="font-size:10px;background:${stageColors[s]||'var(--bg3)'}18;color:${stageColors[s]||'var(--text3)'};border-radius:10px;padding:1px 7px;font-weight:600;">${n} ${s}</span>` : '';
+      }).filter(Boolean).join('');
+      const daysOpen = j.createdAt ? daysSince(j.createdAt) : null;
+      const daysColor = daysOpen === null ? 'var(--text3)' : daysOpen > 60 ? 'var(--red)' : daysOpen > 30 ? 'var(--amber)' : 'var(--text3)';
+      const daysLabel = daysOpen !== null ? daysOpen + 'd open' : '';
+      return `<div onclick="openJobDetail(${j.id})" style="display:flex;align-items:center;gap:14px;padding:12px 16px;${i<activeJobs.length-1?'border-bottom:1px solid var(--border);':''}cursor:pointer;transition:background 0.12s;" onmouseover="this.style.background='var(--bg3)'" onmouseout="this.style.background=''">
+        <div style="width:36px;height:36px;border-radius:9px;background:${j.color}22;color:${j.color};display:flex;align-items:center;justify-content:center;font-size:17px;flex-shrink:0;">${j.icon||'💼'}</div>
+        <div style="flex:1;min-width:0;">
+          <div style="font-size:13px;font-weight:700;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;margin-bottom:3px;">${escapeHtml(j.title)}</div>
+          <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap;">
+            <span style="font-size:11px;color:var(--text3);">${escapeHtml(j.dept||'')}${j.location?' · '+escapeHtml(j.location):''}</span>
+            ${stageBreakdown}
+          </div>
+        </div>
+        <div style="text-align:right;flex-shrink:0;">
+          <div style="font-size:13px;font-weight:700;color:var(--accent);">${cnt} <span style="font-size:11px;font-weight:400;color:var(--text3);">candidate${cnt!==1?'s':''}</span></div>
+          ${daysLabel ? `<div style="font-size:11px;font-weight:600;color:${daysColor};">${daysLabel}</div>` : ''}
+        </div>
+      </div>`;
+    }).join('') : '<div style="padding:24px;text-align:center;color:var(--text3);font-size:13px;">No active jobs</div>';
+  }
 
   // Funnel — real counts from live candidates
   const funnelStages = stages.filter(s => s !== 'Rejected');
@@ -5108,6 +5058,97 @@ function switchSettingsTab(tabId) {
             <button class="btn btn-ghost btn-sm" style="color:var(--red);border-color:var(--red-dim);" onclick="openModal('resetConfirm')">Reset All Data</button>
           </div>
         </div>
+      </div>`;
+  } else if(tabId==='s-onboarding') {
+    const obs = getOnboardingSettings();
+    el.innerHTML = `
+      <div style="font-size:18px;font-weight:800;margin-bottom:4px;">Onboarding Settings</div>
+      <div style="font-size:13px;color:var(--text3);margin-bottom:20px;">Configure the default onboarding checklist applied to new hires.</div>
+      <div class="panel">
+        <div class="panel-header"><span class="panel-title">Default Checklist</span><button class="btn btn-ghost btn-sm" onclick="resetOnboardingSettings()">Reset</button></div>
+        <div style="padding:16px;font-size:13px;color:var(--text3);">Onboarding checklist is configured per candidate from the candidate profile. Settings coming soon.</div>
+      </div>`;
+  } else if(tabId==='s-notifs') {
+    el.innerHTML = `
+      <div style="font-size:18px;font-weight:800;margin-bottom:4px;">Notifications</div>
+      <div style="font-size:13px;color:var(--text3);margin-bottom:20px;">Manage your notification preferences.</div>
+      <div class="panel">
+        <div class="panel-header"><span class="panel-title">Preferences</span></div>
+        <div style="padding:16px;">
+          ${[
+            {label:'Interview reminders', key:'notif_interviews', desc:'Notify when interviews are scheduled for today'},
+            {label:'Offer alerts',        key:'notif_offers',     desc:'Notify when offers are pending response'},
+            {label:'Candidate activity',  key:'notif_activity',   desc:'Notify when candidates move stages'},
+            {label:'Joining dates',       key:'notif_joining',    desc:'Notify when candidates are joining this week'},
+          ].map(n => {
+            const s = getSettings();
+            const on = s[n.key] !== false;
+            return `<div style="display:flex;align-items:center;justify-content:space-between;padding:10px 0;border-bottom:1px solid var(--border);">
+              <div>
+                <div style="font-size:13px;font-weight:600;">\${n.label}</div>
+                <div style="font-size:11px;color:var(--text3);">\${n.desc}</div>
+              </div>
+              <label style="position:relative;display:inline-block;width:36px;height:20px;cursor:pointer;">
+                <input type="checkbox" \${on?'checked':''} onchange="const s=getSettings();s['\${n.key}']=this.checked;localStorage.setItem('tf_settings',JSON.stringify(s));showToast('Saved ✓')" style="opacity:0;width:0;height:0;">
+                <span style="position:absolute;inset:0;background:\${on?'var(--accent)':'var(--border2)'};border-radius:20px;transition:0.2s;"></span>
+                <span style="position:absolute;top:3px;left:\${on?'19':'3'}px;width:14px;height:14px;background:#fff;border-radius:50%;transition:0.2s;"></span>
+              </label>
+            </div>`;
+          }).join('')}
+        </div>
+      </div>`;
+  } else if(tabId==='s-appearance') {
+    const s = getSettings();
+    el.innerHTML = `
+      <div style="font-size:18px;font-weight:800;margin-bottom:4px;">Appearance</div>
+      <div style="font-size:13px;color:var(--text3);margin-bottom:20px;">Customise the look and feel of Talent Nook.</div>
+      <div class="panel" style="margin-bottom:16px;">
+        <div class="panel-header"><span class="panel-title">Theme</span></div>
+        <div style="padding:14px 16px;display:flex;gap:10px;">
+          ${['Light','Dark','System'].map(t=>`<button class="btn ${(s.theme||'Dark')===t?'btn-primary':'btn-ghost'}" onclick="applyTheme('${t}');const s=getSettings();s.theme='${t}';localStorage.setItem('tf_settings',JSON.stringify(s));switchSettingsTab('s-appearance')">${t}</button>`).join('')}
+        </div>
+      </div>
+      <div class="panel">
+        <div class="panel-header"><span class="panel-title">Accent Colour</span></div>
+        <div style="padding:14px 16px;display:flex;gap:8px;flex-wrap:wrap;">
+          ${['#4f8ef7','#a78bfa','#34d399','#fbbf24','#f472b6','#06b6d4','#fb7185','#c084fc'].map(c=>`<div onclick="applyAccent('${c}');const s=getSettings();s.accent='${c}';localStorage.setItem('tf_settings',JSON.stringify(s))" style="width:28px;height:28px;border-radius:50%;background:${c};cursor:pointer;border:3px solid ${(s.accent||'#4f8ef7')===c?'var(--text)':'transparent'};transition:all 0.15s;"></div>`).join('')}
+        </div>
+      </div>`;
+  } else if(tabId==='s-rejection-reasons') {
+    const reasons = getRejectionReasons();
+    el.innerHTML = `
+      <div style="font-size:18px;font-weight:800;margin-bottom:4px;">Rejection Reasons</div>
+      <div style="font-size:13px;color:var(--text3);margin-bottom:20px;">Customise rejection reasons shown when rejecting a candidate.</div>
+      <div class="panel">
+        <div class="panel-header"><span class="panel-title">Reasons</span><button class="btn btn-primary btn-sm" onclick="addRejectionReason()">+ Add</button></div>
+        ${reasons.map((r,i)=>`
+          <div style="display:flex;align-items:center;gap:10px;padding:10px 16px;border-bottom:1px solid var(--border);">
+            <input value="${escapeHtml(r.label||r)}" onchange="updateRejectionReason(${i},this.value)"
+              style="flex:1;background:var(--bg3);border:1px solid var(--border);border-radius:6px;padding:5px 10px;font-size:13px;color:var(--text);outline:none;">
+            <button class="btn btn-ghost btn-sm" style="color:var(--red);" onclick="removeRejectionReason(${i})">✕</button>
+          </div>`).join('')}
+        <div style="padding:12px 16px;border-top:1px solid var(--border);display:flex;gap:8px;">
+          <button class="btn btn-primary btn-sm" onclick="saveRejectionReasons()">Save</button>
+          <button class="btn btn-ghost btn-sm" onclick="resetRejectionReasons()">Reset</button>
+        </div>
+      </div>`;
+  } else if(tabId==='s-archive') {
+    const archived = candidates.filter(c=>c.archived);
+    el.innerHTML = `
+      <div style="font-size:18px;font-weight:800;margin-bottom:4px;">Archive</div>
+      <div style="font-size:13px;color:var(--text3);margin-bottom:20px;">View and restore archived candidates.</div>
+      <div class="panel">
+        <div class="panel-header"><span class="panel-title">Archived Candidates (${archived.length})</span></div>
+        ${archived.length ? archived.map(c=>`
+          <div style="display:flex;align-items:center;gap:12px;padding:10px 16px;border-bottom:1px solid var(--border);">
+            <div style="width:32px;height:32px;border-radius:50%;background:${c.color}33;color:${c.color};display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;">${c.initials}</div>
+            <div style="flex:1;">
+              <div style="font-size:13px;font-weight:600;">${escapeHtml(c.name)}</div>
+              <div style="font-size:11px;color:var(--text3);">${escapeHtml(getJob(c.jobId)?.title||'')}</div>
+            </div>
+            <button class="btn btn-ghost btn-sm" onclick="restoreFromArchive(${c.id})">Restore</button>
+            <button class="btn btn-ghost btn-sm" style="color:var(--red);" onclick="permanentlyDelete(${c.id})">Delete</button>
+          </div>`).join('') : '<div style="padding:20px;text-align:center;color:var(--text3);font-size:13px;">No archived candidates</div>'}
       </div>`;
   }
 }
@@ -8488,7 +8529,8 @@ function saveJob() {
   const newId = Math.max(0, ...jobs.map(j=>j.id)) + 1;
   const dept = document.getElementById('jf-dept')?.value || getDepts()[0];
   const newJob = {
-    id: newId, title, dept, type:'Full-time', location:'', status:'Active',
+    id: newId,
+    createdAt: new Date().toISOString(), title, dept, type:'Full-time', location:'', status:'Active',
     applicants:0, salary:'TBD', posted: new Date().toISOString().split('T')[0],
     color: colors[newId%colors.length], icon: icons[dept]||'💼',
     skills:[], priority:'Medium', jobStages:[], assessments:[]
@@ -9794,13 +9836,6 @@ function getResumeDownloadName(id, filename) {
   return name + ' — Resume.' + ext;
 }
 
-function getResumeDownloadName(id, filename) {
-  const c = getCand(id);
-  const name = c?.name || 'Candidate';
-  const ext = (filename||'resume.pdf').split('.').pop() || 'pdf';
-  return name + ' — Resume.' + ext;
-}
-
 function downloadResume(id) {
   const r = getResumeB64(id);
   if(r?.b64) {
@@ -10547,33 +10582,6 @@ HR / Talent Acquisition
 ];
 
 // Variables that get replaced in templates
-function getEmailVariables(candId) {
-  const c = getCand(candId);
-  const job = c ? getJob(c.jobId) : null;
-  const s = getSettings();
-  const upcomingIV = c ? (c.interviews||[]).find(iv => iv.status === 'Scheduled') : null;
-  const latestOffer = c ? offers.find(o => o.candidateId === c.id) : null;
-  const today = new Date();
-  const nextWeek = new Date(today.getTime() + 7*24*60*60*1000);
-
-  return {
-    candidate_name: c?.name || '[Candidate Name]',
-    job_title: job?.title || '[Job Title]',
-    company_name: s.companyName || '[Company Name]',
-    sender_name: s.yourName || '[Your Name]',
-    interview_date: upcomingIV?.date || nextWeek.toLocaleDateString('en-MY',{weekday:'long',day:'numeric',month:'long',year:'numeric'}),
-    interview_time: upcomingIV?.time || '10:00 AM',
-    interview_type: upcomingIV?.type || 'Video Call (link to follow)',
-    interview_duration: upcomingIV?.duration || '1 hour',
-    interviewer_name: upcomingIV?.interviewer || s.yourName || '[Interviewer Name]',
-    salary: latestOffer?.salary || '[Salary]',
-    start_date: latestOffer?.startDate || '[Start Date]',
-    offer_expiry: latestOffer?.expiryDate || '[Offer Expiry Date]',
-    location: job?.location || s.country || '[Location]',
-    highlight: '[a specific strength you observed]',
-  };
-}
-
 function fillEmailTemplate(body, vars) {
   let result = body;
   Object.entries(vars).forEach(([key, val]) => {
