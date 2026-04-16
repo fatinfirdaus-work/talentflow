@@ -520,7 +520,7 @@
     .login-card { padding: 32px 24px; margin: 16px; }
 
     /* Settings page: stack on mobile */
-    #page-settings > div { grid-template-columns: 1fr !important; }
+    #page-settings > div { grid-template-columns: 200px 1fr !important; }
     #settings-sidebar .nav-item { padding: 5px 10px; font-size: 11px; flex-shrink: 0; }
     #settings-sidebar div[style*="font-size:10px"] { width: 100%; margin-top: 6px; }
 
@@ -1583,7 +1583,7 @@
           <div onclick="switchSettingsTab('s-archive')" id="stab-s-archive" class="nav-item"><span class="icon"><svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:-2px;flex-shrink:0;"><rect x="2" y="2" width="20" height="8" rx="2" ry="2"/><rect x="2" y="14" width="20" height="8" rx="2" ry="2"/><line x1="6" y1="6" x2="6.01" y2="6"/><line x1="6" y1="18" x2="6.01" y2="18"/></svg></span>Archive</div>
         </div>
         <!-- Settings content -->
-        <div style="padding:24px;overflow-y:auto;flex:1;min-width:0;" id="settings-content"></div>
+        <div style="padding:24px;overflow-y:auto;overflow-x:hidden;" id="settings-content"></div>
       </div>
     </div>
 
