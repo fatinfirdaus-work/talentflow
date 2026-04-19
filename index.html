@@ -752,7 +752,7 @@
   tbody tr:nth-child(8){animation-delay:175ms}
 
   /* Kanban col stagger */
-  .kanban-col { animation:slideUp 0.2s ease both; }
+  .kanban-col { animation:fadeIn 0.15s ease forwards; }
   .kanban-col:nth-child(1){animation-delay:0ms}
   .kanban-col:nth-child(2){animation-delay:40ms}
   .kanban-col:nth-child(3){animation-delay:80ms}
@@ -878,6 +878,81 @@
   .nav-icon { pointer-events:none; }
   body.sidebar-collapsed .sidebar .nav-icon { width:22px; height:22px; }
   body.sidebar-collapsed .sidebar .nav-icon svg { width:20px; height:20px; }
+
+  /* ── CALENDAR PAGE ── */
+  #page-calendar.active { display:flex; flex-direction:column; height:calc(100vh - 52px); overflow:hidden; }
+  .cal-shell { display:flex; flex:1; min-height:0; overflow:hidden; }
+  .cal-main { flex:1; min-width:0; display:flex; flex-direction:column; overflow:hidden; }
+  .cal-header { display:flex; align-items:center; justify-content:space-between; padding:14px 20px; border-bottom:1px solid var(--border); flex-shrink:0; flex-wrap:wrap; gap:10px; background:var(--bg2); }
+  .cal-month-label { font-size:17px; font-weight:800; letter-spacing:-0.4px; min-width:160px; }
+  .cal-view-toggle { display:flex; background:var(--bg3); border:1px solid var(--border); border-radius:8px; overflow:hidden; }
+  .cal-view-btn { padding:5px 14px; font-size:12px; font-weight:600; background:none; border:none; color:var(--text2); cursor:pointer; font-family:inherit; transition:all 0.15s; }
+  .cal-view-btn.active { background:var(--accent); color:#fff; }
+  .cal-legend { display:flex; align-items:center; gap:8px; font-size:11px; color:var(--text3); margin-right:8px; flex-wrap:wrap; }
+  .cal-legend-dot { width:8px; height:8px; border-radius:50%; display:inline-block; flex-shrink:0; }
+  .cal-grid-wrap { flex:1; overflow:auto; min-height:0; }
+
+  /* Month grid */
+  .cal-month-grid { display:grid; grid-template-columns:repeat(7,1fr); height:100%; }
+  .cal-dow-header { display:grid; grid-template-columns:repeat(7,1fr); border-bottom:1px solid var(--border); flex-shrink:0; }
+  .cal-dow-cell { padding:8px 0; text-align:center; font-size:11px; font-weight:700; text-transform:uppercase; letter-spacing:0.8px; color:var(--text3); }
+  .cal-day-cell { border-right:1px solid var(--border); border-bottom:1px solid var(--border); padding:6px; min-height:110px; display:flex; flex-direction:column; gap:3px; cursor:pointer; transition:background 0.1s; position:relative; overflow:hidden; }
+  .cal-day-cell:nth-child(7n) { border-right:none; }
+  .cal-day-cell:hover { background:var(--bg3); }
+  .cal-day-cell.other-month { opacity:0.4; }
+  .cal-day-cell.today { background:var(--accent-dim); }
+  .cal-day-cell.today .cal-day-num { background:var(--accent); color:#fff; border-radius:50%; width:22px; height:22px; display:flex; align-items:center; justify-content:center; }
+  .cal-day-num { font-size:12px; font-weight:700; color:var(--text2); width:22px; height:22px; display:flex; align-items:center; justify-content:center; flex-shrink:0; }
+  .cal-event-pill { font-size:10.5px; font-weight:600; padding:2px 7px; border-radius:4px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; cursor:pointer; transition:opacity 0.1s; line-height:1.6; }
+  .cal-event-pill:hover { opacity:0.82; }
+  .cal-more-link { font-size:10px; color:var(--accent); cursor:pointer; padding:1px 4px; }
+
+  /* Week grid */
+  .cal-week-wrap { display:flex; flex-direction:column; min-height:100%; }
+  .cal-week-dow-row { display:grid; grid-template-columns:52px repeat(7,1fr); border-bottom:2px solid var(--border); position:sticky; top:0; background:var(--bg2); z-index:5; }
+  .cal-week-dow-cell { padding:8px 6px; text-align:center; font-size:11px; font-weight:700; color:var(--text3); text-transform:uppercase; letter-spacing:0.6px; }
+  .cal-week-dow-cell.today { color:var(--accent); }
+  .cal-week-dow-date { font-size:20px; font-weight:800; display:block; color:var(--text); line-height:1.2; }
+  .cal-week-dow-cell.today .cal-week-dow-date { color:var(--accent); }
+  .cal-week-body { display:grid; grid-template-columns:52px repeat(7,1fr); flex:1; }
+  .cal-time-col { display:flex; flex-direction:column; }
+  .cal-time-slot { height:56px; border-bottom:1px solid var(--border); display:flex; align-items:flex-start; justify-content:flex-end; padding:2px 6px 0 0; font-size:10px; color:var(--text3); flex-shrink:0; }
+  .cal-week-day-col { border-left:1px solid var(--border); position:relative; }
+  .cal-week-day-col.today { background:rgba(79,142,247,0.04); }
+  .cal-week-hour-line { height:56px; border-bottom:1px solid var(--border); position:relative; cursor:pointer; transition:background 0.1s; }
+  .cal-week-hour-line:hover { background:var(--bg3); }
+  .cal-week-event { position:absolute; left:2px; right:2px; border-radius:5px; padding:3px 6px; font-size:10.5px; font-weight:600; cursor:pointer; overflow:hidden; line-height:1.4; z-index:2; transition:opacity 0.1s; }
+  .cal-week-event:hover { opacity:0.85; }
+
+  /* Agenda panel */
+  .cal-agenda { width:240px; flex-shrink:0; border-left:1px solid var(--border); display:flex; flex-direction:column; background:var(--bg2); overflow:hidden; transition:width 0.22s cubic-bezier(0.4,0,0.2,1); }
+  .cal-agenda.collapsed { width:0; border:none; }
+  .cal-agenda-collapsed-btn { width:24px; background:var(--bg2); border:none; border-left:1px solid var(--border); color:var(--text3); cursor:pointer; flex-shrink:0; transition:all 0.15s; }
+  .cal-agenda-collapsed-btn:hover { color:var(--text); background:var(--bg3); }
+  .cal-agenda-header { display:flex; align-items:center; justify-content:space-between; padding:14px 14px 10px; border-bottom:1px solid var(--border); flex-shrink:0; }
+  .cal-agenda-body { flex:1; overflow-y:auto; padding:10px 8px; display:flex; flex-direction:column; gap:4px; }
+  .cal-agenda-day { margin-bottom:8px; }
+  .cal-agenda-day-label { font-size:10px; font-weight:700; text-transform:uppercase; letter-spacing:0.8px; color:var(--text3); padding:4px 6px; margin-bottom:4px; }
+  .cal-agenda-item { padding:7px 10px; border-radius:7px; cursor:pointer; transition:background 0.12s; border-left:3px solid transparent; }
+  .cal-agenda-item:hover { background:var(--bg3); }
+  .cal-agenda-item-title { font-size:12px; font-weight:600; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+  .cal-agenda-item-sub { font-size:10.5px; color:var(--text3); margin-top:1px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+
+  /* Event popover */
+  .cal-popover { position:fixed; background:var(--bg2); border:1px solid var(--border2); border-radius:12px; box-shadow:var(--shadow-lg); z-index:9990; padding:16px; width:260px; animation:fadeInUp 0.15s ease; }
+  .cal-popover-type-badge { display:inline-flex; align-items:center; gap:5px; font-size:10.5px; font-weight:700; padding:3px 8px; border-radius:5px; margin-bottom:10px; }
+  .cal-popover-title { font-size:14px; font-weight:700; margin-bottom:4px; line-height:1.3; }
+  .cal-popover-meta { font-size:11.5px; color:var(--text3); margin-bottom:12px; line-height:1.6; }
+  .cal-popover-actions { display:flex; gap:6px; flex-wrap:wrap; }
+
+  /* New event type picker */
+  .cal-type-picker { display:grid; grid-template-columns:1fr 1fr; gap:10px; }
+  .cal-type-option { padding:14px 12px; border-radius:10px; border:2px solid var(--border); cursor:pointer; text-align:center; transition:all 0.15s; }
+  .cal-type-option:hover { border-color:var(--border2); background:var(--bg3); }
+  .cal-type-option.selected { border-color:var(--accent); background:var(--accent-dim); }
+  .cal-type-option-icon { font-size:22px; margin-bottom:6px; }
+  .cal-type-option-label { font-size:12px; font-weight:700; }
+  .cal-type-option-sub { font-size:10.5px; color:var(--text3); margin-top:2px; }
 </style>
 </head>
 <body>
@@ -971,6 +1046,9 @@
     </div>
     <div class="nav-section">
       <div class="nav-label">Workspace</div>
+      <div class="nav-item" data-label="Calendar" onclick="showPage('calendar', this)">
+        <span class="nav-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg></span><span class="nav-text">Calendar</span>
+      </div>
       <div class="nav-item" data-label="Reports" onclick="showPage('reports', this)">
         <span class="nav-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 6h16M4 10h10M4 14h12M4 18h8"/><path d="M16 14l2 2 4-4"/></svg></span><span class="nav-text">Reports</span>
       </div>
@@ -1587,6 +1665,52 @@
       </div>
     </div>
 
+    <!-- CALENDAR PAGE -->
+    <div class="page" id="page-calendar">
+      <div class="cal-shell">
+        <!-- Agenda Panel (collapsible right side) -->
+        <div class="cal-agenda" id="cal-agenda">
+          <div class="cal-agenda-header">
+            <span style="font-size:13px;font-weight:700;">Upcoming</span>
+            <button class="btn btn-ghost btn-icon" style="width:24px;height:24px;" onclick="toggleCalAgenda()" title="Collapse">
+              <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 18 15 12 9 6"/></svg>
+            </button>
+          </div>
+          <div class="cal-agenda-body" id="cal-agenda-body"></div>
+        </div>
+        <!-- Collapsed agenda toggle -->
+        <button class="cal-agenda-collapsed-btn" id="cal-agenda-collapsed-btn" onclick="toggleCalAgenda()" style="display:none;" title="Show upcoming">
+          <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2"><polyline points="15 18 9 12 15 6"/></svg>
+        </button>
+        <!-- Main calendar area -->
+        <div class="cal-main" id="cal-main">
+          <!-- Header: nav + view toggle -->
+          <div class="cal-header">
+            <div style="display:flex;align-items:center;gap:10px;">
+              <button class="btn btn-ghost btn-sm" onclick="calNav(-1)">‹</button>
+              <span class="cal-month-label" id="cal-month-label">April 2026</span>
+              <button class="btn btn-ghost btn-sm" onclick="calNav(1)">›</button>
+              <button class="btn btn-ghost btn-sm" onclick="calGoToday()" id="cal-today-btn">Today</button>
+            </div>
+            <div style="display:flex;align-items:center;gap:8px;">
+              <div class="cal-legend">
+                <span class="cal-legend-dot" style="background:var(--green)"></span><span>Interview</span>
+                <span class="cal-legend-dot" style="background:var(--amber)"></span><span>Task</span>
+                <span class="cal-legend-dot" style="background:#60a5fa)"></span><span>Onboarding</span>
+                <span class="cal-legend-dot" style="background:var(--purple)"></span><span>Job Deadline</span>
+              </div>
+              <div class="cal-view-toggle">
+                <button class="cal-view-btn active" id="cal-btn-month" onclick="setCalView('month')">Month</button>
+                <button class="cal-view-btn" id="cal-btn-week" onclick="setCalView('week')">Week</button>
+              </div>
+            </div>
+          </div>
+          <!-- Calendar grid -->
+          <div class="cal-grid-wrap" id="cal-grid-wrap"></div>
+        </div>
+      </div>
+    </div>
+
 </main>
 
 <!-- CANDIDATE DETAIL PANEL -->
@@ -1635,6 +1759,13 @@ function save() {
     localStorage.setItem('tf_tasks', JSON.stringify(tasks));
   } catch(e) { console.warn('Save failed', e); }
   updateSidebarBadges();
+  // If calendar is the active page, re-render it immediately so new events appear instantly
+  if(document.getElementById('page-calendar')?.classList.contains('active')) {
+    renderCalendar();
+  } else {
+    // Calendar not open but silently refresh the agenda panel so it's fresh when opened
+    renderCalAgenda?.();
+  }
   // Sync to Firestore
   if(window._cloudSave) window._cloudSave().catch(e => console.warn('Cloud save error', e));
 }
@@ -5893,7 +6024,7 @@ function showPage(name, navEl, pushHistory=true) {
   if(titleEl) {
     titleEl.style.opacity = '0';
     const titles = {dashboard:'Dashboard',jobs:'Jobs',projects:'Projects',candidates:'Candidates',pipeline:'Pipeline',
-      interviews:'Interviews',offers:'Offers',onboarding:'Onboarding',analytics:'Analytics',reports:'Reports',inbox:'Inbox',settings:'Settings',jobdetail:'Job Detail'};
+      interviews:'Interviews',offers:'Offers',onboarding:'Onboarding',analytics:'Analytics',reports:'Reports',inbox:'Inbox',settings:'Settings',jobdetail:'Job Detail',calendar:'Calendar'};
     setTimeout(()=>{ titleEl.textContent = titles[name]||name; titleEl.style.opacity='1'; document.title = 'TalentFlow — ' + (titles[name]||name); }, 100);
   }
 
@@ -5909,7 +6040,7 @@ function showPage(name, navEl, pushHistory=true) {
          (name==='interviews'&&txt.startsWith('Interviews'))||(name==='offers'&&txt.startsWith('Offers'))||
          (name==='onboarding'&&txt.startsWith('Onboarding'))||
          (name==='analytics'&&txt.startsWith('Analytics'))||(name==='reports'&&txt.startsWith('Reports'))||
-         (name==='inbox'&&txt.startsWith('Inbox'))||(name==='tasks'&&txt.startsWith('Tasks'))||(name==='settings'&&txt.startsWith('Settings')))
+         (name==='inbox'&&txt.startsWith('Inbox'))||(name==='tasks'&&txt.startsWith('Tasks'))||(name==='settings'&&txt.startsWith('Settings'))||(name==='calendar'&&txt.startsWith('Calendar')))
         n.classList.add('active');
     });
   }
@@ -5928,6 +6059,7 @@ function showPage(name, navEl, pushHistory=true) {
   else if(name==='inbox') renderInbox();
   else if(name==='tasks') renderTasks();
   else if(name==='settings') renderSettings();
+  else if(name==='calendar') renderCalendar();
 
   if(name==='dashboard') {
     setTimeout(()=>{
@@ -6849,7 +6981,7 @@ function navigateToHash(hash) {
       if(projects.length > 0) tryOpen(); else setTimeout(tryOpen, 1500);
     }
   } else {
-    const valid = ['dashboard','jobs','projects','candidates','pipeline','interviews','offers','analytics','reports','inbox','tasks','settings'];
+    const valid = ['dashboard','jobs','projects','candidates','pipeline','interviews','offers','analytics','reports','inbox','tasks','settings','calendar'];
     showPage(valid.includes(path)?path:'dashboard', null, false);
   }
 }
@@ -7399,7 +7531,10 @@ function saveInterview(id) {
   const interviewer = interviewerNames.join(', ');
 
   if(!c.interviews) c.interviews=[];
-  c.interviews.push({ round, type, date, time, duration, interviewer, interviewers:interviewerNames, location, notes, status:'Scheduled' });
+  const newIv = { id: Date.now(), candidateId: id, round, type, date, time, duration, interviewer, interviewers:interviewerNames, location, notes, status:'Scheduled', createdAt: new Date().toISOString() };
+  c.interviews.push(newIv);
+  // Also push to global interviews array so Calendar, Interviews page, etc. all see it
+  interviews.push(newIv);
   addToTimeline(c, `${round} scheduled`, 'var(--accent)');
   activities.unshift({ text:`<strong>${round}</strong> scheduled for <strong>${c.name}</strong> on ${date}`, color:'var(--accent)', ts:Date.now() });
   save(); closeModal();
@@ -8725,6 +8860,7 @@ function reactiveUpdate(candId) {
   }
   else if(activePage === 'page-tasks')     { renderTasks(); }
   else if(activePage === 'page-inbox')     { renderInbox(); }
+  else if(activePage === 'page-calendar')  { renderCalendar(); }
   else if(activePage === 'page-jobdetail') {
     const jobId = history.state?.id;
     if(jobId) renderJobDetailPage(jobId);
@@ -12894,6 +13030,672 @@ function reRenderPdf() {
   renderPdfPage();
 }
 
+// ===================== CALENDAR =====================
+// State
+let _calView = 'month';  // 'month' | 'week'
+let _calDate = new Date(); // anchor date (any day in current month/week)
+let _calPopover = null;   // current open popover element
+let _calAgendaOpen = true;
+
+const CAL_COLORS = {
+  interview: { bg: 'rgba(52,211,153,0.18)', text: 'var(--green)', border: 'var(--green)' },
+  task:      { bg: 'rgba(251,191,36,0.18)',  text: 'var(--amber)', border: 'var(--amber)' },
+  onboarding:{ bg: 'rgba(96,165,250,0.18)',  text: '#60a5fa',      border: '#60a5fa' },
+  deadline:  { bg: 'rgba(167,139,250,0.18)', text: 'var(--purple)', border: 'var(--purple)' },
+};
+const CAL_LABELS = { interview:'Interview', task:'Task', onboarding:'Onboarding', deadline:'Job Deadline' };
+const CAL_ICONS  = { interview:'📅', task:'✅', onboarding:'🌱', deadline:'⚑' };
+
+function getCalEvents() {
+  const evts = [];
+  const today = new Date().toISOString().split('T')[0];
+
+  // Interviews
+  (interviews||[]).forEach(iv => {
+    if(!iv.date) return;
+    const c = getCand(iv.candidateId);
+    evts.push({
+      id: 'iv_' + (iv.id||iv.candidateId+'_'+iv.date),
+      type: 'interview',
+      date: iv.date,
+      time: iv.time || '',
+      title: c ? c.name : 'Interview',
+      sub: iv.type || 'Interview',
+      candId: iv.candidateId,
+      raw: iv,
+    });
+  });
+
+  // Tasks with due dates
+  (tasks||[]).forEach(t => {
+    if(!t.dueDate || t.status === 'Done') return;
+    evts.push({
+      id: 'task_' + t.id,
+      type: 'task',
+      date: t.dueDate,
+      time: '',
+      title: t.title || 'Task',
+      sub: t.priority ? t.priority + ' priority' : 'Task',
+      taskId: t.id,
+      raw: t,
+    });
+  });
+
+  // Onboarding start dates — candidates with an offer that has a startDate, OR a _startDate set directly
+  (candidates||[]).forEach(c => {
+    // Check offer startDate
+    const offer = (offers||[]).find(o => o.candidateId === c.id && o.startDate &&
+      (o.status === 'Accepted' || o.status === 'Pending' || c.stage === 'Pending Join'));
+    const startDate = offer?.startDate || c._startDate;
+    if(startDate) {
+      evts.push({
+        id: 'ob_' + c.id,
+        type: 'onboarding',
+        date: startDate,
+        time: '',
+        title: c.name,
+        sub: 'Start date · ' + (getJob(c.jobId)?.title || 'New joiner'),
+        candId: c.id,
+        raw: c,
+      });
+    }
+  });
+
+  // Job deadlines (jobs with a deadline field or createdAt cutoffs)
+  (jobs||[]).filter(j => j.deadline).forEach(j => {
+    evts.push({
+      id: 'jd_' + j.id,
+      type: 'deadline',
+      date: j.deadline,
+      time: '',
+      title: j.title,
+      sub: 'Req. deadline · ' + (j.dept||''),
+      jobId: j.id,
+      raw: j,
+    });
+  });
+
+  return evts;
+}
+
+function getEventsForDate(dateStr) {
+  return getCalEvents().filter(e => e.date === dateStr);
+}
+
+function renderCalendar() {
+  const wrap = document.getElementById('cal-grid-wrap');
+  const label = document.getElementById('cal-month-label');
+  if(!wrap || !label) return;
+
+  document.getElementById('cal-btn-month').classList.toggle('active', _calView === 'month');
+  document.getElementById('cal-btn-week').classList.toggle('active', _calView === 'week');
+
+  if(_calView === 'month') renderCalMonth(wrap, label);
+  else renderCalWeek(wrap, label);
+
+  renderCalAgenda();
+}
+
+// ── MONTH VIEW ──
+function renderCalMonth(wrap, label) {
+  const y = _calDate.getFullYear();
+  const m = _calDate.getMonth();
+  const today = new Date().toISOString().split('T')[0];
+  const monthNames = ['January','February','March','April','May','June','July','August','September','October','November','December'];
+  label.textContent = monthNames[m] + ' ' + y;
+
+  const firstDay = new Date(y, m, 1).getDay(); // 0=Sun
+  const daysInMonth = new Date(y, m+1, 0).getDate();
+  const prevDays = new Date(y, m, 0).getDate();
+
+  // Build cells
+  const totalCells = Math.ceil((firstDay + daysInMonth) / 7) * 7;
+  const events = getCalEvents();
+
+  let html = '<div style="display:flex;flex-direction:column;height:100%;">';
+  // Day-of-week header
+  html += '<div class="cal-dow-header">';
+  ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'].forEach(d => {
+    html += `<div class="cal-dow-cell">${d}</div>`;
+  });
+  html += '</div>';
+  // Grid
+  html += `<div class="cal-month-grid">`;
+  for(let i = 0; i < totalCells; i++) {
+    let dayNum, dateStr, otherMonth = false;
+    if(i < firstDay) {
+      dayNum = prevDays - firstDay + i + 1;
+      const pm = m === 0 ? 11 : m - 1;
+      const py = m === 0 ? y - 1 : y;
+      dateStr = `${py}-${String(pm+1).padStart(2,'0')}-${String(dayNum).padStart(2,'0')}`;
+      otherMonth = true;
+    } else if(i >= firstDay + daysInMonth) {
+      dayNum = i - firstDay - daysInMonth + 1;
+      const nm = m === 11 ? 0 : m + 1;
+      const ny = m === 11 ? y + 1 : y;
+      dateStr = `${ny}-${String(nm+1).padStart(2,'0')}-${String(dayNum).padStart(2,'0')}`;
+      otherMonth = true;
+    } else {
+      dayNum = i - firstDay + 1;
+      dateStr = `${y}-${String(m+1).padStart(2,'0')}-${String(dayNum).padStart(2,'0')}`;
+    }
+    const isToday = dateStr === today;
+    const dayEvents = events.filter(e => e.date === dateStr);
+    const visible = dayEvents.slice(0, 3);
+    const overflow = dayEvents.length - 3;
+
+    html += `<div class="cal-day-cell${otherMonth?' other-month':''}${isToday?' today':''}" onclick="calDayClick('${dateStr}', event)">`;
+    html += `<div class="cal-day-num">${dayNum}</div>`;
+    visible.forEach(ev => {
+      const col = CAL_COLORS[ev.type];
+      html += `<div class="cal-event-pill" style="background:${col.bg};color:${col.text};" onclick="event.stopPropagation();calEventClick('${ev.id}', event)" title="${escapeHtml(ev.title)}">${CAL_ICONS[ev.type]} ${escapeHtml(ev.title)}</div>`;
+    });
+    if(overflow > 0) html += `<div class="cal-more-link">+${overflow} more</div>`;
+    html += `</div>`;
+  }
+  html += '</div></div>';
+  wrap.innerHTML = html;
+}
+
+// ── WEEK VIEW ──
+function renderCalWeek(wrap, label) {
+  const y = _calDate.getFullYear();
+  const m = _calDate.getMonth();
+  const d = _calDate.getDate();
+  const today = new Date().toISOString().split('T')[0];
+  // Find Monday of this week (week starts Sunday)
+  const dayOfWeek = _calDate.getDay(); // 0=Sun
+  const weekStart = new Date(_calDate);
+  weekStart.setDate(d - dayOfWeek);
+
+  const days = [];
+  for(let i = 0; i < 7; i++) {
+    const dd = new Date(weekStart);
+    dd.setDate(weekStart.getDate() + i);
+    days.push({
+      date: dd.toISOString().split('T')[0],
+      dayNum: dd.getDate(),
+      dayName: ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'][i],
+    });
+  }
+
+  const monthNames = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+  const startMon = monthNames[weekStart.getMonth()];
+  const endDate = new Date(weekStart); endDate.setDate(weekStart.getDate()+6);
+  const endMon = monthNames[endDate.getMonth()];
+  label.textContent = startMon === endMon
+    ? `${startMon} ${weekStart.getDate()}–${endDate.getDate()}, ${weekStart.getFullYear()}`
+    : `${startMon} ${weekStart.getDate()} – ${endMon} ${endDate.getDate()}, ${weekStart.getFullYear()}`;
+
+  const hours = Array.from({length:24}, (_,i)=>i);
+  const events = getCalEvents();
+
+  let html = '<div class="cal-week-wrap">';
+  // DOW header
+  html += '<div class="cal-week-dow-row"><div></div>';
+  days.forEach(day => {
+    const isToday = day.date === today;
+    html += `<div class="cal-week-dow-cell${isToday?' today':''}"><span>${day.dayName}</span><span class="cal-week-dow-date">${day.dayNum}</span></div>`;
+  });
+  html += '</div>';
+  // Body
+  html += '<div class="cal-week-body">';
+  // Time col
+  html += '<div class="cal-time-col">';
+  hours.forEach(h => {
+    const label = h === 0 ? '' : (h < 12 ? h+'am' : h===12 ? '12pm' : (h-12)+'pm');
+    html += `<div class="cal-time-slot">${label}</div>`;
+  });
+  html += '</div>';
+  // Day cols
+  days.forEach(day => {
+    const isToday = day.date === today;
+    const dayEvts = events.filter(e => e.date === day.date);
+    html += `<div class="cal-week-day-col${isToday?' today':''}">`;
+    // Hour slots (clickable)
+    hours.forEach(h => {
+      html += `<div class="cal-week-hour-line" onclick="calWeekSlotClick('${day.date}','${String(h).padStart(2,'0')}:00',event)"></div>`;
+    });
+    // Render events as absolute blocks
+    dayEvts.forEach(ev => {
+      const col = CAL_COLORS[ev.type];
+      // Parse time
+      let topPx = 0, heightPx = 56;
+      if(ev.time) {
+        const [hh, mm] = ev.time.split(':').map(Number);
+        topPx = (hh + (mm||0)/60) * 56;
+        heightPx = 56; // 1 hour default
+      } else {
+        topPx = 8; // all-day style — place at top
+        heightPx = 40;
+      }
+      html += `<div class="cal-week-event" style="top:${topPx}px;height:${heightPx}px;background:${col.bg};color:${col.text};border-left:3px solid ${col.border};" onclick="event.stopPropagation();calEventClick('${ev.id}',event)" title="${escapeHtml(ev.title)}">${CAL_ICONS[ev.type]} ${escapeHtml(ev.title)}${ev.time?`<div style="font-size:9.5px;opacity:0.8;">${ev.time}</div>`:''}</div>`;
+    });
+    html += '</div>';
+  });
+  html += '</div></div>';
+  wrap.innerHTML = html;
+}
+
+// ── AGENDA PANEL ──
+function renderCalAgenda() {
+  const body = document.getElementById('cal-agenda-body');
+  if(!body) return;
+  const today = new Date();
+  const todayStr = today.toISOString().split('T')[0];
+  const events = getCalEvents();
+
+  // Group events into: Today, Tomorrow, This Week, Next 30 days
+  const buckets = [
+    { label: 'Today', dates: [todayStr] },
+    { label: 'Tomorrow', dates: [dateOffset(today, 1)] },
+    { label: 'This Week', dates: Array.from({length:5}, (_,i) => dateOffset(today, i+2)) },
+    { label: 'Next 30 Days', dates: Array.from({length:23}, (_,i) => dateOffset(today, i+7)) },
+  ];
+
+  let html = '';
+  buckets.forEach(bucket => {
+    const bEvts = events.filter(e => bucket.dates.includes(e.date));
+    if(!bEvts.length) return;
+    html += `<div class="cal-agenda-day"><div class="cal-agenda-day-label">${bucket.label}</div>`;
+    bEvts.sort((a,b) => a.date.localeCompare(b.date) || (a.time||'').localeCompare(b.time||'')).forEach(ev => {
+      const col = CAL_COLORS[ev.type];
+      html += `<div class="cal-agenda-item" style="border-left-color:${col.border};" onclick="calEventClick('${ev.id}',null)">
+        <div class="cal-agenda-item-title">${CAL_ICONS[ev.type]} ${escapeHtml(ev.title)}</div>
+        <div class="cal-agenda-item-sub">${ev.time||formatCalDate(ev.date)} · ${escapeHtml(ev.sub)}</div>
+      </div>`;
+    });
+    html += '</div>';
+  });
+
+  body.innerHTML = html || '<div style="text-align:center;padding:40px 16px;color:var(--text3);font-size:12px;">Nothing coming up in the next 30 days ✓</div>';
+}
+
+function dateOffset(base, days) {
+  const d = new Date(base);
+  d.setDate(d.getDate() + days);
+  return d.toISOString().split('T')[0];
+}
+
+function formatCalDate(dateStr) {
+  if(!dateStr) return '';
+  const d = new Date(dateStr + 'T00:00:00');
+  return d.toLocaleDateString('en-MY', { day:'numeric', month:'short' });
+}
+
+// ── NAVIGATION ──
+function calNav(dir) {
+  if(_calView === 'month') {
+    _calDate = new Date(_calDate.getFullYear(), _calDate.getMonth() + dir, 1);
+  } else {
+    _calDate = new Date(_calDate);
+    _calDate.setDate(_calDate.getDate() + dir * 7);
+  }
+  renderCalendar();
+}
+
+function calGoToday() {
+  _calDate = new Date();
+  renderCalendar();
+}
+
+function setCalView(view) {
+  _calView = view;
+  renderCalendar();
+}
+
+function toggleCalAgenda() {
+  _calAgendaOpen = !_calAgendaOpen;
+  const panel = document.getElementById('cal-agenda');
+  const btn = document.getElementById('cal-agenda-collapsed-btn');
+  if(_calAgendaOpen) {
+    panel?.classList.remove('collapsed');
+    panel.style.display = 'flex';
+    if(btn) btn.style.display = 'none';
+  } else {
+    panel?.classList.add('collapsed');
+    setTimeout(() => { if(panel) panel.style.display = 'none'; }, 220);
+    if(btn) btn.style.display = 'flex';
+  }
+}
+
+// ── DAY CLICK → TYPE PICKER ──
+function calDayClick(dateStr, e) {
+  closeCalPopover();
+  showCalTypePicker(dateStr);
+}
+
+function calWeekSlotClick(dateStr, timeStr, e) {
+  closeCalPopover();
+  showCalTypePicker(dateStr, timeStr);
+}
+
+function showCalTypePicker(dateStr, timeStr) {
+  const label = formatCalDate(dateStr) + (timeStr ? ' at ' + timeStr : '');
+  document.getElementById('modal-title').innerHTML = '📅 New Event — ' + label;
+  document.getElementById('modal-body').innerHTML = `
+    <div style="margin-bottom:14px;font-size:13px;color:var(--text3);">What would you like to schedule?</div>
+    <div class="cal-type-picker" id="cal-type-picker">
+      <div class="cal-type-option" onclick="selectCalType('interview',this)">
+        <div class="cal-type-option-icon">📅</div>
+        <div class="cal-type-option-label">Interview</div>
+        <div class="cal-type-option-sub">Schedule a candidate interview</div>
+      </div>
+      <div class="cal-type-option" onclick="selectCalType('task',this)">
+        <div class="cal-type-option-icon">✅</div>
+        <div class="cal-type-option-label">Task</div>
+        <div class="cal-type-option-sub">Create a to-do with a due date</div>
+      </div>
+      <div class="cal-type-option" onclick="selectCalType('onboarding',this)">
+        <div class="cal-type-option-icon">🌱</div>
+        <div class="cal-type-option-label">Onboarding Date</div>
+        <div class="cal-type-option-sub">Set a candidate start date</div>
+      </div>
+      <div class="cal-type-option" onclick="selectCalType('deadline',this)">
+        <div class="cal-type-option-icon">⚑</div>
+        <div class="cal-type-option-label">Job Deadline</div>
+        <div class="cal-type-option-sub">Set a requisition deadline</div>
+      </div>
+    </div>`;
+  document.getElementById('modal-footer').innerHTML = `
+    <button class="btn btn-ghost" onclick="closeModal()">Cancel</button>
+    <button class="btn btn-primary" id="cal-type-next-btn" onclick="calTypeNext('${dateStr}','${timeStr||''}')" style="display:none;">Next →</button>`;
+  document.getElementById('modal-overlay').classList.add('open');
+  window._calSelectedType = null;
+}
+
+function selectCalType(type, el) {
+  window._calSelectedType = type;
+  document.querySelectorAll('.cal-type-option').forEach(o => o.classList.remove('selected'));
+  el.classList.add('selected');
+  const btn = document.getElementById('cal-type-next-btn');
+  if(btn) btn.style.display = '';
+}
+
+function calTypeNext(dateStr, timeStr) {
+  const type = window._calSelectedType;
+  if(!type) { showToast('Please select a type'); return; }
+  closeModal();
+  if(type === 'interview') openCalNewInterview(dateStr, timeStr);
+  else if(type === 'task') openCalNewTask(dateStr);
+  else if(type === 'onboarding') openCalNewOnboarding(dateStr);
+  else if(type === 'deadline') openCalNewDeadline(dateStr);
+}
+
+// ── CREATE INTERVIEW FROM CALENDAR ──
+function openCalNewInterview(dateStr, timeStr) {
+  const candOptions = candidates.filter(c=>c.stage!=='Rejected'&&c.stage!=='Hired')
+    .map(c=>`<option value="${c.id}">${escapeHtml(c.name)} — ${getCandStageForJob(c,c.jobId)||c.stage||'Applied'}</option>`).join('');
+  document.getElementById('modal-title').innerHTML = '📅 Schedule Interview';
+  document.getElementById('modal-body').innerHTML = `
+    <div class="form-group"><label>Candidate</label>
+      <select id="cni-cand">${candOptions||'<option value="">No active candidates</option>'}</select></div>
+    <div class="form-row">
+      <div class="form-group"><label>Date</label><input type="date" id="cni-date" value="${dateStr}"></div>
+      <div class="form-group"><label>Time</label><input type="time" id="cni-time" value="${timeStr||'10:00'}"></div>
+    </div>
+    <div class="form-row">
+      <div class="form-group"><label>Format</label>
+        <select id="cni-type"><option>Video Call</option><option>Phone Call</option><option>In-Person</option><option>Panel</option><option>Technical</option></select></div>
+      <div class="form-group"><label>Duration</label>
+        <select id="cni-dur"><option>30 minutes</option><option selected>1 hour</option><option>1.5 hours</option><option>2 hours</option></select></div>
+    </div>
+    <div class="form-group"><label>Interviewer</label><input type="text" id="cni-interviewer" placeholder="e.g. Sarah Lee"></div>
+    <div class="form-group"><label>Notes (optional)</label><textarea id="cni-notes" style="min-height:70px;" placeholder="Agenda, topics to cover..."></textarea></div>`;
+  document.getElementById('modal-footer').innerHTML = `
+    <button class="btn btn-ghost" onclick="closeModal()">Cancel</button>
+    <button class="btn btn-primary" onclick="saveCalInterview()">Schedule Interview</button>`;
+  document.getElementById('modal-overlay').classList.add('open');
+}
+
+function saveCalInterview() {
+  const candId = parseInt(document.getElementById('cni-cand')?.value);
+  const date = document.getElementById('cni-date')?.value;
+  const time = document.getElementById('cni-time')?.value;
+  const type = document.getElementById('cni-type')?.value;
+  const dur = document.getElementById('cni-dur')?.value;
+  const interviewer = document.getElementById('cni-interviewer')?.value.trim();
+  const notes = document.getElementById('cni-notes')?.value.trim();
+  if(!candId || !date) { showToast('Please fill in candidate and date'); return; }
+  const c = getCand(candId);
+  if(!c) return;
+  const iv = {
+    id: Date.now(), candidateId: candId, date, time, type: type||'Video Call',
+    duration: dur||'1 hour', interviewer, notes, status: 'Scheduled', round: 'Interview',
+    createdAt: new Date().toISOString()
+  };
+  interviews.push(iv);
+  if(!c.interviews) c.interviews = [];
+  c.interviews.push(iv);
+  // Move candidate to Interview stage if they're still in Applied/Screening
+  if(['Applied','Screening'].includes(c.stage)) {
+    c.stage = 'Interview';
+    c.stageChangedAt = new Date().toISOString();
+    (c.jobApplications||[]).forEach(app => { if(['Applied','Screening'].includes(app.stage)) app.stage = 'Interview'; });
+  }
+  addToTimeline(c, 'Interview scheduled for ' + date, 'var(--green)');
+  activities.unshift({ text:`Interview scheduled for <strong>${c.name}</strong> on ${date}`, color:'var(--green)', ts:Date.now() });
+  save();
+  closeModal();
+  showToast('Interview scheduled ✓');
+  // Reactively update any other pages that might show this data
+  reactiveUpdate(candId);
+}
+
+// ── CREATE TASK FROM CALENDAR ──
+function openCalNewTask(dateStr) {
+  document.getElementById('modal-title').innerHTML = '✅ New Task';
+  document.getElementById('modal-body').innerHTML = `
+    <div class="form-group"><label>Task Title</label><input type="text" id="cnt-title" placeholder="e.g. Review applications for UX Designer"></div>
+    <div class="form-row">
+      <div class="form-group"><label>Due Date</label><input type="date" id="cnt-due" value="${dateStr}"></div>
+      <div class="form-group"><label>Priority</label>
+        <select id="cnt-priority"><option>Low</option><option selected>Medium</option><option>High</option></select></div>
+    </div>
+    <div class="form-group"><label>Link to Candidate (optional)</label>
+      <select id="cnt-cand"><option value="">— None —</option>${candidates.map(c=>`<option value="${c.id}">${escapeHtml(c.name)}</option>`).join('')}</select></div>
+    <div class="form-group"><label>Notes (optional)</label><textarea id="cnt-notes" style="min-height:70px;" placeholder="Additional details..."></textarea></div>`;
+  document.getElementById('modal-footer').innerHTML = `
+    <button class="btn btn-ghost" onclick="closeModal()">Cancel</button>
+    <button class="btn btn-primary" onclick="saveCalTask()">Create Task</button>`;
+  document.getElementById('modal-overlay').classList.add('open');
+  setTimeout(() => document.getElementById('cnt-title')?.focus(), 80);
+}
+
+function saveCalTask() {
+  const title = document.getElementById('cnt-title')?.value.trim();
+  const due = document.getElementById('cnt-due')?.value;
+  const priority = document.getElementById('cnt-priority')?.value;
+  const candId = parseInt(document.getElementById('cnt-cand')?.value)||null;
+  const notes = document.getElementById('cnt-notes')?.value.trim();
+  if(!title) { showToast('Please enter a task title'); return; }
+  const task = {
+    id: Date.now(), title, dueDate: due, priority: priority||'Medium',
+    status: 'To Do', candidateId: candId||null, notes, createdAt: new Date().toISOString()
+  };
+  tasks.push(task);
+  save();
+  closeModal();
+  showToast('Task created ✓');
+  // If tasks page is open, refresh it too
+  if(document.getElementById('page-tasks')?.classList.contains('active')) renderTasks();
+}
+
+// ── SET ONBOARDING DATE FROM CALENDAR ──
+function openCalNewOnboarding(dateStr) {
+  const eligibleCands = candidates.filter(c => {
+    const offer = (offers||[]).find(o => o.candidateId === c.id && (o.status === 'Accepted' || o.status === 'Pending'));
+    return offer;
+  });
+  if(!eligibleCands.length) {
+    showToast('No candidates with accepted/pending offers found');
+    return;
+  }
+  document.getElementById('modal-title').innerHTML = '🌱 Set Onboarding Date';
+  document.getElementById('modal-body').innerHTML = `
+    <div class="form-group"><label>Candidate</label>
+      <select id="cno-cand">${eligibleCands.map(c=>`<option value="${c.id}">${escapeHtml(c.name)}</option>`).join('')}</select></div>
+    <div class="form-group"><label>Start Date</label><input type="date" id="cno-date" value="${dateStr}"></div>
+    <div style="font-size:12px;color:var(--text3);margin-top:8px;">This will update the start date on the candidate's accepted offer.</div>`;
+  document.getElementById('modal-footer').innerHTML = `
+    <button class="btn btn-ghost" onclick="closeModal()">Cancel</button>
+    <button class="btn btn-primary" onclick="saveCalOnboarding()">Save Start Date</button>`;
+  document.getElementById('modal-overlay').classList.add('open');
+}
+
+function saveCalOnboarding() {
+  const candId = parseInt(document.getElementById('cno-cand')?.value);
+  const date = document.getElementById('cno-date')?.value;
+  if(!candId || !date) { showToast('Please fill in all fields'); return; }
+  // Find any offer for this candidate (accepted or pending) and update its startDate
+  const offer = (offers||[]).find(o => o.candidateId === candId && (o.status === 'Accepted' || o.status === 'Pending'));
+  if(offer) {
+    offer.startDate = date;
+  } else {
+    // No offer yet — store it directly on the candidate for calendar display
+    const c = getCand(candId);
+    if(c) c._startDate = date;
+  }
+  const c = getCand(candId);
+  if(c) addToTimeline(c, 'Onboarding date set: ' + date, '#60a5fa');
+  save();
+  closeModal();
+  showToast('Start date saved ✓');
+  // Refresh onboarding page if open
+  if(document.getElementById('page-onboarding')?.classList.contains('active')) renderOnboarding();
+  if(candId) reactiveUpdate(candId);
+}
+
+// ── SET JOB DEADLINE FROM CALENDAR ──
+function openCalNewDeadline(dateStr) {
+  const activeJobs = jobs.filter(j => j.status === 'Active' || j.status === 'Paused');
+  if(!activeJobs.length) { showToast('No active jobs found'); return; }
+  document.getElementById('modal-title').innerHTML = '⚑ Set Job Deadline';
+  document.getElementById('modal-body').innerHTML = `
+    <div class="form-group"><label>Job</label>
+      <select id="cnd-job">${activeJobs.map(j=>`<option value="${j.id}">${escapeHtml(j.title)}</option>`).join('')}</select></div>
+    <div class="form-group"><label>Deadline</label><input type="date" id="cnd-date" value="${dateStr}"></div>
+    <div style="font-size:12px;color:var(--text3);margin-top:8px;">This will appear on the calendar and on the job card.</div>`;
+  document.getElementById('modal-footer').innerHTML = `
+    <button class="btn btn-ghost" onclick="closeModal()">Cancel</button>
+    <button class="btn btn-primary" onclick="saveCalDeadline()">Set Deadline</button>`;
+  document.getElementById('modal-overlay').classList.add('open');
+}
+
+function saveCalDeadline() {
+  const jobId = parseInt(document.getElementById('cnd-job')?.value);
+  const date = document.getElementById('cnd-date')?.value;
+  if(!jobId || !date) { showToast('Please fill in all fields'); return; }
+  const j = getJob(jobId);
+  if(j) j.deadline = date;
+  save();
+  closeModal();
+  showToast('Deadline set ✓');
+  // Refresh jobs page if open
+  if(document.getElementById('page-jobs')?.classList.contains('active')) renderJobs();
+}
+
+// ── EVENT CLICK → POPOVER ──
+function calEventClick(evtId, e) {
+  closeCalPopover();
+  const ev = getCalEvents().find(x => x.id === evtId);
+  if(!ev) return;
+  const col = CAL_COLORS[ev.type];
+
+  let actions = '';
+  if(ev.type === 'interview' && ev.candId) {
+    actions += `<button class="btn btn-ghost btn-sm" onclick="closeCalPopover();openCandProfile(${ev.candId})">Open Profile</button>`;
+    actions += `<button class="btn btn-ghost btn-sm" style="color:var(--red);" onclick="closeCalPopover();deleteCalEvent('${evtId}')">Cancel</button>`;
+  } else if(ev.type === 'task' && ev.taskId) {
+    actions += `<button class="btn btn-ghost btn-sm" onclick="closeCalPopover();showPage('tasks',null)">Open Tasks</button>`;
+    actions += `<button class="btn btn-ghost btn-sm" style="color:var(--green);" onclick="closeCalPopover();markCalTaskDone('${evtId}')">Mark Done ✓</button>`;
+  } else if(ev.type === 'onboarding' && ev.candId) {
+    actions += `<button class="btn btn-ghost btn-sm" onclick="closeCalPopover();openCandProfile(${ev.candId})">Open Profile</button>`;
+    actions += `<button class="btn btn-ghost btn-sm" onclick="closeCalPopover();showPage('onboarding',null)">Onboarding Page</button>`;
+  } else if(ev.type === 'deadline' && ev.jobId) {
+    actions += `<button class="btn btn-ghost btn-sm" onclick="closeCalPopover();showPage('jobs',null);setTimeout(()=>openJobDetail(${ev.jobId}),100)">Open Job</button>`;
+    actions += `<button class="btn btn-ghost btn-sm" style="color:var(--red);" onclick="closeCalPopover();deleteCalDeadline(${ev.jobId})">Remove</button>`;
+  }
+
+  const pop = document.createElement('div');
+  pop.className = 'cal-popover';
+  pop.id = 'cal-popover';
+  pop.innerHTML = `
+    <div class="cal-popover-type-badge" style="background:${col.bg};color:${col.text};">${CAL_ICONS[ev.type]} ${CAL_LABELS[ev.type]}</div>
+    <div class="cal-popover-title">${escapeHtml(ev.title)}</div>
+    <div class="cal-popover-meta">${formatCalDate(ev.date)}${ev.time?' · '+ev.time:''}<br>${escapeHtml(ev.sub)}</div>
+    <div class="cal-popover-actions">${actions}</div>
+    <button onclick="closeCalPopover()" style="position:absolute;top:10px;right:10px;background:none;border:none;color:var(--text3);cursor:pointer;font-size:15px;padding:2px;">✕</button>`;
+  pop.style.position = 'fixed';
+  document.body.appendChild(pop);
+  _calPopover = pop;
+
+  // Position smartly
+  if(e) {
+    const rect = e.currentTarget ? e.currentTarget.getBoundingClientRect() : { bottom: e.clientY, right: e.clientX };
+    let top = rect.bottom + 6;
+    let left = rect.left || e.clientX;
+    if(top + 220 > window.innerHeight) top = (rect.top || e.clientY) - 220;
+    if(left + 270 > window.innerWidth) left = window.innerWidth - 280;
+    pop.style.top = top + 'px';
+    pop.style.left = left + 'px';
+  } else {
+    // Opened from agenda — center it
+    pop.style.top = '50%';
+    pop.style.left = '50%';
+    pop.style.transform = 'translate(-50%,-50%)';
+  }
+}
+
+function closeCalPopover() {
+  if(_calPopover) { _calPopover.remove(); _calPopover = null; }
+}
+
+// Close popover on outside click
+document.addEventListener('click', e => {
+  if(_calPopover && !_calPopover.contains(e.target) && !e.target.closest('.cal-event-pill') && !e.target.closest('.cal-week-event') && !e.target.closest('.cal-agenda-item')) {
+    closeCalPopover();
+  }
+});
+
+function deleteCalEvent(evtId) {
+  const ev = getCalEvents().find(x => x.id === evtId);
+  if(!ev) return;
+  if(ev.type === 'interview') {
+    const idx = interviews.findIndex(iv => ('iv_'+(iv.id||iv.candidateId+'_'+iv.date)) === evtId);
+    if(idx > -1) interviews.splice(idx, 1);
+    const c = getCand(ev.candId);
+    if(c && c.interviews) {
+      const i2 = c.interviews.findIndex(iv => ('iv_'+(iv.id||iv.candidateId+'_'+iv.date)) === evtId);
+      if(i2 > -1) c.interviews.splice(i2, 1);
+    }
+  }
+  save();
+  showToast('Event removed');
+  if(ev.candId) reactiveUpdate(ev.candId);
+}
+
+function deleteCalDeadline(jobId) {
+  const j = getJob(jobId);
+  if(j) {
+    delete j.deadline;
+    save();
+    showToast('Deadline removed');
+    if(document.getElementById('page-jobs')?.classList.contains('active')) renderJobs();
+  }
+}
+
+function markCalTaskDone(evtId) {
+  const taskId = evtId.replace('task_','');
+  const t = tasks.find(t => String(t.id) === String(taskId));
+  if(t) {
+    t.status = 'Done';
+    t.completedAt = new Date().toISOString();
+    save();
+    showToast('Task marked done ✓');
+    if(document.getElementById('page-tasks')?.classList.contains('active')) renderTasks();
+  }
+}
 </script>
 
 <!-- /APP SHELL -->
