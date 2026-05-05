@@ -879,6 +879,13 @@
   body.sidebar-collapsed .sidebar .nav-icon { width:22px; height:22px; }
   body.sidebar-collapsed .sidebar .nav-icon svg { width:20px; height:20px; }
 
+  /* ── NEW BUTTON DROPDOWN ── */
+  .new-btn-wrap { position:relative; display:inline-block; }
+  .new-btn-dropdown { position:absolute; top:calc(100% + 6px); right:0; background:var(--bg2); border:1px solid var(--border2); border-radius:10px; box-shadow:var(--shadow-lg); min-width:170px; z-index:9999; overflow:hidden; animation:fadeIn 0.12s ease; }
+  .new-btn-dropdown-item { display:flex; align-items:center; gap:10px; padding:11px 16px; font-size:13px; font-weight:600; cursor:pointer; transition:background 0.1s; color:var(--text); }
+  .new-btn-dropdown-item:hover { background:var(--bg3); }
+  .new-btn-dropdown-item svg { flex-shrink:0; }
+
   /* ── GLOBAL INTERACTION WARMTH ── */
   /* Every clickable card/row gets a smooth lift on hover */
   .stat-card { transition: border-color 0.15s, box-shadow 0.15s, transform 0.15s; cursor:default; }
@@ -1200,7 +1207,23 @@
         <div id="global-search-results" style="display:none;position:absolute;top:calc(100% + 6px);left:0;right:0;background:var(--bg2);border:1px solid var(--border2);border-radius:12px;box-shadow:0 8px 32px rgba(0,0,0,0.4);z-index:9999;max-height:480px;overflow-y:auto;"></div>
       </div>
       <button class="btn btn-ghost btn-icon" data-tip="Notifications"><svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:-2px;flex-shrink:0;"><path d="M18 8A6 6 0 006 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 01-3.46 0"/></svg></button>
-      <button class="btn btn-primary" onclick="openModal('add')">+ New Job</button>
+      <div class="new-btn-wrap" id="new-btn-wrap">
+        <button class="btn btn-primary" onclick="toggleNewDropdown(event)">+ New</button>
+        <div class="new-btn-dropdown" id="new-btn-dropdown" style="display:none;">
+          <div class="new-btn-dropdown-item" onclick="closeNewDropdown();openModal('add')">
+            <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="7" width="20" height="14" rx="2"/><path d="M16 21V5a2 2 0 00-2-2h-4a2 2 0 00-2 2v16"/></svg>
+            New Job
+          </div>
+          <div class="new-btn-dropdown-item" onclick="closeNewDropdown();openModal('addCandidate')">
+            <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+            New Candidate
+          </div>
+          <div class="new-btn-dropdown-item" onclick="closeNewDropdown();openNewTaskModal()">
+            <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 11.08V12a10 10 0 11-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
+            New Task
+          </div>
+        </div>
+      </div>
     </div>
   </div>
 
@@ -2052,6 +2075,7 @@ function setCandStageForJob(c, jobId, newStage) {
     c.jobId = jobId;
   }
   save();
+  reactiveUpdate(c?.id);
 }
 
 
@@ -2760,12 +2784,34 @@ async function docsHandleFiles(files, candId) {
     cand.documents.unshift(doc); // newest first
     save();
     showToast(`${file.name} uploaded`);
-    // Refresh the right panel immediately so PDF viewer, resume tab and file count update
-    if(typeof refreshRightPanel === 'function') refreshRightPanel(candId);
+
+    // Immediately update resume tab count badge
+    const resumeTabEl = document.querySelector('.cp-tab[onclick*="lt-resume"]');
+    if(resumeTabEl) resumeTabEl.textContent = `Resume Files (${cand.documents.length})`;
+
+    // If PDF viewer is open for this candidate, load new file immediately from b64
+    if(pdfCandId === candId && file.type?.includes('pdf')) {
+      const container = document.getElementById('pdf-container');
+      if(container && window.pdfjsLib) {
+        try {
+          pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+          const bin = atob(b64);
+          const arr = new Uint8Array(bin.length);
+          for(let i=0;i<bin.length;i++) arr[i]=bin.charCodeAt(i);
+          pdfDoc = await pdfjsLib.getDocument({data:arr}).promise;
+          pdfPage = 1; pdfZoom = 1.0;
+          const totalEl = document.getElementById('pdf-page-total');
+          if(totalEl) totalEl.textContent = pdfDoc.numPages;
+          await renderPdfPage();
+        } catch(e) { console.warn('PDF b64 preview error:', e); }
+      }
+    }
   }
 
   if(status) status.innerHTML = '';
-  openManageDocs(candId); // refresh modal
+  openManageDocs(candId); // refresh modal doc list
+  // After Cloudinary upload finishes, reload PDF from URL for best quality
+  // (already wired in saveResumeToCloud .then => refreshRightPanel => loadInlinePdf)
 }
 
 function deleteCandDoc(candId, idx) {
@@ -7303,12 +7349,13 @@ function updateOfferStatusProfile(candId, status) {
   const idx = offers.findIndex(o=>o.candidateId===candId);
   if(idx>=0) updateOfferStatus(idx, status); // updateOfferStatus calls save() internally
   else save();
+  reactiveUpdate(candId);
   renderCandProfileContent(candId);
 }
 
 function rateCand(id, rating) {
   const c = getCand(id); if(!c) return;
-  c.rating = rating; save();
+  c.rating = rating; save(); reactiveUpdate(candId); updateSidebarBadges();
   openCandProfile(id);
 }
 
@@ -8689,7 +8736,24 @@ function openModal(type, data={}) {
     footer.innerHTML = '<button class="btn btn-ghost" onclick="closeModal()">Cancel</button><button class="btn btn-primary" onclick="saveJob()">Post Job</button>';
   } else if(type==='addCandidate') {
     title.textContent = 'Add Candidate';
+    // Reset resume globals when modal opens
+    currentResumeB64 = null; currentResumeType = null; currentResumeFilename = null;
     body.innerHTML = `
+      <!-- RESUME UPLOAD -->
+      <div class="form-group" style="margin-bottom:14px;">
+        <label>Resume (PDF or DOCX) — optional</label>
+        <div id="nc-drop-zone" style="border:2px dashed var(--border2);border-radius:10px;padding:20px;text-align:center;cursor:pointer;transition:border-color 0.15s;background:var(--bg3);"
+          ondragover="this.style.borderColor='var(--accent)';event.preventDefault();"
+          ondragleave="this.style.borderColor='var(--border2)';"
+          ondrop="ncHandleDrop(event)"
+          onclick="document.getElementById('nc-file-input').click()">
+          <div id="nc-dz-icon" style="color:var(--text3);margin-bottom:6px;"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21.44 11.05l-9.19 9.19a6 6 0 01-8.49-8.49l9.19-9.19a4 4 0 015.66 5.66l-9.2 9.19a2 2 0 01-2.83-2.83l8.49-8.48"/></svg></div>
+          <div id="nc-dz-text" style="font-size:13px;font-weight:600;color:var(--text2);margin-bottom:2px;">Drop resume here or click to browse</div>
+          <div style="font-size:11px;color:var(--text3);">PDF or DOCX · Max 20MB</div>
+          <input type="file" id="nc-file-input" accept=".pdf,.docx,application/pdf,application/vnd.openxmlformats-officedocument.wordprocessingml.document" style="display:none" onchange="ncHandleFile(this.files[0])">
+        </div>
+      </div>
+
       <!-- CANDIDATE FIELDS -->
       <div class="form-row">
         <div class="form-group"><label>Full Name</label><input type="text" id="nc-name" placeholder="Jane Smith"></div>
@@ -8828,6 +8892,8 @@ function confirmApplyToJob(candId) {
   addCandJobApplication(c, jobId, stage);
   addToTimeline(c, 'Applied to ' + (getJob(jobId)?.title||'job'), 'var(--accent)');
   save();
+  closeModal();
+  reactiveUpdate(candId);
   closeModal();
   // Refresh job applications section
   const el = document.getElementById('cp-job-applications');
@@ -9638,6 +9704,39 @@ let currentResumeFilename = null;
 
 function setVal(id, val) { const el = document.getElementById(id); if(el) el.value = val; }
 
+
+function ncHandleDrop(e) {
+  e.preventDefault();
+  const file = e.dataTransfer?.files?.[0];
+  if(file) ncHandleFile(file);
+  document.getElementById('nc-drop-zone').style.borderColor = 'var(--border2)';
+}
+
+async function ncHandleFile(file) {
+  if(!file) return;
+  if(file.size > 20*1024*1024) { showToast('File too large — max 20MB'); return; }
+  const allowed = ['application/pdf','application/vnd.openxmlformats-officedocument.wordprocessingml.document'];
+  if(!allowed.includes(file.type) && !file.name.match(/\.(pdf|docx)$/i)) {
+    showToast('Please upload a PDF or DOCX file'); return;
+  }
+  // Read file as base64
+  const b64 = await new Promise(res => {
+    const reader = new FileReader();
+    reader.onload = e => res(e.target.result.split(',')[1]);
+    reader.readAsDataURL(file);
+  });
+  // Store in globals for saveCandidate to use
+  currentResumeB64 = b64;
+  currentResumeType = file.type || 'application/pdf';
+  currentResumeFilename = file.name;
+  // Update drop zone UI
+  const dz = document.getElementById('nc-drop-zone');
+  const dzText = document.getElementById('nc-dz-text');
+  const dzIcon = document.getElementById('nc-dz-icon');
+  if(dz) dz.style.borderColor = 'var(--green)';
+  if(dzText) dzText.innerHTML = '<span style="color:var(--green);font-weight:700;">' + escapeHtml(file.name) + '</span>';
+  if(dzIcon) dzIcon.innerHTML = '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="var(--green)" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M22 11.08V12a10 10 0 11-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>';
+}
 
 function saveCandidate() {
   const name = document.getElementById('nc-name')?.value.trim();
@@ -11848,6 +11947,26 @@ function initOnboarding() {
 
 // ===================== END ONBOARDING SYSTEM =====================
 
+function toggleNewDropdown(e) {
+  e.stopPropagation();
+  const dd = document.getElementById('new-btn-dropdown');
+  if(!dd) return;
+  const isOpen = dd.style.display !== 'none';
+  dd.style.display = isOpen ? 'none' : 'block';
+  if(!isOpen) {
+    // Close on outside click
+    setTimeout(() => document.addEventListener('click', closeNewDropdown, { once: true }), 0);
+  }
+}
+function closeNewDropdown() {
+  const dd = document.getElementById('new-btn-dropdown');
+  if(dd) dd.style.display = 'none';
+}
+function openNewTaskModal() {
+  if(typeof openAddTask === 'function') openAddTask();
+  else showToast('Navigate to Tasks to create a task');
+}
+
 function showToast(msg) {
   const t = document.createElement('div');
   t.style.cssText = 'position:fixed;bottom:80px;left:50%;transform:translateX(-50%);background:var(--bg4);border:1px solid var(--border2);color:var(--text);padding:10px 20px;border-radius:8px;font-size:13px;font-weight:600;z-index:9999;box-shadow:0 4px 20px rgba(0,0,0,0.4);animation:fadeIn 0.2s ease';
@@ -11945,6 +12064,7 @@ function renameStage(i,val) {
   list[i].name=val.trim();
   localStorage.setItem('tf_custom_stages',JSON.stringify(list));
   candidates.forEach(c=>{if(c.stage===old) c.stage=val.trim();}); save();
+  reactiveUpdate(null);
 }
 function toggleStage(i,enabled) {
   const list=getCustomStages(); list[i].enabled=enabled;
