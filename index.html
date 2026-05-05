@@ -2764,7 +2764,7 @@ async function docsHandleFiles(files, candId) {
     if(typeof refreshRightPanel === 'function') refreshRightPanel(candId);
   }
 
-  if(status) status.innerHTML = `<div style="color:var(--green);font-size:12px;">✓ Upload complete · <button class="btn btn-primary btn-sm" onclick="parseResumeWithClaude(${candId})"><svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:-2px;flex-shrink:0;"><rect x="3" y="11" width="18" height="10" rx="2"/><circle cx="12" cy="5" r="2"/><line x1="12" y1="7" x2="12" y2="11"/><line x1="8" y1="15" x2="8" y2="15"/><line x1="16" y1="15" x2="16" y2="15"/></svg> Parse with Claude</button></div>`;
+  if(status) status.innerHTML = '';
   openManageDocs(candId); // refresh modal
 }
 
@@ -2777,8 +2777,7 @@ function deleteCandDoc(candId, idx) {
     cand.resumeFilename = '';
     cand.resumeUrl = null;
     cand.resumePath = null;
-    // Clear localStorage cache so old file doesn't show
-    try { localStorage.removeItem('tf_resume_' + candId); } catch(e) {}
+    // Resume lives in Cloudinary — no local cache to clear
   } else {
     // If deleted doc was the primary resume, promote next PDF as primary
     const nextPdf = cand.documents.find(d => d.type?.includes('pdf') || d.name?.endsWith('.pdf'));
@@ -2787,8 +2786,7 @@ function deleteCandDoc(candId, idx) {
       cand.resumeType = nextPdf.type;
       cand.resumeUrl = null;
       cand.resumePath = null;
-      // Update localStorage cache to the new primary resume
-      try { localStorage.setItem('tf_resume_' + candId, JSON.stringify({ b64: nextPdf.b64, type: nextPdf.type, filename: nextPdf.name })); } catch(e) {}
+      // Resume URL will be set by next Cloudinary upload
     }
   }
   save();
@@ -3064,7 +3062,7 @@ function renderCandPipelineFunnel(filteredList, activeStage, activeJobId) {
   const total = filteredList.length;
   const sc = stages.map(s => ({
     s,
-    n: filteredList.filter(c => (activeJobId ? getCandStageForJob(c,activeJobId) : c.stage) === s).length,
+    n: filteredList.filter(c => (activeJobId ? getCandStageForJob(c,activeJobId) : getCandPrimaryStage(c)) === s).length,
     color: stageColors[s] || 'var(--text3)'
   }));
 
@@ -3224,7 +3222,7 @@ function renderCandidates() {
     const displayJobId = jobId || c.jobId;
     const job = getJob(displayJobId);
     const allApps = getCandJobs(c);
-    const displayStage = jobId ? getCandStageForJob(c,jobId) : c.stage;
+    const displayStage = jobId ? getCandStageForJob(c,jobId) : getCandPrimaryStage(c);
     const stageColor = stageColors[displayStage]||'var(--text3)';
     const isSelected = _candSelectedIds.includes(c.id);
     const nameDisplay = searchQ ? highlightMatch(c.name, searchQ) : escapeHtml(c.name);
@@ -13130,6 +13128,23 @@ function getLastActivityDate(c) {
   (c.timeline||[]).forEach(t => { if(t.ts) dates.push(new Date(t.ts).toISOString().split('T')[0]); });
   if(!dates.length) return c.applied || null;
   return dates.sort().reverse()[0];
+}
+
+// Returns the highest-priority stage for a candidate across all their jobs
+// Order: Hired > Pending Join > Offer > Interview > Screening > Applied > Rejected
+function getCandPrimaryStage(c) {
+  const STAGE_RANK = { 'Hired':8, 'Pending Join':7, 'Offer':6, 'Interview':5, 'Screening':4, 'Applied':3, 'Rejected':1 };
+  // Collect all stages across all job applications
+  const allStages = [];
+  if(c.stage) allStages.push(c.stage);
+  if(c.jobApplications?.length) {
+    c.jobApplications.forEach(app => { if(app.stage) allStages.push(app.stage); });
+  }
+  if(!allStages.length) return c.stage || 'Applied';
+  // Return the highest-ranked stage
+  return allStages.reduce((best, s) => {
+    return (STAGE_RANK[s] || 0) > (STAGE_RANK[best] || 0) ? s : best;
+  }, allStages[0]);
 }
 
 function getCandIntelligence(c) {
