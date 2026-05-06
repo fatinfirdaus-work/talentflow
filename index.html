@@ -74,7 +74,7 @@
   .main { margin-left: var(--sidebar-w); flex: 1; display: flex; flex-direction: column; height: 100vh; overflow: hidden; min-width: 0; width: calc(100% - var(--sidebar-w)); }
 
   /* ── TOPBAR ── */
-  .topbar { background: var(--bg2); border-bottom: 1px solid var(--border); padding: 0 22px; height: 52px; display: flex; align-items: center; gap: 14px; flex-shrink: 0; overflow: hidden; }
+  .topbar { background: var(--bg2); border-bottom: 1px solid var(--border); padding: 0 22px; height: 52px; display: flex; align-items: center; gap: 14px; flex-shrink: 0; overflow: visible; }
   .topbar-title { font-size: 16px; font-weight: 700; letter-spacing: -0.3px; flex: 1; min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
   .topbar-actions { display: flex; align-items: center; gap: 8px; }
 
@@ -2742,13 +2742,14 @@ function docsHandleDrop(e, candId) {
 
 async function docsHandleFiles(files, candId) {
   if(!files?.length) return;
+  candId = parseInt(candId) || candId; // normalise — HTML onclick passes strings
   const cand = getCand(candId); if(!cand) return;
   if(!cand.documents) cand.documents = [];
   const status = document.getElementById('docs-parse-status');
 
   for(const file of Array.from(files)) {
     if(file.size > 20*1024*1024) { showToast(`${file.name} too large (max 20MB)`); continue; }
-    if(status) status.innerHTML = `<div style="color:var(--accent);font-size:12px;"><svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:-2px;flex-shrink:0;"><path d="M5 22h14"/><path d="M5 2h14"/><path d="M17 22v-4.172a2 2 0 00-.586-1.414L12 12l-4.414 4.414A2 2 0 007 17.828V22"/><path d="M7 2v4.172a2 2 0 00.586 1.414L12 12l4.414-4.414A2 2 0 0017 6.172V2"/></svg> Uploading ${escapeHtml(file.name)}...</div>`;
+    if(status) status.innerHTML = `<div style="color:var(--accent);font-size:12px;">Uploading ${escapeHtml(file.name)}...</div>`;
 
     const b64 = await new Promise(res => {
       const reader = new FileReader();
@@ -2756,62 +2757,58 @@ async function docsHandleFiles(files, candId) {
       reader.readAsDataURL(file);
     });
 
+    const isPdf = !!(file.type?.includes('pdf') || file.name?.toLowerCase().endsWith('.pdf'));
+
     const doc = {
       name: file.name, type: file.type||'application/pdf',
       size: file.size, b64, uploadedAt: Date.now(),
       label: cand.documents.length === 0 ? 'Resume v1' : `Document ${cand.documents.length+1}`,
-      parsed: false
     };
 
-    // Set as active resume if first doc or is a PDF
-    if(cand.documents.length === 0 || file.type?.includes('pdf')) {
+    if(cand.documents.length === 0 || isPdf) {
       cand.hasResume = true;
       cand.resumeFilename = file.name;
       cand.resumeType = file.type;
-      cand.resumeUrl = null;   // clear old Cloudinary URL so viewer uses new file
-      cand.resumePath = null;  // clear old path
-      // Overwrite localStorage cache with new file
-      try { localStorage.setItem('tf_resume_'+candId, JSON.stringify({b64, type: file.type, filename: file.name})); } catch(e){}
-      // Upload to Cloudinary
+      cand.resumeUrl = null;
+      cand.resumePath = null;
       if(window.saveResumeToCloud && currentUser) {
         cand.resumePath = `users/${currentUser.uid}/resumes/${candId}`;
         window.saveResumeToCloud(candId, b64, file.type, file.name)
-          .then(ok => { if(ok && typeof refreshRightPanel === 'function') refreshRightPanel(candId); })
+          .then(ok => { if(ok) refreshRightPanel(candId); })
           .catch(e => console.warn('Cloud upload failed', e));
       }
     }
 
-    cand.documents.unshift(doc); // newest first
+    cand.documents.unshift(doc);
     save();
     showToast(`${file.name} uploaded`);
 
-    // Immediately update resume tab count badge
-    const resumeTabEl = document.querySelector('.cp-tab[onclick*="lt-resume"]');
-    if(resumeTabEl) resumeTabEl.textContent = `Resume Files (${cand.documents.length})`;
-
-    // If PDF viewer is open for this candidate, load new file immediately from b64
-    if(pdfCandId === candId && file.type?.includes('pdf')) {
+    // Immediately render PDF in viewer from b64 — no waiting for Cloudinary
+    if(isPdf) {
+      window.pdfCandId = candId;
       const container = document.getElementById('pdf-container');
       if(container && window.pdfjsLib) {
         try {
+          container.innerHTML = '<div style="padding:40px;text-align:center;color:var(--text3);font-size:13px;">Loading preview...</div>';
           pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
           const bin = atob(b64);
           const arr = new Uint8Array(bin.length);
-          for(let i=0;i<bin.length;i++) arr[i]=bin.charCodeAt(i);
-          pdfDoc = await pdfjsLib.getDocument({data:arr}).promise;
-          pdfPage = 1; pdfZoom = 1.0;
+          for(let i = 0; i < bin.length; i++) arr[i] = bin.charCodeAt(i);
+          window.pdfDoc = await pdfjsLib.getDocument({data: arr}).promise;
+          window.pdfPage = 1;
+          window.pdfZoom = 1.0;
           const totalEl = document.getElementById('pdf-page-total');
-          if(totalEl) totalEl.textContent = pdfDoc.numPages;
+          if(totalEl) totalEl.textContent = window.pdfDoc.numPages;
           await renderPdfPage();
-        } catch(e) { console.warn('PDF b64 preview error:', e); }
+        } catch(e) {
+          console.warn('PDF preview error:', e);
+        }
       }
     }
   }
 
   if(status) status.innerHTML = '';
-  openManageDocs(candId); // refresh modal doc list
-  // After Cloudinary upload finishes, reload PDF from URL for best quality
-  // (already wired in saveResumeToCloud .then => refreshRightPanel => loadInlinePdf)
+  openManageDocs(candId);
 }
 
 function deleteCandDoc(candId, idx) {
